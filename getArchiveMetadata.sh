@@ -28,6 +28,29 @@ echo -n "Enter the master HTTP address [$DEFAULT_MASTER_HTTP]: "; read MASTER_HT
 echo -n "Enter your web credentials for $MASTER_HTTP [$DEFAULT_CREDS]: "; read CREDS
 [[ -z $CREDS ]] && CREDS="$DEFAULT_CREDS"
 
+# Choose one of several space-separated values
+# arg1: prompt text that continues to be displayed until one of the values is chosen
+# arg2: space-separated values
+# arg3: optional default value to be used only when nothing is entered
+# The result is that CHOICE is populated with entered value
+function chooseOne {
+        prompt="$1"
+        list="$2"
+        default="$3"
+        CHOICE=
+        [[ -n $default ]] && prompt="$prompt [$default]"
+        regex="^`echo $list | sed "s/ /$|^/g"`$"
+        [[ ! "$default" =~ $regex ]] && echo "The default value is not a valid option: $default" 1>&2 && return 1
+        while [[ -z "$CHOICE" ]]; do
+                echo -n "$prompt : "; read val
+                # Set the default only if nothing is entered
+                [[ -n $default ]] && [[ -z $val ]] && CHOICE=$default
+                if [[ "$val" =~ $regex ]]; then
+                        CHOICE=$val
+                fi
+        done
+}
+
 echo
 echo "==== WebRestoreInfo ===="
 echo -n "Enter source GUID     : "; read srcGuid
@@ -112,8 +135,8 @@ echo
 echo
 echo "==== WebRestoreTreeNode (find file) ===="
 echo -n "Enter fileId from request above: "; read fileId
-echo -n "Enter fileId type (directory or file) [directory]: "; read type
-[[ -z $type ]] && type=directory
+#echo -n "Enter fileId type (directory or file) [directory]: "; read type
+chooseOne "Enter file type (directory or file)" "file directory" directory && type=$CHOICE
 Q="WebRestoreTreeNode?guid=$srcGuid&webRestoreSessionId=$webRestoreSessionId&fileId=$fileId&includeOsMetadata=true&type=$type"
 echo "POST $Q"
 curl --header "Content-Type: application/json" \
