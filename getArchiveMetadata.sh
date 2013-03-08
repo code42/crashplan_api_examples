@@ -20,13 +20,10 @@
 #######################################################################################
 
 DEFAULT_CREDS="admin:admin"
-DEFAULT_MASTER_HTTP=https://proe-master.acme.com:4285
-
-echo -n "Enter the master HTTP address [$DEFAULT_MASTER_HTTP]: "; read MASTER_HTTP
-[[ -z $MASTER_HTTP ]] && MASTER_HTTP="$DEFAULT_MASTER_HTTP"
-
-echo -n "Enter your web credentials for $MASTER_HTTP [$DEFAULT_CREDS]: "; read CREDS
-[[ -z $CREDS ]] && CREDS="$DEFAULT_CREDS"
+#DEFAULT_MASTER_HTTP=https://proe-master.acme.com:4285
+DEFAULT_MASTER_HTTP=https://proe-master.crashplan.com:7285
+DEFAULT_GUID=570477308691873793
+DEFAULT_DEST_GUID=73
 
 # Choose one of several space-separated values
 # arg1: prompt text that continues to be displayed until one of the values is chosen
@@ -51,13 +48,32 @@ function chooseOne {
         done
 }
 
+echo -n "Enter the master HTTP address [$DEFAULT_MASTER_HTTP]: "; read MASTER_HTTP
+[[ -z $MASTER_HTTP ]] && MASTER_HTTP="$DEFAULT_MASTER_HTTP"
+
+echo -n "Enter your web credentials for $MASTER_HTTP [$DEFAULT_CREDS]: "; read CREDS
+[[ -z $CREDS ]] && CREDS="$DEFAULT_CREDS"
+
+echo
+echo "==== User ===="
+echo -n "Enter username: "; read username
+curl -u $CREDS --header "Accept: application/json" \
+	"$MASTER_HTTP/api/User?username=$username" || exit 1
+echo -n "Enter userId found with username above: "; read userId
+
+echo
+echo
+echo "==== Computer ===="
+curl -u $CREDS --header "Accept: application/json" \
+	"$MASTER_HTTP/api/Computer?userId=$userId&incBackupUsage=true&active=true" || exit 1
+
 echo
 echo "==== WebRestoreInfo ===="
 echo -n "Enter source GUID     : "; read srcGuid
 # Some defaults
-[[ -z $srcGuid ]] && srcGuid=570477308691873793
+[[ -z $srcGuid ]] && srcGuid=$DEFAULT_GUID
 echo -n "Enter destination GUID: "; read destGuid
-[[ -z $destGuid ]] && destGuid=72
+[[ -z $destGuid ]] && destGuid=$DEFAULT_DEST_GUID
 echo -n "Press enter to GET WebRestoreInfo?srcGuid=$srcGuid&destGuid=$destGuid :"; read x
 curl -u $CREDS --header "Accept: application/json" \
 	"$MASTER_HTTP/api/WebRestoreInfo?srcGuid=$srcGuid&destGuid=$destGuid" || exit 1
@@ -97,7 +113,7 @@ echo
 echo
 echo "==== DataKeyToken ===="
 DATA="{\"computerGuid\":\"$srcGuid\"}" 
-echo -n "Press enter to POST DataKeyToken $DATA :"; read x
+echo -n "Press enter to POST DataKeyToken to master: $DATA :"; read x
 curl -u $CREDS -X POST \
 	--data-binary "$DATA" \
 	--header "Content-Type: application/json" \
@@ -107,7 +123,7 @@ curl -u $CREDS -X POST \
 echo
 echo
 echo "==== WebRestoreSession ===="
-echo " ** NOTE ** You only have 15 seconds to enter this dataKeyToken"
+echo " ** NOTE ** You have only 15 seconds to enter this dataKeyToken"
 echo -n "Enter dataKeyToken from DataKeyToken response: "; read dataKeyToken
 DATA="{ \"computerGuid\":\"$srcGuid\", \"dataKeyToken\":\"$dataKeyToken\" }"
 echo "POST WebRestoreSession $DATA: "
