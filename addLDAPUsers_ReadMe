@@ -1,0 +1,23 @@
+File: addLDAPUsers.py ReadMe
+Author: Nick Olmsted, Code 42 Software
+Last Modified: 04-22-2013
+
+SUMMARY:
+Takes a comma-delimited CSV file of user names and adds those users to a LDAP Org.
+
+PRE-REQS:
+* Python 2.7
+* Requests Module
+** http://www.python-requests.org/
+* PROe Server Host and Port
+* PROe Server Admin and Password
+* CSV file name
+* LDAP ORG ID. You can get this by navigating to the org and getting the org id value from the url. For examples: http://localhost:4280/console/app.html#v=orgs:overview&t=0mbunsjn5sbz91tlzg5clpd7qg&s=orgDetail&so[orgId]=3 would be an Org ID of 3.
+
+STEPS:
+1. Create CSV file with comma-delmited list of LDAP users to add to the PROe Server. Save it in the same location as the addLDAPUsers.py script.
+2. Update addLDAPUsers.py and add your environment values for cp_host, cp_port, etc.
+3. Execute the script and check the addLDAPUsers.log file for your results.
+
+RESULTS:
+LDAP Users will be added to the specified CrashPlan Organization. 
