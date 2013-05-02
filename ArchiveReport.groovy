@@ -102,14 +102,6 @@ class shellCmd {
 			ie.printStackTrace(); // or log it, or otherwise handle it
 		}
 		return outtext
-		/*
-		def process = new ProcessBuilder(addShellPrefix(command))
-				.directory(workingDir)
-				.redirectErrorStream(false)
-				.start()
-		process.waitFor();
-		return process.in.text
-		*/
 	}
 	// shell invocation (for curl)
 	private def addShellPrefix(String command) {
