@@ -24,7 +24,7 @@ class showArchiveReport {
  * - All restores in date range	
  * 
  */
-	def ShowArchiveReport(server, cred, userId, fromDate="", toDate="", devices="") {
+	def showArchiveReport(server, cred, userId, fromDate="", toDate="", devices="") {
 		
 		def json = exec(server, cred, "/api/RestoreRecord?userId="+userId)
 
