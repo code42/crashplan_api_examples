@@ -14,8 +14,11 @@
 # 1 arg - type of logging (values: verbose, nonverbose)
 #
 # Example usages: 
-# python licenseAvailabilityreport.py verbose 
-# python licenseAvailabilityreport.py noverbose
+# python licenseAvailabilityreport.py verbose 1 
+# The above example will show a verbose log and write the results to a file.
+#
+# python licenseAvailabilityreport.py noverbose 0
+# The above exmaple will show terse logging and produce an on screen summary of license availability
 #
 # NOTE: Make sure to set cpc_host, cpc_port, cpc_username, cpc_password to your environments values.
 #
