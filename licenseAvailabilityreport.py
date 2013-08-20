@@ -211,7 +211,7 @@ def getColdStorageArchives(storePoints):
 					if not ( userID in activeList ):
 						# Encode computer names to protect against throwing decoding errors
 						computerNamedecoded = computerName.encode('utf-8')		
-						deviceObjs = (userID, str(archiveExpireDate), computerID, str(computerNamedecoded), str(userName))
+						deviceObjs = (userID, str(archiveExpireDate), computerID, str(computerNamedecoded), str(userName), str(mountpointName))
 						deviceList.append(deviceObjs)
 						logging.debug("     " + str(dCount) + " | Saving UserID: " + str(userID) + " computerID:  " + str(computerID) + " Expire Date: " + str(archiveExpireDate))
 					else: 
@@ -441,9 +441,9 @@ def sortExpiredates(archiveList):
 		logging.info ('Saving Users to File')
 		output = open("CrashPlanPROe_License_Available_List_" + todayis +".txt", "w") # Open the file
 		output.write ("CrashPlanePROe License Availablity List - " +  todayis + "\n")
-		output.write ("========================================================================================================\n")
-		output.write ("UserID      UserName                       DeviceID   Device Name                            Expire Date\n")
-		output.write ("--------------------------------------------------------------------------------------------------------\n")
+		output.write ("=====================================================================================================================================\n")
+		output.write ("UserID      UserName                       DeviceID   Device Name                       Expire Date          MountPointID\n")
+		output.write ("-------------------------------------------------------------------------------------------------------------------------------------\n")
 		
 	
 	for d in archiveList:
@@ -453,7 +453,7 @@ def sortExpiredates(archiveList):
 		archiveExpireclean = archiveExpireyear + '-' + archiveExpiremonth
 		justMonthslist.append(archiveExpireclean)
 		if (SAVE_USER_LIST == "1"):
-			output.write (str(d[0]).ljust(11)+str(d[4]).ljust(32)+str(d[2]).ljust(10)+str(d[3]).ljust(35)+str(justThedate)[:10]+"\n")
+			output.write (str(d[0]).rjust(6)+"     "+str(d[4]).ljust(32)+str(d[2]).ljust(10)+str(d[3]).ljust(35)+str(justThedate)[:10]+"     "+str(d[5]).rjust(30)+"\n")
 	
 	if (SAVE_USER_LIST == 1):
 		output.close
