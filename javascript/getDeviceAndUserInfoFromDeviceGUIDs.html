@@ -1,0 +1,342 @@
+<html>
+	<head>
+
+
+<!-- File: app.html
+Author: AJ LaVenture, Code 42 Software
+Last Modified: 08-23-2013
+
+From a list of Device GUIDS, pull device and user information into CSV Format
+Very hard coded for this report
+ -->
+
+		<title>CrashPlan Reporting Page</title>
+		<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+	</head>
+	<body>
+		<h1>CrashPlan Reporting Page</h1>
+		<div>
+			<h3>file: [getDeviceAndUserInfoFromDeviceGUIDs.html]</h3>
+			<p>This file will generate a report from a list of device GUIDs to return device and user information assoicated with that device
+			</p>
+			<h5>Usage:</h5>
+			<p>
+				<ul>
+					<li>Make sure this computer has access to the internet</li>
+					<li>Run this file within Firefox or place on a webserver and run with firefox / chrome</li>
+					<li>Make sure this computer is on the same network / can access the CrashPlan Master Server</li>
+					<li>Fill out data in the table below</li>
+					<li>NOTE: device guids must be comma separated with no extra characters</li>
+					<li>Hit save to save the data</li>
+					<li>Click the run button to execute the look up</li>
+				</ul>
+			</p>
+		</div>
+		<div>
+			<table border=1>
+				<thead><tr>
+					<th>Properties</th><th>Values</th>
+				</tr></thead>
+				<tbody>
+					<tr><td>Server Host / IP:</td><td><input id="server_url" type="text" value=""/></td></tr>
+					<tr><td>Server Port:</td><td><input id="server_port" type="text" value=""/></td></tr>
+					<tr><td>Server Username:</td><td><input id="server_username" type="text" value=""/></td></tr>
+					<tr><td>Server Password:</td><td><input id="server_password" type="text" value=""/></td></tr>
+					<tr><td>Device GUIDs:</td><td><textarea id="device_guids"></textarea></td></tr>
+				</tbody>
+			</table>
+			<input type="button" id="save_settings" value="Save Settings!"/><br/><input type="button" id="load_settings" value="Load/reload settings"/><br/>
+			<input type="button" id="run_report" value="Run Report"/>
+		</div>
+<br/>
+<br/>
+<hr/>
+<br/>
+<br/>
+
+		<div>
+			<table id="results_table" border=1>
+				<thead>
+					<tr>
+						<th>guid</th>
+						<th>deviceName</th>
+						<th>osName</th>
+						<th>lastCompletedBackup</th>
+						<th>percentComplete</th>
+						<th>archiveBytes</th>
+						<th>selectedBytes</th>
+						<th>userId</th>
+						<th>userName</th>
+						<th>email</th>
+						<th>firstName</th>
+						<th>lastName</th>
+					</tr>
+				</thead>
+				<tbody>
+					
+				</tbody>
+				<tfoot>
+					<tr>
+						<th>guid</th>
+						<th>deviceName</th>
+						<th>osName</th>
+						<th>lastCompletedBackup</th>
+						<th>percentComplete</th>
+						<th>archiveBytes</th>
+						<th>selectedBytes</th>
+						<th>userId</th>
+						<th>userName</th>
+						<th>email</th>
+						<th>firstName</th>
+						<th>lastName</th>
+					</tr>
+					
+				</tfoot>
+			</table>
+		</div>
+		<script>
+			// alert("hi");
+			var $j = jQuery.noConflict();
+
+			var c42 = {
+				"vars" : {
+					"serverURL" : "http://aj-proappliance",
+					"serverPort" : "4280",
+					"username" : "admin",
+					"password" : "admin",
+					"device_guids" : "597897713966645505,597724554922036354,597893957280654977,597153934331668098"
+				},
+				"api_urls" : {
+					"cp_api_user" : "/api/User",
+					"cp_api_computer" : "/api/Computer"
+				},
+				"defaultFunctions": {
+					successFunction: function() {},
+					failureFunction: function() {},
+					beforeSendFunction: function() {},
+					completeFunction: function() {},
+					errorFunction: function() {}
+				},
+				"executedFunctions": {
+					successFunction: function() {},
+					failureFunction: function() {},
+					beforeSendFunction: function() {},
+					completeFunction: function() {},
+					errorFunction: function() {}
+				},
+
+			};
+
+			$j(function(){
+
+				$j("#load_settings").click(function(){
+					getParams();
+				});
+
+				$j("#save_settings").click(function(){
+					saveParams();
+
+				});
+
+				$j("#run_report").click(function(){
+					runCustomReport();
+				});
+
+				init();
+			});
+
+			function init(){
+				getParams();
+			}
+
+			function saveParams(){
+				c42.vars.serverURL = $j("#server_url").val();
+				c42.vars.serverPort = $j("#server_port").val();
+				c42.vars.username = $j("#server_username").val();
+				c42.vars.password = $j("#server_password").val();
+				c42.vars.device_guids = $j("#device_guids").val();
+			}
+
+			function getParams(){
+				
+				$j("#server_url").val(c42.vars.serverURL);
+				$j("#server_port").val(c42.vars.serverPort);
+				$j("#server_username").val(c42.vars.username);
+				$j("#server_password").val(c42.vars.password);
+				$j("#device_guids").val(c42.vars.device_guids);
+
+			}
+
+
+
+			function runCustomReport(){
+				$j("#results_table tbody").empty();
+				var guids = c42.vars.device_guids;
+				var guid_list = guids.split(",");
+
+				var saveCounter = 0;
+
+				executeRecursiveAjax(saveCounter,guid_list);
+
+				// for (var i = 0; i < guid_list.length; i++) {
+					// guid_list[i]
+					//for each guid:
+					//getDeviceInfoByGUID
+					//get info
+					//then getUserInfoById
+					// get info
+					//repeate
+					// executeRecursiveAjax(guid_list[i]);
+				// };
+			}
+
+			function executeRecursiveAjax(saveCounter, device_guid){
+				var callbacks = new Object();
+				var currentGUID = device_guid[saveCounter];
+				var parameters = new Object();
+				parameters.incBackupUsage = "true";
+				parameters.guid = currentGUID;
+
+				var currentRow = [];
+
+				currentRow.unshift(currentGUID);
+
+				callbacks.successFunction = function(responseText){
+
+					
+					// var computers = computers
+					var computers = responseText.data.computers[0];
+					var deviceName = computers.name;
+					currentRow.unshift(deviceName);
+					var osName = computers.osName;
+					currentRow.unshift(osName);
+
+					if (typeof computers.backupUsage !== 'undefined' && computers.backupUsage.length > 0){
+
+						var deviceObject = computers.backupUsage[0];
+						var lastCompletedBackup = deviceObject.lastCompletedBackup;
+						currentRow.unshift(lastCompletedBackup);
+						var percentComplete = deviceObject.percentComplete;
+						currentRow.unshift(percentComplete);
+						var archiveBytes = deviceObject.archiveBytes;
+						currentRow.unshift(archiveBytes);
+						var selectedBytes = deviceObject.selectedBytes;
+						currentRow.unshift(selectedBytes);
+					}
+					else{
+						// var emptyBlock = ",,,,";
+						var emptyBlock="";
+						currentRow.unshift(emptyBlock);
+						currentRow.unshift(emptyBlock);
+						currentRow.unshift(emptyBlock);
+						currentRow.unshift(emptyBlock);
+					}
+
+					var currUserId = computers.userId;
+					currentRow.unshift(currUserId);
+
+
+					var userAPIUrl = c42.api_urls.cp_api_user + "/" + currUserId;
+
+					
+					var callbacks2 = new Object();
+					callbacks2.successFunction = function(responseText2){
+
+						var user = responseText2.data;
+						var username = user.username
+						currentRow.unshift(username);
+						var email = user.email
+						currentRow.unshift(email);
+						var firstName = user.firstName
+						currentRow.unshift(firstName);
+						var lastName = user.lastName
+						currentRow.unshift(lastName);
+
+						console.log(currentRow);
+						var htmlString = printTableRowsFromArray(currentRow);
+						$j("#results_table tbody").append(htmlString);
+						saveCounter++;
+						if (saveCounter < device_guid.length){
+							executeRecursiveAjax(saveCounter, device_guid);
+						}
+						else{
+							alert("Report Complete");
+						}
+					}
+					$j.ajax({
+						cache: false,
+						dataType: "json",
+						type: 'GET',
+						username: c42.vars.username,
+						password: c42.vars.password,
+						// data: parameters,
+						url: c42.vars.serverURL + ":" + c42.vars.serverPort + userAPIUrl,
+						// beforeSend: callbacks.beforeSendFunction,
+						success: callbacks2.successFunction
+						// failure: callbacks.failureFunction,
+						// complete: callbacks.completeFunction,
+						// error: callbacks.errorFunction
+					});
+					// var userAPIUrl = c42.api_urls.cp_api_user + "/" + currUserId;
+					// executeAPICall("get",c42.api_urls.cp_api_user,parameters,callbacks)
+				}
+				executeAPICall("get",c42.api_urls.cp_api_computer,parameters, callbacks);
+			}
+
+
+			// function getDeviceInfoByGUID(guid){
+
+			// }
+
+
+			// function getUserInfoById(userId){
+
+			// }
+
+			function printTableRowsFromArray(arrayToPrint){
+				var htmlString = "<tr>";
+				for (var i = arrayToPrint.length - 1; i >= 0; i--) {
+					htmlString += "<td>" + arrayToPrint[i] + "</td>";
+				};
+				htmlString += "</tr>";
+				return htmlString;
+			}
+
+			function executeAPICall(type, urlContext, parameters, callbacks){
+				var requestType = "GET";
+				if(type == "get"){
+					requestType = "GET";
+				}
+				else if (type == "post"){
+					requestType = "POST";
+				}
+				else if (type == "put"){
+					requestType = "PUT";
+				}
+				else if (type == "delete"){
+					requestType = "DELETE";
+				}
+
+				// c42.executedFunctions = c42.defaultFunctions;
+
+				$j.ajax({
+					cache: false,
+					dataType: "json",
+					type: requestType,
+					username: c42.vars.username,
+					password: c42.vars.password,
+					data: parameters,
+					url: c42.vars.serverURL + ":" + c42.vars.serverPort + urlContext,
+					beforeSend: callbacks.beforeSendFunction,
+			        success: callbacks.successFunction,
+			        failure: callbacks.failureFunction,
+			        complete: callbacks.completeFunction,
+			        error: callbacks.errorFunction
+				});
+
+			}
+
+
+		</script>
+	</body>
+</html>
