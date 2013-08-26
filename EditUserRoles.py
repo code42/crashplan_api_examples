@@ -16,7 +16,7 @@
 #
 # Example usages: 
 # 1) Delete 'test' role for all users
-# python EditUserRoles.py 0 delete test
+# python EditUserRoles.py 0 remove test
 #
 # 2) Add 'test' role to orgId 3 users
 # python EditUserRoles.py 3 add test
