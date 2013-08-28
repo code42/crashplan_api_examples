@@ -33,6 +33,10 @@ c42Lib.setLoggingLevel()
 
 
 AJ_TEST_DEVICE_GUID_LIST = [597897713966645505,597724554922036354,597893957280654977,597153934331668098]
+# AJ_TEST_DEVICE_GUID_LIST = [597897713966645505]
+# AJ_TEST_DEVICE_GUID_LIST = [597724554922036354]
+# AJ_TEST_DEVICE_GUID_LIST = [597893957280654977]
+# AJ_TEST_DEVICE_GUID_LIST = [597153934331668098]
 
 
 GUID_LIST = AJ_TEST_DEVICE_GUID_LIST
@@ -54,10 +58,10 @@ for index, guid in enumerate(GUID_LIST):
 	# print deviceObject
 	
 	deviceName = deviceObject[0]['name']
-	printValues.extend([deviceName])
+	printValues.extend([deviceName.encode('utf-8')])
 
 	deviceOsName = deviceObject[0]['osName']
-	printValues.extend([deviceOsName])
+	printValues.extend([deviceOsName.encode('utf-8')])
 
 	if deviceObject[0]['backupUsage']:
 
@@ -77,7 +81,10 @@ for index, guid in enumerate(GUID_LIST):
 		printValues.extend([str(selectedBytes)])
 
 	else:
-		emptyBlock = ",,,,"
+		emptyBlock = ""
+		printValues.extend([emptyBlock])
+		printValues.extend([emptyBlock])
+		printValues.extend([emptyBlock])
 		printValues.extend([emptyBlock])
 
 	userId = deviceObject[0]['userId']
@@ -87,17 +94,18 @@ for index, guid in enumerate(GUID_LIST):
 	# userObject = userList['users']
 
 	username = userList['username']
-	printValues.extend([str(username)])
+	printValues.extend([username.encode('utf-8')])
 
 	email = userList['email']
-	printValues.extend([str(email)])
+	printValues.extend([email.encode('utf-8')])
 
 	firstName = userList['firstName']
-	printValues.extend([str(firstName)])
+	printValues.extend([firstName.encode('utf-8')])
 
 	lastName = userList['lastName']
-	printValues.extend([str(lastName)])
+	printValues.extend([lastName.encode('utf-8')])
 	
+	logging.info(printValues)
 	csvFile.writerow(printValues)
 	print printValues
 
