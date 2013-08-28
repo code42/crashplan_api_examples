@@ -43,6 +43,7 @@ class c42Lib(object):
 	cp_api_org = "/api/Org"
 	cp_api_deviceUpgrade = "/api/DeviceUpgrade"
 	cp_api_computer = "/api/Computer"
+	cp_api_userMoveProcess = "/api/UserMoveProcess"
 
 	cp_logLevel = "INFO"
 	cp_logFileName = "c42SharedLibrary.log"
@@ -51,7 +52,7 @@ class c42Lib(object):
 
 	@staticmethod
 	def getRequestHeaders():
-		header = {"Authorization":c42Lib.getAuthHeader(c42Lib.cp_username,c42Lib.cp_password)}
+		header = {"Authorization":c42Lib.getAuthHeader(c42Lib.cp_username,c42Lib.cp_password), "Content-Type": "application/json"}
 		# print header
 		return header
 
@@ -61,28 +62,30 @@ class c42Lib(object):
 		return url
 
 	@staticmethod
-	def executeRequest(type, cp_api, cp_payload):
+	def executeRequest(type, cp_api, params, payload):
 		# logging.debug
 		header = c42Lib.getRequestHeaders()
 		# print header
 		url = c42Lib.getRequestUrl(cp_api)
 		# url = cp_host + ":" + cp_port + cp_api
-		payload = cp_payload
+		# payload = cp_payload
 
 		if type == "get":
-			r = requests.get(url, params=payload, headers=header)
+			logging.info(str(payload))
+			r = requests.get(url, params=params, data=json.dumps(payload), headers=header)
 			logging.debug(r.text)
 			return r
 		elif type == "delete":
-			r = requests.delete(url, params=payload, headers=header)
+			r = requests.delete(url, params=params, data=json.dumps(payload), headers=header)
 			logging.debug(r.text)
 			return r
 		elif type == "post":
-			r = requests.post(url, params=payload, headers=header)
+			r = requests.post(url, params=params, data=json.dumps(payload), headers=header)
 			logging.debug(r.text)
 			return r
 		elif type == "put":
-			r = requests.put(url, params=payload, headers=header)
+			# logging.debug(str(json.dumps(payload)))
+			r = requests.put(url, params=params, data=json.dumps(payload), headers=header)
 			logging.debug(r.text)
 			return r
 		else:
@@ -99,12 +102,12 @@ class c42Lib(object):
 
 	    # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 	    # url = cp_host + ":" + cp_port + cp_api_user
+	    params = {'active': 'true'}
 	    payload = {}
-	    
 	    # r = requests.get(url, params=payload, headers=headers)
 	    # logging.debug(r.text)
 
-	    r = c42Lib.executeRequest("get", c42Lib.cp_api_user, payload)
+	    r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
 
 	    content = r.content
 	    binary = json.loads(content)
@@ -117,7 +120,7 @@ class c42Lib(object):
 	    logging.debug("getUsersPageCount:totalCount= " + str(totalCount))
 
 	    # num of requests is rounding down and not up. Add+1 as we know we are completed because the computerId value returns as 0
-	    numOfRequests = int(math.ceil(totalCount/MAX_PAGE_NUM)+1)
+	    numOfRequests = int(math.ceil(totalCount/c42Lib.MAX_PAGE_NUM)+1)
 
 	    logging.debug("getUsersPageCount:numOfRequests= " + str(numOfRequests))
 	   
@@ -129,16 +132,16 @@ class c42Lib(object):
 	#
 	@staticmethod
 	def getUsersPageCountByOrg(orgId):
-	    logging.debug("getUsersPageCountByOrg-params: orgId[" + orgId + "]")
+	    logging.debug("getUsersPageCountByOrg-params: orgId[" + str(orgId) + "]")
 
 	    # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 	    # url = cp_host + ":" + cp_port + cp_api_user
-	    payload = {'orgId': orgId}
-	    
+	    params = {'orgId': orgId, 'active': 'true'}
+	    payload = {}
 	    # r = requests.get(url, params=payload, headers=headers)
 	    # logging.debug(r.text)
 
-	    r = c42Lib.executeRequest("get", c42Lib.cp_api_user, payload)
+	    r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
 
 	    content = r.content
 	    binary = json.loads(content)
@@ -151,7 +154,7 @@ class c42Lib(object):
 	    logging.debug("getUsersPageCountByOrg:totalCount= " + str(totalCount))
 
 	    # num of requests is rounding down and not up. Add+1 as we know we are completed because the computerId value returns as 0
-	    numOfRequests = int(math.ceil(totalCount/MAX_PAGE_NUM)+1)
+	    numOfRequests = int(math.ceil(totalCount/c42Lib.MAX_PAGE_NUM)+1)
 
 	    logging.debug("getUsersPageCountByOrg:numOfRequests= " + str(numOfRequests))
 	   
@@ -162,9 +165,10 @@ class c42Lib(object):
 	def getUserById(userId):
 		logging.debug("getUser-params:userId[" + str(userId) + "]")
 
-		payload = {'incAll': 'true'}
+		params = {'incAll': 'true'}
+		payload = {}
 
-		r = c42Lib.executeRequest("get", c42Lib.cp_api_user + "/" + str(userId), payload)
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_user + "/" + str(userId), params, payload)
 
 		logging.debug(r.text)
 
@@ -175,25 +179,24 @@ class c42Lib(object):
 		user = binary['data']
 		return user
 
-
-
-
 	#
 	# Returns a list of users, 
 	# Params:
 	# orgId - integer, that is used to limit the users to an org. Can be set to 0 to return all users.
 	# pgNum - Current page request count. 
+	# active - only return active users
 	#
 	@staticmethod
 	def getUsersByOrgPaged(orgId, pgNum):
-	    logging.debug("getUsersByOrgPaged-params:orgId[" + orgId + "]:pgNum[" + str(pgNum) + "]")
+	    logging.debug("getUsersByOrgPaged-params:orgId[" + str(orgId) + "]:pgNum[" + str(pgNum) + "]")
 
 	    # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 	    # url = cp_host + ":" + cp_port + cp_api_user
-	    payload = {'orgId': orgId, 'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM)}
-
+	    params = {'orgId': orgId, 'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM), 'active': 'true'}
+	    payload = {}
+	    logging.info(str(payload))
 	    # r = requests.get(url, params=payload, headers=headers)
-	    r = c42Lib.executeRequest("get", c42Lib.cp_api_user, payload)
+	    r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
 
 	    logging.debug(r.text)
 	    
@@ -202,7 +205,7 @@ class c42Lib(object):
 	    logging.debug(binary)
 
 
-	    users = binary['data']
+	    users = binary['data']['users']
 	    return users
 
 	@staticmethod
@@ -211,10 +214,11 @@ class c42Lib(object):
 
 	    # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 	    # url = cp_host + ":" + cp_port + cp_api_user
-	    payload = {'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM)}
+	    params = {'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM), 'active': 'true'}
+	    payload = {}
 
 	    # r = requests.get(url, params=payload, headers=headers)
-	    r = c42Lib.executeRequest("get", c42Lib.cp_api_user, payload)
+	    r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
 
 	    logging.debug(r.text)
 	    
@@ -222,7 +226,7 @@ class c42Lib(object):
 	    binary = json.loads(content)
 	    logging.debug(binary)
 
-	    users = binary['data']
+	    users = binary['data']['users']
 	    return users
 
 
@@ -232,10 +236,11 @@ class c42Lib(object):
 		logging.debug("getAllUsers")
 
 		currentRequestCount = 0
-		numberOfRequests = getUsersPageCount()
+		numberOfRequests = c42Lib.getUsersPageCount()
 		fullUserList = []
 		while (currentRequestCount <= numberOfRequests):
-			pagedUserList = getUsers(currentRequestCount)
+			currentRequestCount += 1
+			pagedUserList = c42Lib.getUsers(currentRequestCount)
 			fullUserList.extend(pagedUserList)
 		return fullUserList
 
@@ -243,25 +248,69 @@ class c42Lib(object):
 
 	@staticmethod
 	def getAllUsersByOrg(orgId):
-		logging.debug("getAllUsersByOrg-params:orgId[" + orgId + "]")
+		logging.debug("getAllUsersByOrg-params:orgId[" + str(orgId) + "]")
 
 		currentRequestCount = 0
-		numberOfRequests = getUsersPageCountByOrg(orgId)
+		numberOfRequests = c42Lib.getUsersPageCountByOrg(orgId)
 		fullUserList = []
 		while (currentRequestCount <= numberOfRequests):
-			pagedUserList = getUsersByOrgPaged(orgId, currentRequestCount)
+			currentRequestCount += 1
+			pagedUserList = c42Lib.getUsersByOrgPaged(orgId, currentRequestCount)
 			fullUserList.extend(pagedUserList)
 		return fullUserList
 
+
+	@staticmethod
+	def putUserUpdate(userId, payload):
+		logging.debug("putUserUpdate-params:userId[" + str(userId) + "],payload[" + str(payload) + "]")
+
+		if (payload is not None and payload != ""):
+			params = {}
+			r = c42Lib.executeRequest("put", c42Lib.cp_api_user + "/" + str(userId), params, payload)
+			logging.debug(str(r.status_code))
+			content = r.content
+			binary = json.loads(content)
+			logging.debug(binary)
+			user = binary['data']
+			return user
+			# if (r.status_code == 200):
+				# return True
+			# else:
+				# return False
+		else:
+			logging.error("putUserUpdate param payload is null or empty")
+
+
+
+	@staticmethod
+	def postUserMoveProcess(userId, orgId):
+		logging.debug("postUserMoveProcess-params:userId[" + str(userId) + "],orgId[" + str(orgId) + "]")
+
+		params = {}
+		payload = {"userId": userId, "parentOrgId": orgId}
+
+		r = c42Lib.executeRequest("post", c42Lib.cp_api_userMoveProcess, params, payload)
+		logging.debug(r.status_code)
+
+		if (r.status_code == 204):
+			return True
+		elif (r.status_code == 500):
+			content = r.content
+			binary = json.loads(content)
+			logging.debug(binary)
+			return binary
+		else:
+			return False
 
 
 	@staticmethod
 	def getOrg(orgId):
 		logging.debug("getOrg-params:orgId[" + str(orgId) + "]")
 
-		payload = {'incAll': 'true'}
+		params = {'incAll': 'true'}
+		payload = {}
 
-		r = c42Lib.executeRequest("get", c42Lib.cp_api_org + "/" + str(orgId), payload)
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_org + "/" + str(orgId), params, payload)
 
 		logging.debug(r.text)
 
@@ -277,9 +326,10 @@ class c42Lib(object):
 	def getOrgs(pgNum):
 		logging.debug("getOrgs-params:pgNum[" + str(pgNum) + "]")
 
-		payload = {'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM)}
+		params = {'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM)}
+		payload = {}
 
-		r = c42Lib.executeRequest("get", c42Lib.cp_api_org, payload)
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_org, params, payload)
 
 		logging.debug(r.text)
 
@@ -293,8 +343,9 @@ class c42Lib(object):
 	@staticmethod
 	def getOrgPageCount():
 		logging.debug("getOrgPageCount")
+		params = {}
 		payload = {}
-		r = c42Lib.executeRequest("get", c42Lib.cp_api_org, payload)
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_org, params, payload)
 
 		logging.debug(r.text)
 		content = r.content
@@ -318,10 +369,11 @@ class c42Lib(object):
 		logging.debug("getAllOrgs")
 
 		currentRequestCount = 0
-		numberOfRequests = getOrgPageCount()
+		numberOfRequests = c42Lib.getOrgPageCount()
 		fullOrgList = []
-		while(currentRequestCount <= numberOfRequests):
-			pagedOrgList = getOrgs(currentRequestCount)
+		while (currentRequestCount <= numberOfRequests):
+			currentRequestCount += 1
+			pagedOrgList = c42Lib.getOrgs(currentRequestCount)
 			fullOrgList.extend(pagedOrgList)
 		return fullOrgList
 
@@ -330,9 +382,10 @@ class c42Lib(object):
 	def getDeviceByGuid(guid):
 		logging.debug("getDeviceByGuid-params:guid[" + str(guid) + "]")
 
-		payload = {'incBackupUsage': 'true', 'guid': str(guid)}
+		params = {'incBackupUsage': 'true', 'guid': str(guid)}
+		payload = {}
 
-		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, payload)
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, params, payload)
 
 		logging.debug(r.text)
 
@@ -348,9 +401,10 @@ class c42Lib(object):
 	def getDeviceById(computerId):
 		logging.debug("getDeviceById-params:computerId[" + str(computerId) + "]")
 
-		payload = {'incBackupUsage': 'true'}
+		params = {'incBackupUsage': 'true'}
+		payload = {}
 
-		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer + "/" + str(computerId), payload)
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer + "/" + str(computerId), params, payload)
 
 		logging.debug(r.text)
 
@@ -366,46 +420,48 @@ class c42Lib(object):
 	def getDevicesPageCount():
 		logging.debug("getDevicesPageCount")
 
+		params = {'incCounts': 'true', 'active': 'true'}
 		payload = {}
 
-		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, payload)
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, params, payload)
 
 		content = r.content
 		binary = json.loads(content)
 		logging.debug(binary)
 
 
-		users = binary['data']
-		totalCount = users['totalCount']
+		devices = binary['data']
+		totalCount = devices['totalCount']
 
 		logging.debug("getDevicesPageCount:totalCount= " + str(totalCount))
 
 		# num of requests is rounding down and not up. Add+1 as we know we are completed because the computerId value returns as 0
-		numOfRequests = int(math.ceil(totalCount/MAX_PAGE_NUM)+1)
+		numOfRequests = int(math.ceil(totalCount/c42Lib.MAX_PAGE_NUM)+1)
 
 		logging.debug("getDevicesPageCount:numOfRequests= " + str(numOfRequests))
 
 		return numOfRequests
 
-
+	@staticmethod
 	def getDevicesPageCountByOrg(orgId):
 		logging.debug("getDevicesPageCountByOrg-params:orgId[" + str(orgId) + "]")
 
-		payload = {'orgId': orgId}
+		params = {'orgId': orgId, 'incCounts': 'true', 'active': 'true'}
+		payload = {}
 
-		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, payload)
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, params, payload)
 
 		content = r.content
 		binary = json.loads(content)
 		logging.debug(binary)
 
-		users = binary['data']
-		totalCount = users['totalCount']
+		devices = binary['data']
+		totalCount = devices['totalCount']
 
 		logging.debug("getDevicesPageCountByOrg:totalCount= " + str(totalCount))
 
 		# num of requests is rounding down and not up. Add+1 as we know we are completed because the computerId value returns as 0
-		numOfRequests = int(math.ceil(totalCount/MAX_PAGE_NUM)+1)
+		numOfRequests = int(math.ceil(totalCount/c42Lib.MAX_PAGE_NUM)+1)
 
 		logging.debug("getDevicesPageCountByOrg:numOfRequests= " + str(numOfRequests))
 
@@ -417,10 +473,11 @@ class c42Lib(object):
 
 		# headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 		# url = cp_host + ":" + cp_port + cp_api_user
-		payload = {'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM)}
+		params = {'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM), 'active': 'true'}
+		payload = {}
 
 		# r = requests.get(url, params=payload, headers=headers)
-		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, payload)
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, params, payload)
 
 		logging.debug(r.text)
 
@@ -428,21 +485,22 @@ class c42Lib(object):
 		binary = json.loads(content)
 		logging.debug(binary)
 
-		devices = binary['data']
+		devices = binary['data']['computers']
 		return devices
 
 
 
 	@staticmethod
 	def getDevicesByOrgPaged(orgId, pgNum):
-		logging.debug("getDevicesByOrgPaged-params:orgId[" + orgId + "]:pgNum[" + str(pgNum) + "]")
+		logging.debug("getDevicesByOrgPaged-params:orgId[" + str(orgId) + "]:pgNum[" + str(pgNum) + "]")
 
 		# headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 		# url = cp_host + ":" + cp_port + cp_api_user
-		payload = {'orgId': orgId, 'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM)}
+		params = {'orgId': orgId, 'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM), 'active': 'true'}
+		payload = {}
 
 		# r = requests.get(url, params=payload, headers=headers)
-		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, payload)
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, params, payload)
 
 		logging.debug(r.text)
 
@@ -450,7 +508,7 @@ class c42Lib(object):
 		binary = json.loads(content)
 		logging.debug(binary)
 
-		devices = binary['data']
+		devices = binary['data']['computers']
 		return devices
 
 
@@ -460,43 +518,51 @@ class c42Lib(object):
 		logging.debug("getAllDevices")
 
 		currentRequestCount = 0
-		numberOfRequests = getUsersPageCount()
-		fullUserList = []
+		numberOfRequests = c42Lib.getDevicesPageCount()
+		fullDeviceList = []
 		while (currentRequestCount <= numberOfRequests):
-			pagedUserList = getDevices(currentRequestCount)
-			fullUserList.extend(pagedUserList)
-		return fullUserList
+			currentRequestCount += 1
+			pagedDeviceList = c42Lib.getDevices(currentRequestCount)
+			fullDeviceList.extend(pagedDeviceList)
+		logging.debug(fullDeviceList)
+		return fullDeviceList
 
 
 
 	@staticmethod
 	def getAllDevicesByOrg(orgId):
-		logging.debug("getAllDevicesByOrg-params:orgId[" + orgId + "]")
+		logging.debug("getAllDevicesByOrg-params:orgId[" + str(orgId) + "]")
 
 		currentRequestCount = 0
-		numberOfRequests = getUsersPageCountByOrg(orgId)
-		fullUserList = []
+		numberOfRequests = c42Lib.getDevicesPageCountByOrg(orgId)
+		fullDeviceList = []
 		while (currentRequestCount <= numberOfRequests):
-			pagedUserList = getDevicesByOrgPaged(orgId, currentRequestCount)
-			fullUserList.extend(pagedUserList)
-		return fullUserList
+			currentRequestCount += 1
+			pagedDeviceList = c42Lib.getDevicesByOrgPaged(orgId, currentRequestCount)
+			fullDeviceList.extend(pagedDeviceList)
+		logging.debug(fullDeviceList)
+		return fullDeviceList
 
 
 
 	@staticmethod
 	def putDeviceUpgrade(computerId):
-		logging.debug("putDeviceUpgrade-params:computerId[" + computerId + "]")
+		logging.debug("putDeviceUpgrade-params:computerId[" + str(computerId) + "]")
 
 		result = False
 
+		params = {}
 		payload = {}
 
-		r = c42Lib.executeRequest("put", c42Lib.cp_api_deviceUpgrade + "/" + str(computerId), payload)
+		r = c42Lib.executeRequest("put", c42Lib.cp_api_deviceUpgrade + "/" + str(computerId), params, payload)
 		
 		logging.debug(r.text)
 		logging.debug(r.status_code)
 
-		return True
+		if (r.status_code == 201):
+			return True
+		else:
+			return False
 
 
 
@@ -512,11 +578,11 @@ class c42Lib(object):
 		if(userId!=1):
 			# headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 			# url = cp_host + ":" + cp_port + cp_api_userRole
+			params = {}
 			payload = {'userId': userId, 'roleName': roleName}
-
 			# r = requests.post(url, data=json.dumps(payload), headers=headers)
 			
-			r = c42Lib.executeRequest("post", c42Lib.cp_api_userRole, payload)
+			r = c42Lib.executeRequest("post", c42Lib.cp_api_userRole, params, payload)
 
 			logging.debug(r.text)
 			logging.debug(r.status_code)
@@ -533,7 +599,7 @@ class c42Lib(object):
 	# Adds a role for all users per org
 	#
 	def addAllUsersRoleByOrg(orgId, roleName):
-		logging.debug("addAllUsersRoleByOrg-params: orgId[" + orgId + "]:userRole[" + roleName + "]")
+		logging.debug("addAllUsersRoleByOrg-params: orgId[" + str(orgId) + "]:userRole[" + roleName + "]")
 
 		count = 0
 		users = c42Lib.getAllUsersByOrg(orgId)
@@ -579,11 +645,12 @@ class c42Lib(object):
 
 		# headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 		# url = cp_host + ":" + cp_port + cp_api_userRole
-		payload = {'userId': userId, 'roleName': roleName}
+		params = {'userId': userId, 'roleName': roleName}
+		payload = {}
 
 
 		# r = requests.delete(url, data=json.dumps(payload), headers=headers)
-		r = c42Lib.executeRequest("delete", c42Lib.cp_api_userRole, payload)
+		r = c42Lib.executeRequest("delete", c42Lib.cp_api_userRole, params, payload)
 
 		logging.debug(r.text)
 		logging.debug(r.status_code)
@@ -597,7 +664,7 @@ class c42Lib(object):
 	# Removes the role for all users within an org
 	#
 	def removeAllUsersRoleByOrg(orgId, roleName):
-		logging.debug("removeAllUsersRoleByOrg-params: orgId[" + orgId + "]:roleName[" + roleName + "]")
+		logging.debug("removeAllUsersRoleByOrg-params: orgId[" + str(orgId) + "]:roleName[" + roleName + "]")
 
 		count = 0
 		users = c42Lib.getAllUsersByOrg(orgId)

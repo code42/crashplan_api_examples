@@ -20,15 +20,44 @@ c42Lib.cp_logLevel = "INFO"
 c42Lib.cp_logFileName = "sharedLibTest.log"
 c42Lib.setLoggingLevel()
 
-payload = {'orgId': '0', 'pgNum': str(1), 'pgSize': str(c42Lib.MAX_PAGE_NUM)}
+# payload = {'orgId': '0', 'pgNum': str(1), 'pgSize': str(c42Lib.MAX_PAGE_NUM)}
 
-r = c42Lib.executeRequest("get", c42Lib.cp_api_user, payload)
+# r = c42Lib.executeRequest("get", c42Lib.cp_api_user, payload)
 
-logging.debug(r.text)
+# logging.debug(r.text)
 
-content = r.content
-binary = json.loads(content)
-logging.debug(binary)
+# content = r.content
+# binary = json.loads(content)
+# logging.debug(binary)
 
-users = binary['data']
-print users
+# users = binary['data']
+# print users
+
+# print c42Lib.getAllUsers()
+# c42Lib.getDevicesPageCountByOrg(3)
+# users = c42Lib.getAllUsersByOrg(3)
+
+# http://aj-proappliance:4280/api/User?orgId=3&pgNum=1&pgSize=250&active=true
+# orgId = "35"
+# pgNum = 1
+
+
+# header = c42Lib.getRequestHeaders()
+# url = c42Lib.getRequestUrl(c42Lib.cp_api_user)
+# payload = {'orgId': orgId, 'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM), 'active': 'true'}
+# logging.info(str(payload))
+# r = requests.get(url, params=payload, headers=header)
+# content = r.content
+# binary = json.loads(content)
+# logging.debug(binary)
+
+
+# users = binary['data']['users']
+
+users = c42Lib.getUsersByOrgPaged(35, 1)
+for user in users:
+	userId = user["userId"]
+	print "--------------"
+	print userId
+
+
