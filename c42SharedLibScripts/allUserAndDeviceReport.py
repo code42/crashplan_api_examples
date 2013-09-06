@@ -3,7 +3,7 @@
 # Author: AJ LaVenture, Code 42 Software
 # Last Modified: 09-04-2013
 #
-# Specify source and destination organizaions and move all users
+# get report data on all users and devices
 # 
 
 from c42SharedLibrary import c42Lib
