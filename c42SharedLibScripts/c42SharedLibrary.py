@@ -1,7 +1,7 @@
 #
 # File: c42SharedLibary.py
 # Author: AJ LaVenture, Code 42 Software
-# Last Modified: 08-21-2013
+# Last Modified: 09-04-2013
 #
 # Common and reused functions to allow for rapid script creation
 # 

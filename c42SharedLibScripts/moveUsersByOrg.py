@@ -41,14 +41,13 @@ if len(sys.argv) == 3:
 
 def performUserMove(src_orgId, dest_orgId):
 	logging.info("performUserMove-params:src_orgId["+src_orgId+"],dest_orgId["+dest_orgId+"]")
+	
 	users = c42Lib.getAllUsersByOrg(src_orgId)
-
 	# logging.info(users)
 
 	for index, user in enumerate(users):
 		userId = user["userId"]
-		# payload = {'orgId': dest_orgId}
-		# userUpdated = c42Lib.putUserUpdate(userId, payload)
+		
 		userMoved = c42Lib.postUserMoveProcess(userId, dest_orgId)
 		if (userMoved):
 			logging.info("user["+str(userId)+"] moved")
