@@ -3,7 +3,7 @@
 # Author: AJ LaVenture, Code 42 Software
 # Last Modified: 08-27-2013
 #
-# Specify source and destination organizaions and move all users
+# Specify organizaions and flag all devices to upgrade
 # 
 
 from c42SharedLibrary import c42Lib
