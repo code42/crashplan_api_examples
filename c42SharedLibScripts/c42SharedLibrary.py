@@ -157,6 +157,13 @@ class c42Lib(object):
 	   
 	    return numOfRequests
 
+
+
+
+
+	def getUsersPageCountByOrg(orgId):
+
+		c42Lib.getUsersPageCountByOrg(orgId, None)
 	# 
 	# getUsersPageCountByOrg(orgId):
 	# Gets the number of page requests needed to return all users within an org.
@@ -164,12 +171,13 @@ class c42Lib(object):
 	# Note: This is used because of the current REST API resultset limit of 250 results.
 	#
 	@staticmethod
-	def getUsersPageCountByOrg(orgId):
+	def getUsersPageCountByOrg(orgId, incSubOrgs):
 	    logging.info("getUsersPageCountByOrg-params: orgId[" + str(orgId) + "]")
 
 	    # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 	    # url = cp_host + ":" + cp_port + cp_api_user
-	    params = {'orgId': orgId, 'active': 'true'}
+	    if incSubOrgs != None
+	    params = {'orgId': orgId, 'active': 'true', if not none inc tagansldkgnasldkgn}
 	    payload = {}
 	    # r = requests.get(url, params=payload, headers=headers)
 	    # logging.debug(r.text)
@@ -887,6 +895,14 @@ class c42Lib(object):
 			num /= 1024.0
 		return "%3.1f%s" % (num, 'TB')
 
+
+	@staticmethod
+	def sizeof_fmt_si(num):
+		for x in ['bytes','KB','MB','GB']:
+			if num < 1000.0 and num > -1000.0:
+				return "%3.1f%s" % (num, x)
+			num /= 1000.0
+		return "%3.1f%s" % (num, 'TB')
 
 # class UserClass(object)
 
