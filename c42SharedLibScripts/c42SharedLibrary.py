@@ -161,9 +161,9 @@ class c42Lib(object):
 
 
 
-	def getUsersPageCountByOrg(orgId):
+	# def getUsersPageCountByOrg(orgId):
 
-		c42Lib.getUsersPageCountByOrg(orgId, None)
+	# 	c42Lib.getUsersPageCountByOrg(orgId, None)
 	# 
 	# getUsersPageCountByOrg(orgId):
 	# Gets the number of page requests needed to return all users within an org.
@@ -171,13 +171,13 @@ class c42Lib(object):
 	# Note: This is used because of the current REST API resultset limit of 250 results.
 	#
 	@staticmethod
-	def getUsersPageCountByOrg(orgId, incSubOrgs):
+	def getUsersPageCountByOrg(orgId):
 	    logging.info("getUsersPageCountByOrg-params: orgId[" + str(orgId) + "]")
 
 	    # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 	    # url = cp_host + ":" + cp_port + cp_api_user
-	    if incSubOrgs != None
-	    params = {'orgId': orgId, 'active': 'true', if not none inc tagansldkgnasldkgn}
+	    # if incSubOrgs != None
+	    params = {'orgId': orgId, 'active': 'true'}
 	    payload = {}
 	    # r = requests.get(url, params=payload, headers=headers)
 	    # logging.debug(r.text)
