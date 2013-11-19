@@ -290,7 +290,7 @@ class c42Lib(object):
 	# no limit or batching, will return all users within the system
 	# 
 	@staticmethod
-	def getAllUsers():
+	def getAllUsers_old():
 		logging.info("getAllUsers")
 
 		currentRequestCount = 0
@@ -302,6 +302,37 @@ class c42Lib(object):
 			fullUserList.extend(pagedUserList)
 		return fullUserList
 
+
+	@staticmethod
+	def getAllUsers():
+		logging.info("getAllUsers")
+		currentPage = 1
+		keepLooping = True
+		fullList = []
+		while keepLooping:
+			pagedList = c42Lib.getUsersPaged(currentPage)
+			if pagedList:
+				fullList.extend(pagedList)
+			else:
+				keepLooping = False
+			currentPage += 1
+		return fullList
+
+	@staticmethod
+	def generaticLoopUntilEmpty():
+		currentPage = 1
+		keepLooping = True
+		fullList = []
+		while keepLooping:
+			# pagedList = c42Lib.getUsersPaged(currentPage)
+			pagedList = c42Lib.getDevices(currentPage)
+			if pagedList:
+				fullList.extend(pagedList)
+			else:
+				keepLooping = False
+			currentPage += 1
+		return fullList
+
 	# 
 	# getAllUsersByOrg(orgId):
 	# Returns json users in single list limited by organization
@@ -311,7 +342,7 @@ class c42Lib(object):
 	# 
 
 	@staticmethod
-	def getAllUsersByOrg(orgId):
+	def getAllUsersByOrg_old(orgId):
 		logging.info("getAllUsersByOrg-params:orgId[" + str(orgId) + "]")
 
 		currentRequestCount = 0
@@ -323,6 +354,21 @@ class c42Lib(object):
 			fullUserList.extend(pagedUserList)
 		return fullUserList
 
+
+	@staticmethod
+	def getAllUsersByOrg(orgId):
+		logging.info("getAllUsersByOrg-params:orgId[" + str(orgId) + "]")
+		currentPage = 1
+		keepLooping = True
+		fullList = []
+		while keepLooping:
+			pagedList = c42Lib.getUsersByOrgPaged(orgId, currentPage)
+			if pagedList:
+				fullList.extend(pagedList)
+			else:
+				keepLooping = False
+			currentPage += 1
+		return fullList
 
 	# 
 	# putUserUpdate(userId, payload):
@@ -471,7 +517,7 @@ class c42Lib(object):
 	# 
 
 	@staticmethod
-	def getAllOrgs():
+	def getAllOrgs_old():
 		logging.info("getAllOrgs")
 
 		currentRequestCount = 0
@@ -482,6 +528,21 @@ class c42Lib(object):
 			pagedOrgList = c42Lib.getOrgs(currentRequestCount)
 			fullOrgList.extend(pagedOrgList)
 		return fullOrgList
+
+	@staticmethod
+	def getAllOrgs():
+		logging.info("getAllOrgs")
+		currentPage = 1
+		keepLooping = True
+		fullList = []
+		while keepLooping:
+			pagedList = c42Lib.getOrgs(currentPage)
+			if pagedList:
+				fullList.extend(pagedList)
+			else:
+				keepLooping = False
+			currentPage += 1
+		return fullList
 
 	# 
 	# getDeviceByGuid(guid):
@@ -659,7 +720,7 @@ class c42Lib(object):
 	# 
 
 	@staticmethod
-	def getAllDevices():
+	def getAllDevices_old():
 		logging.info("getAllDevices")
 
 		currentRequestCount = 0
@@ -672,10 +733,24 @@ class c42Lib(object):
 		logging.debug(fullDeviceList)
 		return fullDeviceList
 
+	@staticmethod
+	def getAllDevices():
+		logging.info("getAllDevices")
+		currentPage = 1
+		keepLooping = True
+		fullList = []
+		while keepLooping:
+			pagedList = c42Lib.getDevices(currentPage)
+			if pagedList:
+				fullList.extend(pagedList)
+			else:
+				keepLooping = False
+			currentPage += 1
+		return fullList
 
 
 	@staticmethod
-	def getAllDevicesByOrg(orgId):
+	def getAllDevicesByOrg_old(orgId):
 		logging.info("getAllDevicesByOrg-params:orgId[" + str(orgId) + "]")
 
 		currentRequestCount = 0
@@ -688,6 +763,20 @@ class c42Lib(object):
 		logging.debug(fullDeviceList)
 		return fullDeviceList
 
+	@staticmethod
+	def getAllDevicesByOrg(orgId):
+		logging.info("getAllDevicesByOrg-params:orgId[" + str(orgId) + "]")
+		currentPage = 1
+		keepLooping = True
+		fullList = []
+		while keepLooping:
+			pagedList = c42Lib.getDevicesByOrgPaged(orgId, currentPage)
+			if pagedList:
+				fullList.extend(pagedList)
+			else:
+				keepLooping = False
+			currentPage += 1
+		return fullList
 
 
 	@staticmethod
@@ -844,21 +933,6 @@ class c42Lib(object):
 		logging.info("Total Users affected: " + str(count))
 
 
-
-# storePointId		number		returns archives in this store point	
-# serverId			number		returns archives in this server	
-# destinationId		number		returns archives in this destination	
-# userId				number		returns archives belonging to this user	
-# guid				number		returns archives belonging to this guid (requires targetComputerId)	
-# targetComputerId	number		returns archives backing up to this computer (requires guid)	
-# pgSize				number	100	the max number of objects to return	
-# pgNum				number	1	the 'page' of objects to return. Starts with 1.	
-# srtKey				string		key to sort on Values: guid, selectedBytes, selectedFiles, todoBytes, archiveBytes, lastBackup, lastMaintained, coldStore	
-# srtDir				string	asc	direction of sort Values: ASC or DESC (case is irrelevant)	
-# export				string		option to specify an export Values: csv	
-
-
-
 	@staticmethod
 	def getArchivesPageCount(type, id):
 		logging.info("getArchivesPageCount-params:type[" + type + "]:id[" + str(id) + "]")
@@ -890,7 +964,7 @@ class c42Lib(object):
 
 
 	@staticmethod
-	def getArchiveByStorePointId(storePointId):
+	def getArchiveByStorePointId_old(storePointId):
 		logging.info("getArchiveByStorePointId-params:storePointId[" + str(storePointId) + "]")
 
 		currentRequestCount = 0
@@ -904,9 +978,25 @@ class c42Lib(object):
 			fullArchiveList.extend(pagedArchiveList)
 		return fullArchiveList
 
+	@staticmethod
+	def getArchiveByStorePointId(storePointId):
+		logging.info("getArchiveByStorePointId-params:storePointId[" + str(storePointId) + "]")
+		currentPage = 1
+		keepLooping = True
+		fullList = []
+		while keepLooping:
+			params = {'storePointId': str(storePointId)}
+			pagedList = c42Lib.getArchivesPaged(params,currentPage)
+			if pagedList:
+				fullList.extend(pagedList)
+			else:
+				keepLooping = False
+			currentPage += 1
+		return fullList
+
 
 	@staticmethod
-	def getArchiveByServerId(serverId):
+	def getArchiveByServerId_old(serverId):
 		logging.info("getArchiveByServerId-params:serverId[" + str(serverId) + "]")
 
 		currentRequestCount = 0
@@ -922,7 +1012,25 @@ class c42Lib(object):
 
 
 	@staticmethod
-	def getArchiveByDestinationId(destinationId):
+	def getArchiveByServerId(serverId):
+		logging.info("getArchiveByServerId-params:serverId[" + str(serverId) + "]")
+		currentPage = 1
+		keepLooping = True
+		fullList = []
+		while keepLooping:
+			params = {'serverId': str(serverId)}
+			pagedList = c42Lib.getArchivesPaged(params,currentPage)
+			if pagedList:
+				fullList.extend(pagedList)
+			else:
+				keepLooping = False
+			currentPage += 1
+		return fullList
+
+
+
+	@staticmethod
+	def getArchiveByDestinationId_old(destinationId):
 		logging.info("getArchiveByDestinationId-params:destinationId[" + str(destinationId) + "]")
 
 		currentRequestCount = 0
@@ -936,7 +1044,21 @@ class c42Lib(object):
 			fullArchiveList.extend(pagedArchiveList)
 		return fullArchiveList
 
-
+	@staticmethod
+	def getArchiveByDestinationId(destinationId):
+		logging.info("getArchiveByDestinationId-params:destinationId[" + str(destinationId) + "]")
+		currentPage = 1
+		keepLooping = True
+		fullList = []
+		while keepLooping:
+			params = {'destinationId': str(serverId)}
+			pagedList = c42Lib.getArchivesPaged(params,currentPage)
+			if pagedList:
+				fullList.extend(pagedList)
+			else:
+				keepLooping = False
+			currentPage += 1
+		return fullList
 
 	@staticmethod
 	def getArchiveByGuidAndComputerId(guid, targetComputerId):
