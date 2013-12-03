@@ -39,6 +39,7 @@ import logging
 
 import array
 
+import csv
 from collections import Counter
 
 from operator import itemgetter, attrgetter
@@ -54,6 +55,9 @@ if len(sys.argv)==1:
 
 # Deactivate devices (should be text that equals "deactivate")
 SAVE_USER_LIST = str(sys.argv[2])
+
+# Text or CSV
+# OUTPUT_TYPE = str(sys.argv[3])
 
 MAX_PAGE_NUM = 250
 NOW = datetime.now()
@@ -210,7 +214,6 @@ def getColdStorageArchives(storePoints):
 					if not ( userID in activeList ):
 						# Encode computer names to protect against throwing decoding errors
 						computerNamedecoded = computerName.encode('utf-8')		
-						deviceObjs = (userID, str(archiveExpireDate), computerID, str(computerNamedecoded), str(userName), str(mountpointName))
 						deviceList.append(deviceObjs)
 						logging.debug("     " + str(dCount) + " | Saving UserID: " + str(userID) + " computerID:  " + str(computerID) + " Expire Date: " + str(archiveExpireDate))
 					else: 
