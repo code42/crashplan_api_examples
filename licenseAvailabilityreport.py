@@ -1,4 +1,4 @@
-#
+	#
 # File: licenseAvailabilityreport.py
 # Author: Paul Hirst, Nick Olmsted, Code 42 Software
 # Last Modified: 07-18-2013
@@ -40,6 +40,7 @@ import logging
 import array
 
 import csv
+
 from collections import Counter
 
 from operator import itemgetter, attrgetter
@@ -65,6 +66,7 @@ NOW = datetime.now()
 TOTAL_ACTIVE_USERS = 0
 
 # Set to your environments vlaues
+cpc_host = "10.10.44.58"
 cpc_port = "4285"
 cpc_username = "admin"
 cpc_password = "admin"
@@ -98,7 +100,7 @@ def getStorePoints():
 		storepointCount = storepoints['totalCount']
 		# NOTE: storepoints and mountpoints are the different names for the same thing but are not interchangable
 
-		logging.info("Number of Store Points (storepointCount): " + str(storepointCount))
+		logging.debug("Number of Store Points (storepointCount): " + str(storepointCount))
 
 		dCount = 0
 
@@ -127,7 +129,7 @@ def getStorePoints():
 			dCount = dCount + 1
 				
 		logging.debug("END - getStorePoints")
-		logging.info('Total Storepoints with Cold Storage Archives: ' + str(len(storepointList)))
+		logging.debug('Total Storepoints with Cold Storage Archives: ' + str(len(storepointList)))
 		return storepointList
 
 	except httplib.HTTPException as inst:
@@ -173,7 +175,7 @@ def getColdStorageArchives(storePoints):
 		mountpointID = m[0]
 		mountpointName = m[1]
 		
-		logging.info("Mount Point: " + str(mountpointID) + " | " + mountpointName)
+		logging.debug("Mount Point: " + str(mountpointID) + " | " + mountpointName)
 		
 		numOfRequests = getDevicesPageCount("coldStorage?mountPointId=" + str(mountpointID) + "&pgNum=1")
 				
@@ -214,6 +216,7 @@ def getColdStorageArchives(storePoints):
 					if not ( userID in activeList ):
 						# Encode computer names to protect against throwing decoding errors
 						computerNamedecoded = computerName.encode('utf-8')		
+						deviceObjs = (userID, str(archiveExpireDate), computerID, str(computerNamedecoded), str(userName))
 						deviceList.append(deviceObjs)
 						logging.debug("     " + str(dCount) + " | Saving UserID: " + str(userID) + " computerID:  " + str(computerID) + " Expire Date: " + str(archiveExpireDate))
 					else: 
@@ -235,7 +238,7 @@ def getColdStorageArchives(storePoints):
 					
 		mCount = mCount + 1
 			
-	logging.info ("Total Devices with Cold Storage Archives: " + str(len(deviceList)))
+	logging.debug ("Total Devices with Cold Storage Archives: " + str(len(deviceList)))
 	return deviceList 
 
 #
@@ -268,11 +271,10 @@ def getDevicesPageCount(countstringURL):
         numOfRequests = math.ceil(totalCount/MAX_PAGE_NUM)+1
 
         logging.debug("numOfRequests: " + str(numOfRequests))
-        logging.debug("END - getDevicesPageCount")
-        logging.info('\n')
-        logging.info('Found ' + str(totalCount) + ' Devices')
-        logging.info('Will need ' + str(int(numOfRequests)) + ' group(s) of API calls.')
-        logging.info('--------------------------------------------------------------------------')
+        logging.debug('\n')
+        logging.debug('Found ' + str(totalCount) + ' Devices')
+        logging.debug('Will need ' + str(int(numOfRequests)) + ' group(s) of API calls.')
+        logging.debug('--------------------------------------------------------------------------')
         return numOfRequests
 
     except httplib.HTTPException as inst:
@@ -299,6 +301,8 @@ def getDevicesPageCount(countstringURL):
 #   incCounts - includes the total count in the result
 #   active - return only active devices
 #
+
+
 def getActiveDevices(totalNumOfRequests):
 
     logging.debug("BEGIN - getDevices")
@@ -316,6 +320,7 @@ def getActiveDevices(totalNumOfRequests):
         try:
             currentRequestCount = currentRequestCount + 1
             conn = httplib.HTTPSConnection(cpc_host,cpc_port)
+            conn.request("GET","/api/Computer?pgNum=" + str(currentRequestCount) + "&pgSize=250&incCounts=true",None,headers)
             data = conn.getresponse().read()
             conn.close()
         except httplib.HTTPException as inst:
@@ -344,8 +349,8 @@ def getActiveDevices(totalNumOfRequests):
             deviceNameecoded = deviceName.encode('utf8')
             
             # If user has a status that indicates an in-use archive, add them to the list for future use.
+            if (status == 'Active' or status == 'Active, Deauthorized'):
                 try:
-                    logging.debug("Active : " + status + " - UserID: " + str(userID) + " - Computer ID: " + str(computerId) + " with last connected date of: " + str(lastConnected))
                     logging.debug("Status : " + status + " - UserID: " + str(userID) + " - Computer ID: " + str(computerId) + " with last connected date of: " + str(lastConnected))
                 except:
                     #ignore name errors
@@ -472,6 +477,9 @@ def sortExpiredates(archiveList):
 		logging.info ('Saving Users to File')
 		output = open("CrashPlanPROe_License_Available_List_" + todayis +".txt", "w") # Open the file
 		output.write ("CrashPlanePROe License Availablity List - " +  todayis + "\n")
+		output.write ("========================================================================================================\n")
+		output.write ("UserID      UserName                       DeviceID   Device Name                            Expire Date\n")
+		output.write ("--------------------------------------------------------------------------------------------------------\n")
 		
 	
 	for d in archiveList:
@@ -481,6 +489,7 @@ def sortExpiredates(archiveList):
 		archiveExpireclean = archiveExpireyear + '-' + archiveExpiremonth
 		justMonthslist.append(archiveExpireclean)
 		if (SAVE_USER_LIST == "1"):
+			output.write (str(d[0]).ljust(11)+str(d[4]).ljust(32)+str(d[2]).ljust(10)+str(d[3]).ljust(35)+str(justThedate)[:10]+"\n")
 	
 	if (SAVE_USER_LIST == 1):
 		output.close
@@ -529,23 +538,21 @@ def prettyResultsprinted(expireDates):
 				logging.info((str(d[1]).rjust(6)) + " licenses will be available  " + d[0])
 				output.write ((str(d[1]).rjust(6)) + " licenses will be available  " + d[0]+"\n")
 		
-		totalInUselicenses = totalLicenses + TOTAL_ACTIVE_USERS #calculate the total number of licenses actually being used
 		# totalInUselicenses = totalLicenses + TOTAL_ACTIVE_USERS #calculate the total number of licenses actually being used
 		totalInUselicenses = getLicensedUsers() #Get the total number of licenses actually being used
+		coldStoragelicenses = totalInUselicenses - totalLicenses
 		
 		output.write ("========================================================\n")
 		output.write ((str(totalLicenses).rjust(6)) + " total licenses to be made available.\n")
-		output.write ((str(TOTAL_ACTIVE_USERS).rjust(6)) + " total licenses used with by users with active archives.\n")
 		output.write ((str(coldStoragelicenses).rjust(6)) + " total licenses used with by users with active archives.\n")
 		output.write ((str(totalInUselicenses).rjust(6)) + " total licenses currently being used.\n")
 		output.write ("\n\nNOTE:  Licenses will become available when the cold storage archives expire or are removed.\n")
 		
+		
 		logging.info ("========================================================")
 		logging.info ((str(totalLicenses).rjust(6)) + " total licenses to be made available.")
-		logging.info ((str(TOTAL_ACTIVE_USERS).rjust(6)) + " total licenses used with by users with active archives.")
 		logging.info ((str(coldStoragelicenses).rjust(6)) + " total licenses used with by users with active archives.")
 		logging.info ((str(totalInUselicenses).rjust(6)) + " total licenses currently being used.")
-		logging.info ("\n\nNOTE:  Licenses will become available when the cold storage archives expire or are removed.")
 		logging.info ("NOTE:  Licenses will become available when the cold storage archives expire or are removed.")
 	
 	finally:

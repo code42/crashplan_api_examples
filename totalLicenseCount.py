@@ -89,4 +89,3 @@ def getLicensedUsers():
 	logging.debug("END - getLicensedUsers")
 	
 print 'Total Licensed Users:' + str(getLicensedUsers())
-print '\n'
