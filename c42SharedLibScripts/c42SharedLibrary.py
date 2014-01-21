@@ -18,6 +18,7 @@ import math
 from dateutil.relativedelta import *
 import datetime
 import calendar
+import getpass
 
 
 
@@ -28,14 +29,14 @@ class c42Lib(object):
 	#cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
 	#cp_port = "<PORT>" ex: 4280 or 4285
 	#cp_username = "<username>"
-	#cp_password = "<pw>"
+	#cp_password = getpass.getpass()  - This will prompt you for the password when the script is run
 
 	# Test values
 	cp_host = "http://localhost"
 	# cp_host = "http://aj-proappliance"
 	cp_port = "4280"
 	cp_username = "admin"
-	cp_password = "admin"
+	cp_password = getpass.getpass('Enter your CrashPlan console password: ') # You will be prompted for your password
 
 	# REST API Calls
 	cp_api_userRole = "/api/UserRole"
