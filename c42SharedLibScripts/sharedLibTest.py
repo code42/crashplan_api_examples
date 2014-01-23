@@ -10,16 +10,23 @@ import math
 from dateutil.relativedelta import *
 import datetime
 import calendar
+import getpass
 
 # Test values
 c42Lib.cp_host = "http://aj-proappliance"
 c42Lib.cp_port = "4280"
 c42Lib.cp_username = "admin"
-c42Lib.cp_password = "admin"
+# c42Lib.cp_password = "admin"
+c42Lib.cp_password = getpass.getpass()
 c42Lib.cp_logLevel = "INFO"
 c42Lib.cp_logFileName = "sharedLibTest.log"
 c42Lib.setLoggingLevel()
 
+
+
+users = c42Lib.generaticLoopUntilEmpty()
+
+print users
 # payload = {'orgId': '0', 'pgNum': str(1), 'pgSize': str(c42Lib.MAX_PAGE_NUM)}
 
 # r = c42Lib.executeRequest("get", c42Lib.cp_api_user, payload)
@@ -54,10 +61,12 @@ c42Lib.setLoggingLevel()
 
 # users = binary['data']['users']
 
-users = c42Lib.getUsersByOrgPaged(35, 1)
-for user in users:
-	userId = user["userId"]
-	print "--------------"
-	print userId
+# users = c42Lib.getUsersByOrgPaged(35, 1)
+# for user in users:
+# 	userId = user["userId"]
+# 	print "--------------"
+# 	print userId
 
+# c42Lib.getArchivesPageCount('serverId',3)
+# c42Lib.getArchiveByServerId(3)
 
