@@ -4,13 +4,15 @@ import httplib
 
 import base64
 
+import getpass
+
 cpc_host = "HOST OR IP ADDRESS"
 
 cpc_port = 4285
 
 cpc_username = "<username"
 
-cpc_password = "<pw>"
+cpc_password = getpass.getpass('Enter your CrashPlan console password: ') # You will be prompted for your password
 
 def getAuthHeader(u,p):
 
