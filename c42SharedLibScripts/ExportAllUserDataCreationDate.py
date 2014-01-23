@@ -49,7 +49,7 @@ import math
 from dateutil.relativedelta import *
 import datetime
 import calendar
-
+import getpass
 
 # Set to your environments values
 #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -61,7 +61,7 @@ import calendar
 c42Lib.cp_host = "http://aj-proappliance"
 c42Lib.cp_port = "4280"
 c42Lib.cp_username = "admin"
-c42Lib.cp_password = ""
+c42Lib.cp_password = getpass.getpass('Enter your CrashPlan console password: ') # You will be prompted for your password
 
 
 c42Lib.cp_logLevel = "INFO"
