@@ -18,6 +18,7 @@ import math
 from dateutil.relativedelta import *
 import datetime
 import calendar
+import re
 
 
 
@@ -46,6 +47,10 @@ class c42Lib(object):
 	cp_api_computer = "/api/Computer"
 	cp_api_userMoveProcess = "/api/UserMoveProcess"
 	cp_api_cli = "/api/cli"
+	cp_api_restoreHistory = "/api/restoreHistory"
+	#?pgNum=1&pgSize=50&srtKey=startDate&srtDir=desc&days=9999&orgId=35
+	cp_api_archiveMetadata = "/api/ArchiveMetadata"
+	cp_api_server = "/api/Server"
 
 	cp_logLevel = "INFO"
 	cp_logFileName = "c42SharedLibrary.log"
@@ -1012,7 +1017,7 @@ class c42Lib(object):
 
 
 	@staticmethod
-	def getArchiveByServerId(serverId):
+	def getArchivesByServerId(serverId):
 		logging.info("getArchiveByServerId-params:serverId[" + str(serverId) + "]")
 		currentPage = 1
 		keepLooping = True
@@ -1045,13 +1050,13 @@ class c42Lib(object):
 		return fullArchiveList
 
 	@staticmethod
-	def getArchiveByDestinationId(destinationId):
+	def getArchivesByDestinationId(destinationId):
 		logging.info("getArchiveByDestinationId-params:destinationId[" + str(destinationId) + "]")
 		currentPage = 1
 		keepLooping = True
 		fullList = []
 		while keepLooping:
-			params = {'destinationId': str(serverId)}
+			params = {'destinationId': str(destinationId)}
 			pagedList = c42Lib.getArchivesPaged(params,currentPage)
 			if pagedList:
 				fullList.extend(pagedList)
@@ -1131,7 +1136,138 @@ class c42Lib(object):
 	# @staticmethod
 	# def getAllArchives():
 
-	# 	return 0
+
+	# cp_api_restoreHistory = "/api/restoreHistory"
+	#?pgNum=1&pgSize=50&srtKey=startDate&srtDir=desc&days=9999&orgId=35
+
+	@staticmethod
+	def getRestoreHistoryForOrgId(orgId):
+
+		return null
+
+
+	@staticmethod
+	def getRestoreHistoryForUserId(userId):
+
+		return null
+
+
+	@staticmethod
+	def getRestoreHistoryForDeviceId(computerId):
+
+		return null
+		
+
+	# only 3.6.2.1 and greater
+	# will return array of info for every file within given archive
+	# performance is not expected to be great when looking at large archives
+	# guid is int, decrypt is boolean
+	@staticmethod
+	def getArchiveMetadata(guid, decrypt):
+		logging.info("getArchiveMetadata-params:guid["+str(guid)+"]:decrypt["+str(decrypt)+"]")
+
+		params = {}
+		if (decrypt):
+			params['decryptPaths'] = "true"
+		payload = {}
+
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_archiveMetadata + "/" + str(guid), params, payload)
+
+		logging.debug(r.text)
+
+
+		#null response on private passwords
+
+		if r.text:
+			content = r.content
+			binary = json.loads(content)
+			logging.debug(binary)
+
+			archiveMetadata = binary['data']
+
+			return archiveMetadata
+		else:
+			return ""
+		
+
+
+	# 
+	# getServers():
+	# returns servers information
+	# params:
+	# 
+
+	@staticmethod
+	def getServers():
+		logging.info("getServers")
+
+		params = {}
+		payload = {}
+
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_server, params, payload)
+
+		logging.debug(r.text)
+
+		content = r.content
+		binary = json.loads(content)
+		logging.debug(binary)
+
+		device = binary['data']['servers']
+		return device
+
+
+	# 
+	# getServer(serverId):
+	# returns server information based on serverId
+	# params: serverId
+	# 
+
+	@staticmethod
+	def getServer(serverId):
+		logging.info("getServer-params:serverId["+str(serverId)+"]")
+
+		params = {}
+		payload = {}
+
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_server + "/" + str(serverId), params, payload)
+
+		logging.debug(r.text)
+
+		content = r.content
+		binary = json.loads(content)
+		logging.debug(binary)
+
+		device = binary['data']
+		return device
+
+
+
+	# 
+	# getServersByDesitnationId(destinationId):
+	# returns server information based on destinationId
+	# params:
+	# destinationId: id of destination
+	# 
+
+	@staticmethod
+	def getServersByDesitnationId(destinationId):
+		logging.info("getServersByDesitnationId-params:destinationId[" + str(destinationId) + "]")
+
+		params = {'destinationId': str(destinationId)}
+		payload = {}
+
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_server, params, payload)
+
+		logging.debug(r.text)
+
+		content = r.content
+		binary = json.loads(content)
+		logging.debug(binary)
+
+		device = binary['data']['servers']
+		return device
+
+
 	#
 	# Compute base64 representation of the authentication token.
 	#
@@ -1198,6 +1334,7 @@ class c42Lib(object):
 		return "%3.1f%s" % (num, 'TiB')
 
 
+
 	@staticmethod
 	def sizeof_fmt_si(num):
 		for x in ['bytes','kB','MB','GB']:
@@ -1205,6 +1342,22 @@ class c42Lib(object):
 				return "%3.1f%s" % (num, x)
 			num /= 1000.0
 		return "%3.1f%s" % (num, 'TB')
+
+
+
+
+	@staticmethod
+	def returnHostAndPortFromFullURL(url):
+		p = '(?:http.*://)?(?P<host>[^:/ ]+).?(?P<port>[0-9]*).*'
+		m = re.search(p, str(url))
+		
+		# address = [m.group('protocol') +''+ m.group('host'),m.group('port')]
+		# m.group('host') # 'www.abc.com'
+		# m.group('port') # '123'
+		# address = [m.group('http')]
+		# print address
+		return address
+
 
 # class UserClass(object)
 
