@@ -25,11 +25,13 @@ import csv
 
 import requests
 
+import getpass
+
 # Set to your environments values
 #cp_host = "<HOST OR IP ADDRESS>"
 #cp_port = "<PORT>"
 #cp_username = "<username>"
-#cp_password = "<pw>"
+#cp_password = getpass.getpass('Enter your CrashPlan console password: ') # You will be prompted to enter your password
 
 #cp_ldap_orgId = "<Org Id>"
 #cp_csv_file_name = "<filename.csv>"
