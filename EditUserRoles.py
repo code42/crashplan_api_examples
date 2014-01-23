@@ -164,9 +164,15 @@ def removeUserRole(userId, roleName):
 
     headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
     url = cp_host + ":" + cp_port + cp_api_userRole
-    payload = {'userId': userId, 'roleName': roleName}
+
+    # payload = {'userId': userId, 'roleName': '"'+roleName+'"'}
+    payload = {}
+    parameters = {}
+    parameters['userId'] = userId
+    parameters['roleName'] = roleName
+
     
-    r = requests.delete(url, data=json.dumps(payload), headers=headers)
+    r = requests.delete(url, params=parameters, data=json.dumps(payload), headers=headers)
 
     logging.debug(r.text)
     logging.debug(r.status_code)
