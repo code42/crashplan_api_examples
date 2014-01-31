@@ -1,7 +1,7 @@
 #
 # File: EditUserRoles.py
 # Author: Nick Olmsted, Code 42 Software
-# Last Modified: 05-21-2013
+# Last Modified: 01-29-2014
 #
 # Adds or Removes a role from all users. If an orgId is specified than only adds/removes from that Org.
 # Log file: EditUserRoles.log
@@ -27,6 +27,8 @@
 # NOTE: Make sure to set cpc_host, cpc_port, cpc_username, cpc_password to your environments values.
 # Also make sure the role you are trying to add or remove has been added to your PROe environment. 
 # 
+# NOT TESTED ON API VERSIONS BEFORE 3.5.4.
+#
 import sys
 
 import json
