@@ -20,7 +20,6 @@ import datetime
 import calendar
 import getpass
 
-
 c42Lib.cp_host = "https://10.10.10.10"
 c42Lib.cp_port = "4285"
 c42Lib.cp_username = "admin"

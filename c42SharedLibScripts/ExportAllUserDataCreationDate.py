@@ -50,10 +50,7 @@ from dateutil.relativedelta import *
 import datetime
 import calendar
 import getpass
-<<<<<<< HEAD
-=======
 
->>>>>>> f27e3f889cfe804785a34da96555c0102f983bcb
 
 # Set to your environments values
 #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost

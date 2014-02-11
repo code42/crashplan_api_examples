@@ -1,24 +1,35 @@
 #
 # File: upgradeDevicesByOrg.py
 # Author: AJ LaVenture, Code 42 Software
-# Last Modified: 08-27-2013
+# Last Modified: 2-10-2014
 #
 # Specify organizaions and flag all devices to upgrade.
 # 
+"""upgradeDevicesByOrg Script
 
+	Usage:
+		upgradeDevicesByOrg.py  <orgId>
+
+
+	Arguments:
+		<orgId>		required id of the organizaion to send the upgrade to devices: 0 for all devices regardless of org.
+
+	Options:
+		-h --help     Show this screen.
+		--version     Show version.
+
+"""
+from docopt import docopt
 from c42SharedLibrary import c42Lib
-import math
-import sys
 import json
-import csv
-import base64
 import logging
 import requests
-import math
-from dateutil.relativedelta import *
-import datetime
-import calendar
 import getpass
+
+
+if __name__ == '__main__':
+    arguments = docopt(__doc__, version='upgradeDevicesByOrg 1.0')
+    print(arguments)
 
 
 c42Lib.cp_host = "http://aj-proappliance"
@@ -32,9 +43,9 @@ c42Lib.setLoggingLevel()
 
 
 # ARG1 - Org ID
-cp_orgId = ""
-if len(sys.argv) > 1:
-	cp_orgId = str(sys.argv[1])
+# cp_orgId = ""
+# if len(sys.argv) > 1:
+	# cp_orgId = str(sys.argv[1])
 
 
 def performDeviceUpgradeByOrg(orgId):
@@ -69,7 +80,7 @@ def performDeviceUpgradeByOrg(orgId):
 
 def interpretParamsAndExecute():
 	logging.info("upgradeDevicesByOrg Action")
-
+	cp_orgId = arguments['<orgId>']
 	if (cp_orgId is not None and cp_orgId != ""):
 		orgToLog = cp_orgId
 		if (orgToLog == "0"):

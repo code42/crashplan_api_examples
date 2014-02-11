@@ -430,7 +430,7 @@ class c42Lib(object):
 			content = r.content
 			binary = json.loads(content)
 			logging.debug(binary)
-			return binary
+			return False
 		else:
 			return False
 
@@ -1183,9 +1183,11 @@ class c42Lib(object):
 			binary = json.loads(content)
 			logging.debug(binary)
 
-			archiveMetadata = binary['data']
-
-			return archiveMetadata
+			if binary:
+				archiveMetadata = binary['data']
+				return archiveMetadata
+			else:
+				return ""
 		else:
 			return ""
 		
