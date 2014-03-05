@@ -104,20 +104,20 @@ class c42Lib(object):
 
 		if type == "get":
 			logging.info(str(payload))
-			r = requests.get(url, params=params, data=json.dumps(payload), headers=header)
+			r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=False)
 			logging.debug(r.text)
 			return r
 		elif type == "delete":
-			r = requests.delete(url, params=params, data=json.dumps(payload), headers=header)
+			r = requests.delete(url, params=params, data=json.dumps(payload), headers=header, verify=False)
 			logging.debug(r.text)
 			return r
 		elif type == "post":
-			r = requests.post(url, params=params, data=json.dumps(payload), headers=header)
+			r = requests.post(url, params=params, data=json.dumps(payload), headers=header, verify=False)
 			logging.debug(r.text)
 			return r
 		elif type == "put":
 			# logging.debug(str(json.dumps(payload)))
-			r = requests.put(url, params=params, data=json.dumps(payload), headers=header)
+			r = requests.put(url, params=params, data=json.dumps(payload), headers=header, verify=False)
 			logging.debug(r.text)
 			return r
 		else:
@@ -675,7 +675,7 @@ class c42Lib(object):
 
 		# headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 		# url = cp_host + ":" + cp_port + cp_api_user
-		params = {'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM), 'active': 'true', 'incBackupUsage': 'true'}
+		params = {'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM), 'active': 'true', 'incBackupUsage': 'true', 'incHistory': 'true'}
 		 # ,'incHistory': 'true'}
 		payload = {}
 
