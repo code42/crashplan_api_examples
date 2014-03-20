@@ -233,8 +233,8 @@ then
 			find ${restoreDir} | sed s:"${restoreDir}"::
 
 			# move out of temporary container folder (prompt for overwrite)
-			mv -i ${restoreDir}/* ${restorePath}
-			# rm -rf ${restoreDir}       # optional cleanup temp folder		
+			sudo mv -i ${restoreDir}/* ${restorePath}
+			# sudo rm -rf ${restoreDir}       # optional cleanup temp folder		
 			exit
 		fi
 	fi	
