@@ -18,7 +18,7 @@
 #  * Archive adoption (or original owner) not requried.
 # 
 # Author: Marc Johnson, Code 42 Software
-# Last Modified: 03-02-2014
+# Last Modified: 03-24-2014
 # 
 # --------
 #
@@ -40,7 +40,7 @@
 # Local Variables (customize)
 ###################################
 
-# PROe Master Server
+# PROe Master Server (e.g. http/4280 or https/4285)
 MASTER='https://127.0.01:4285' 
 
 # Restore credentials 
