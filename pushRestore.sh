@@ -1,7 +1,10 @@
 #!/bin/bash
 #######################################################################################
 #
-# pushRestore.sh
+# pushRestore.sh [sourceComputer] [destComputer] [restorePath] [getDirs] [getFiles]
+#
+# Example:
+#    pushRestore.sh 'COMP1' 'COMP2' '/tmp/restore' '/tmp/dir1,/tmp/dir 2' '/tmp/file1,/tmp/file 2'
 #
 # This example script performs an automated Push Restore (via REST):
 #  * One or more source files/directories.
@@ -11,14 +14,14 @@
 #  * Between computers of different users (if Admin).
 #  * ...and more.
 #
-# Simply edit the variables near the top of this script.
+# Edit the variables near the top of this script, or pass in optional args. 
 #
 # Notes:
 #  * Push destination should be running authenticated Crashplan client.
 #  * Archive adoption (or original owner) not requried.
 # 
 # Author: Marc Johnson, Code 42 Software
-# Last Modified: 03-24-2014
+# Last Modified: 04-07-2014 
 # 
 # --------
 #
@@ -72,6 +75,24 @@ TIMEOUT=900 #seconds
 # Performs additional status monitoring.  Currently only works 
 # if script running on destination + MPC.  See below.
 DOMOVE=false
+
+###################################
+# Utilize Optional Commandline Args if Present 
+# [sourceComputer] [destComputer] [restorePath] [getDirs] [getFiles]
+###################################
+
+sourceComputer=${1:-$sourceComputer} 
+destComputer=${2:-$destComputer} 
+restorePath=${3:-$restorePath} 
+OLD_IFS=$IFS
+IFS=','
+if [ -n "$4" ]; then
+	getDirs=($4) 
+fi
+if [ -n "$5" ]; then
+	getFiles=($5) 
+fi
+IFS=$OLD_IFS
 
 ###################################
 # Helper Functions 
