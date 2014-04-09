@@ -6,10 +6,15 @@
 # Common and reused functions to allow for rapid script creation
 # 
 
+# sudo pip install requests
+# sudo pip install python-dateutil [-update]
+# sudo pip install simplejson
+
+
 
 import math
 import sys
-import json
+import simplejson as json
 import csv
 import base64
 import logging
@@ -1158,9 +1163,9 @@ class c42Lib(object):
 		return null
 		
 
-	# only 3.6.2.1 and greater
+	# only 3.6.3.1 and greater - json errors in pervious versions
 	# will return array of info for every file within given archive
-	# performance is not expected to be great when looking at large archives
+	# performance is not expected to be great when looking at large archives - impacted by number of files in archive
 	# guid is int, decrypt is boolean
 	@staticmethod
 	def getArchiveMetadata(guid, decrypt):
@@ -1169,28 +1174,31 @@ class c42Lib(object):
 		params = {}
 		if (decrypt):
 			params['decryptPaths'] = "true"
+		# always stream the response - remove memory limitation on requests library
+		params['stream'] = "True"
 		payload = {}
 
 		r = c42Lib.executeRequest("get", c42Lib.cp_api_archiveMetadata + "/" + str(guid), params, payload)
 
-		logging.debug(r.text)
-
-
+		# logging.debug(r.text)
 		#null response on private passwords
 
 		if r.text:
-			content = r.content
+			content = ""
+			for chunk in r.iter_content(1024):
+				if chunk:
+					content = content + chunk
 			binary = json.loads(content)
-			logging.debug(binary)
-
+			content = ""
 			if binary:
 				archiveMetadata = binary['data']
+				binary = ""
 				return archiveMetadata
 			else:
 				return ""
 		else:
 			return ""
-		
+
 
 
 	# 
@@ -1288,7 +1296,7 @@ class c42Lib(object):
 		# set up logging to file
 		logging.basicConfig(
 							# level=logging.DEBUG,
-							level = logging.DEBUG,
+							level = logging.INFO,
 							format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
 							datefmt='%m-%d %H:%M',
 							# filename='EditUserRoles.log',
