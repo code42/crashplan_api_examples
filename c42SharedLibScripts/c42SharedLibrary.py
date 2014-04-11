@@ -1190,7 +1190,9 @@ class c42Lib(object):
 					content = content + chunk
 			binary = json.loads(content)
 			content = ""
-			if binary:
+			# may be missing data by doing this call.. 
+			# but this means the parcing failed and we can't extract the data
+			if 'data' in binary:
 				archiveMetadata = binary['data']
 				binary = ""
 				return archiveMetadata
