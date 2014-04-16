@@ -1,20 +1,19 @@
 #
 # File: c42SharedLibary.py
 # Author: AJ LaVenture, Code 42 Software
-# Last Modified: 09-04-2013
+# Last Modified: 4-16-2014
 #
 # Common and reused functions to allow for rapid script creation
 # 
 
 # sudo pip install requests
 # sudo pip install python-dateutil [-update]
-# sudo pip install simplejson
 
 
 
 import math
 import sys
-import simplejson as json
+import json
 import csv
 import base64
 import logging
@@ -1189,12 +1188,12 @@ class c42Lib(object):
 				if chunk:
 					content = content + chunk
 			binary = json.loads(content)
-			content = ""
+			del content
 			# may be missing data by doing this call.. 
 			# but this means the parcing failed and we can't extract the data
 			if 'data' in binary:
 				archiveMetadata = binary['data']
-				binary = ""
+				del binary
 				return archiveMetadata
 			else:
 				return ""
@@ -1262,8 +1261,8 @@ class c42Lib(object):
 	# 
 
 	@staticmethod
-	def getServersByDesitnationId(destinationId):
-		logging.info("getServersByDesitnationId-params:destinationId[" + str(destinationId) + "]")
+	def getServersByDestinationId(destinationId):
+		logging.info("getServersByDestinationId-params:destinationId[" + str(destinationId) + "]")
 
 		params = {'destinationId': str(destinationId)}
 		payload = {}
