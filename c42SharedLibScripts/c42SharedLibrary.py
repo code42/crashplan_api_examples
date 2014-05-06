@@ -1,7 +1,7 @@
 #
 # File: c42SharedLibary.py
 # Author: AJ LaVenture, Code 42 Software
-# Last Modified: 4-16-2014
+# Last Modified: 5-06-2014
 #
 # Common and reused functions to allow for rapid script creation
 # 
@@ -55,6 +55,7 @@ class c42Lib(object):
 	#?pgNum=1&pgSize=50&srtKey=startDate&srtDir=desc&days=9999&orgId=35
 	cp_api_archiveMetadata = "/api/ArchiveMetadata"
 	cp_api_server = "/api/Server"
+	cp_api_storePoint = "/api/StorePoint"
 
 	cp_logLevel = "INFO"
 	cp_logFileName = "c42SharedLibrary.log"
@@ -1223,8 +1224,8 @@ class c42Lib(object):
 		binary = json.loads(content)
 		logging.debug(binary)
 
-		device = binary['data']['servers']
-		return device
+		servers = binary['data']['servers']
+		return servers
 
 
 	# 
@@ -1248,8 +1249,8 @@ class c42Lib(object):
 		binary = json.loads(content)
 		logging.debug(binary)
 
-		device = binary['data']
-		return device
+		server = binary['data']
+		return server
 
 
 
@@ -1275,8 +1276,33 @@ class c42Lib(object):
 		binary = json.loads(content)
 		logging.debug(binary)
 
-		device = binary['data']['servers']
-		return device
+		servers = binary['data']['servers']
+		return servers
+
+
+	# getStorePoitnByStorePointId(storePointId):
+	# returns store point information based on the storePointId
+	# params:
+	# storePointId: id of storePoint
+	# 
+
+	@staticmethod
+	def getStorePointByStorePointId(storePointId):
+		logging.info("getStorePointByStorePointId-params:storePointId[" + str(storePointId) + "]")
+
+		params = {}
+		payload = {}
+
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_storePoint + "/" + str(storePointId), params, payload)
+
+		logging.debug(r.text)
+
+		content = r.content
+		binary = json.loads(content)
+		logging.debug(binary)
+
+		storePoint = binary['data']
+		return storePoint
 
 
 	#
