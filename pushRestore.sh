@@ -139,7 +139,7 @@ fi
 JSON=`api Computer 'q="'${destComputer}'"&active=true'`
 acceptingGuid=`jsonValue guid "${JSON}"`
 
-echo "Getting up Data Key Token..."
+echo "Getting Data Key Token..."
 
 # Get Data Key Token
 DATA='{"computerGuid":'${sourceGuid}'}'
