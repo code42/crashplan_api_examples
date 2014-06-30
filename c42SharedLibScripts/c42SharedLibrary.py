@@ -71,7 +71,10 @@ class c42Lib(object):
 	#
 	@staticmethod
 	def getRequestHeaders():
-		header = {"Authorization":c42Lib.getAuthHeader(c42Lib.cp_username,c42Lib.cp_password), "Content-Type": "application/json"}
+		header = {}
+		header["Authorization"] = c42Lib.getAuthHeader(c42Lib.cp_username,c42Lib.cp_password)
+		header["Content-Type"] = "application/json"
+
 		# print header
 		return header
 
@@ -145,7 +148,10 @@ class c42Lib(object):
 
 	    # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 	    # url = cp_host + ":" + cp_port + cp_api_user
-	    params = {'active': 'true', 'pgSize': '1', 'pgNum': '1'}
+	    params = {}
+	    params['active'] = 'true'
+	    params['pgSize'] = '1'
+	    params['pgNum'] = '1'
 	    payload = {}
 	    # r = requests.get(url, params=payload, headers=headers)
 	    # logging.debug(r.text)
@@ -171,8 +177,6 @@ class c42Lib(object):
 
 
 
-
-
 	# def getUsersPageCountByOrg(orgId):
 
 	# 	c42Lib.getUsersPageCountByOrg(orgId, None)
@@ -189,7 +193,11 @@ class c42Lib(object):
 	    # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 	    # url = cp_host + ":" + cp_port + cp_api_user
 	    # if incSubOrgs != None
-	    params = {'orgId': orgId, 'active': 'true', 'pgSize': '1', 'pgNum': '1'}
+	    params = {}
+	    params['orgId'] = orgId
+	    params['active'] = 'true'
+	    params['pgSize'] = '1'
+	    params['pgNum'] = '1'
 	    payload = {}
 	    # r = requests.get(url, params=payload, headers=headers)
 	    # logging.debug(r.text)
@@ -223,7 +231,8 @@ class c42Lib(object):
 	def getUserById(userId):
 		logging.info("getUser-params:userId[" + str(userId) + "]")
 
-		params = {'incAll': 'true'}
+		params = {}
+		params['incAll'] = 'true'
 		payload = {}
 
 		r = c42Lib.executeRequest("get", c42Lib.cp_api_user + "/" + str(userId), params, payload)
@@ -250,7 +259,12 @@ class c42Lib(object):
 
 	    # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 	    # url = cp_host + ":" + cp_port + cp_api_user
-	    params = {'orgId': orgId, 'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM), 'active': 'true'}
+	    params = {}
+	    params['orgId'] = orgId
+	    params['pgNum'] = str(pgNum)
+	    params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
+	    params['active'] = 'true'
+
 	    payload = {}
 	    logging.info(str(payload))
 	    # r = requests.get(url, params=payload, headers=headers)
@@ -278,7 +292,12 @@ class c42Lib(object):
 
 	    # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 	    # url = cp_host + ":" + cp_port + cp_api_user
-	    params = {'incAll': 'true', 'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM), 'active': 'true'}
+	    params = {}
+	    params['incAll'] = 'true'
+	    params['pgNum'] = str(pgNum)
+	    params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
+	    params['active'] = 'true'
+
 	    payload = {}
 
 	    # r = requests.get(url, params=payload, headers=headers)
@@ -424,7 +443,9 @@ class c42Lib(object):
 		logging.info("postUserMoveProcess-params:userId[" + str(userId) + "],orgId[" + str(orgId) + "]")
 
 		params = {}
-		payload = {"userId": userId, "parentOrgId": orgId}
+		payload = {}
+		payload["userId"] = userId
+		payload["parentOrgId"] = orgId
 
 		r = c42Lib.executeRequest("post", c42Lib.cp_api_userMoveProcess, params, payload)
 		logging.debug(r.status_code)
@@ -452,7 +473,8 @@ class c42Lib(object):
 	def getOrg(orgId):
 		logging.info("getOrg-params:orgId[" + str(orgId) + "]")
 
-		params = {'incAll': 'true'}
+		params = {}
+		params['incAll'] = 'true'
 		payload = {}
 
 		r = c42Lib.executeRequest("get", c42Lib.cp_api_org + "/" + str(orgId), params, payload)
@@ -477,7 +499,10 @@ class c42Lib(object):
 	def getOrgs(pgNum):
 		logging.info("getOrgs-params:pgNum[" + str(pgNum) + "]")
 
-		params = {'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM)}
+		params = {}
+		params['pgNum'] = str(pgNum)
+		params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
+
 		payload = {}
 
 		r = c42Lib.executeRequest("get", c42Lib.cp_api_org, params, payload)
@@ -500,7 +525,11 @@ class c42Lib(object):
 	@staticmethod
 	def getOrgPageCount():
 		logging.info("getOrgPageCount")
-		params = {'pgSize': '1', 'pgNum': '1'}
+
+		params = {}
+		params['pgSize'] = '1'
+		params['pgNum'] = '1'
+
 		payload = {}
 		r = c42Lib.executeRequest("get", c42Lib.cp_api_org, params, payload)
 
@@ -562,10 +591,14 @@ class c42Lib(object):
 	# 
 
 	@staticmethod
-	def getDeviceByGuid(guid):
+	def getDeviceByGuid(guid, incAll):
 		logging.info("getDeviceByGuid-params:guid[" + str(guid) + "]")
 
-		params = {'incAll': 'true', 'guid': str(guid)}
+		params = {}
+		if incAll:
+			params['incAll'] = 'true'
+		params['guid'] = str(guid)
+
 		payload = {}
 
 		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, params, payload)
@@ -576,7 +609,7 @@ class c42Lib(object):
 		binary = json.loads(content)
 		logging.debug(binary)
 
-		device = binary['data']
+		device = binary['data']['computers'][0]
 		return device
 
 
@@ -591,7 +624,9 @@ class c42Lib(object):
 	def getDeviceById(computerId):
 		logging.info("getDeviceById-params:computerId[" + str(computerId) + "]")
 
-		params = {'incAll': 'true'}
+		params = {}
+		params['incAll'] = 'true'
+
 		payload = {}
 
 		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer + "/" + str(computerId), params, payload)
@@ -616,7 +651,12 @@ class c42Lib(object):
 	def getDevicesPageCount():
 		logging.info("getDevicesPageCount")
 
-		params = {'incCounts': 'true', 'active': 'true', 'pgSize': '1', 'pgNum': '1'}
+		params = {}
+		params['incCounts'] = 'true'
+		params['active'] = 'true'
+		params['pgSize'] = '1'
+		params['pgNum'] = '1'
+
 		payload = {}
 
 		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, params, payload)
@@ -648,7 +688,13 @@ class c42Lib(object):
 	def getDevicesPageCountByOrg(orgId):
 		logging.info("getDevicesPageCountByOrg-params:orgId[" + str(orgId) + "]")
 
-		params = {'orgId': orgId, 'incCounts': 'true', 'active': 'true', 'pgSize': '1', 'pgNum': '1'}
+		params = {}
+		params['orgId'] = orgId
+		params['incCounts'] = 'true'
+		params['active'] = 'true'
+		params['pgSize'] = '1'
+		params['pgNum'] = '1'
+
 		payload = {}
 
 		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, params, payload)
@@ -669,6 +715,7 @@ class c42Lib(object):
 
 		return numOfRequests
 
+
 	# 
 	# getDevices(pgNum):
 	# returns all devices in system for requested page number within a single json object
@@ -680,8 +727,14 @@ class c42Lib(object):
 
 		# headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 		# url = cp_host + ":" + cp_port + cp_api_user
-		params = {'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM), 'active': 'true', 'incBackupUsage': 'true', 'incHistory': 'true'}
-		 # ,'incHistory': 'true'}
+		params = {}
+		params['pgNum'] = str(pgNum)
+		params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
+		params['active'] = 'true'
+		params['incBackupUsage'] = 'true'
+		params['incHistory'] = 'true'
+		# params['incHistory'] = 'true'
+
 		payload = {}
 
 		# r = requests.get(url, params=payload, headers=headers)
@@ -708,7 +761,14 @@ class c42Lib(object):
 
 		# headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 		# url = cp_host + ":" + cp_port + cp_api_user
-		params = {'orgId': orgId, 'pgNum': str(pgNum), 'pgSize': str(c42Lib.MAX_PAGE_NUM), 'active': 'true', 'incBackupUsage': 'true', 'incHistory': 'true'}
+		params = {}
+		params['orgId'] = orgId
+		params['pgNum'] = str(pgNum)
+		params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
+		params['active'] = 'true'
+		params['incBackupUsage'] = 'true'
+		params['incHistory'] = 'true'
+
 		payload = {}
 
 		# r = requests.get(url, params=payload, headers=headers)
@@ -743,6 +803,7 @@ class c42Lib(object):
 		logging.debug(fullDeviceList)
 		return fullDeviceList
 
+
 	@staticmethod
 	def getAllDevices():
 		logging.info("getAllDevices")
@@ -773,6 +834,7 @@ class c42Lib(object):
 		logging.debug(fullDeviceList)
 		return fullDeviceList
 
+
 	@staticmethod
 	def getAllDevicesByOrg(orgId):
 		logging.info("getAllDevicesByOrg-params:orgId[" + str(orgId) + "]")
@@ -787,6 +849,21 @@ class c42Lib(object):
 				keepLooping = False
 			currentPage += 1
 		return fullList
+
+
+	@staticmethod
+	def putDeviceSettings(computerId, payload):
+		logging.info("putDeviceSettings-params:computerId[" + str(computerId) + "]:payload[" + str(payload) + "]")
+		params = {}
+
+		r = c42Lib.executeRequest("put", c42Lib.cp_api_computer + "/" + str(computerId), params, payload)
+
+		content = r.content
+		binary = json.loads(content)
+		logging.debug(binary)
+
+		device = binary['data']
+		return device
 
 
 	@staticmethod
@@ -809,7 +886,6 @@ class c42Lib(object):
 			return False
 
 
-
 	#
 	# Adds the role to an individual user. 
 	# Note: attempts to add the role to a user even if it already exists. 
@@ -823,7 +899,11 @@ class c42Lib(object):
 			# headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 			# url = cp_host + ":" + cp_port + cp_api_userRole
 			params = {}
-			payload = {'userId': userId, 'roleName': roleName}
+			
+			payload = {}
+			payload['userId'] = userId
+			payload['roleName'] = roleName
+
 			# r = requests.post(url, data=json.dumps(payload), headers=headers)
 			
 			r = c42Lib.executeRequest("post", c42Lib.cp_api_userRole, params, payload)
@@ -878,7 +958,6 @@ class c42Lib(object):
 		logging.info("Total Users affected: " + str(count))
 
 
-
 	#
 	# Remove the role from an individual user. 
 	# Note: attempts to remove the role from a user even if the role doesn't exist. 
@@ -889,9 +968,11 @@ class c42Lib(object):
 
 		# headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 		# url = cp_host + ":" + cp_port + cp_api_userRole
-		params = {'userId': userId, 'roleName': roleName}
-		payload = {}
+		params = {}
+		params['userId'] = userId
+		params['roleName'] = roleName
 
+		payload = {}
 
 		# r = requests.delete(url, data=json.dumps(payload), headers=headers)
 		r = c42Lib.executeRequest("delete", c42Lib.cp_api_userRole, params, payload)
@@ -901,7 +982,6 @@ class c42Lib(object):
 
 		# Delete was successful with an HTTP return code of 204
 		return r.status_code == 204
-
 
 
 	#
@@ -922,6 +1002,7 @@ class c42Lib(object):
 				logging.info("Fail: userRole[" + userRole + "] removal for userId[" + userId + "]:userName[" + userName + "]")
 
 		logging.info("Total Users affected: " + str(count))
+
 
 	#
 	# Removes the role for all users
@@ -949,7 +1030,11 @@ class c42Lib(object):
 
 		validTypes = ['storePointId','serverId','destinationId']
 		if (type in validTypes):
-			params = {type: str(id), 'pgSize': '1', 'pgNum': '1'}
+			params = {}
+			params[type] = str(id)
+			params['pgSize'] = '1'
+			params['pgNum'] = '1'
+			
 			payload = {}
 			
 			r = c42Lib.executeRequest("get", c42Lib.cp_api_archive, params, payload)
@@ -972,7 +1057,6 @@ class c42Lib(object):
 			return 0
 
 
-
 	@staticmethod
 	def getArchiveByStorePointId_old(storePointId):
 		logging.info("getArchiveByStorePointId-params:storePointId[" + str(storePointId) + "]")
@@ -988,14 +1072,16 @@ class c42Lib(object):
 			fullArchiveList.extend(pagedArchiveList)
 		return fullArchiveList
 
+
 	@staticmethod
 	def getArchiveByStorePointId(storePointId):
 		logging.info("getArchiveByStorePointId-params:storePointId[" + str(storePointId) + "]")
 		currentPage = 1
 		keepLooping = True
 		fullList = []
+		params = {}
+		params['storePointId'] =  str(storePointId)
 		while keepLooping:
-			params = {'storePointId': str(storePointId)}
 			pagedList = c42Lib.getArchivesPaged(params,currentPage)
 			if pagedList:
 				fullList.extend(pagedList)
@@ -1011,11 +1097,11 @@ class c42Lib(object):
 
 		currentRequestCount = 0
 		numberOfRequests = c42Lib.getArchivesPageCount('serverId',serverId)
-
 		fullArchiveList = []
+		params = {}
+		params['serverId'] = str(serverId)
 		while (currentRequestCount <= numberOfRequests):
 			currentRequestCount += 1
-			params = {'serverId': str(serverId)}
 			pagedArchiveList = c42Lib.getArchivesPaged(params,currentRequestCount)
 			fullArchiveList.extend(pagedArchiveList)
 		return fullArchiveList
@@ -1027,8 +1113,9 @@ class c42Lib(object):
 		currentPage = 1
 		keepLooping = True
 		fullList = []
+		params = {}
+		params['serverId'] = str(serverId)
 		while keepLooping:
-			params = {'serverId': str(serverId)}
 			pagedList = c42Lib.getArchivesPaged(params,currentPage)
 			if pagedList:
 				fullList.extend(pagedList)
@@ -1047,12 +1134,15 @@ class c42Lib(object):
 		numberOfRequests = c42Lib.getArchivesPageCount('destinationId',destinationId)
 
 		fullArchiveList = []
+		params = {}
+		params['destinationId'] = str(destinationId)
+
 		while (currentRequestCount <= numberOfRequests):
 			currentRequestCount += 1
-			params = {'destinationId': str(destinationId)}
 			pagedArchiveList = c42Lib.getArchivesPaged(params,currentRequestCount)
 			fullArchiveList.extend(pagedArchiveList)
 		return fullArchiveList
+
 
 	@staticmethod
 	def getArchivesByDestinationId(destinationId):
@@ -1060,8 +1150,10 @@ class c42Lib(object):
 		currentPage = 1
 		keepLooping = True
 		fullList = []
+		params = {}
+		params['destinationId'] = str(destinationId)
+		
 		while keepLooping:
-			params = {'destinationId': str(destinationId)}
 			pagedList = c42Lib.getArchivesPaged(params,currentPage)
 			if pagedList:
 				fullList.extend(pagedList)
@@ -1070,11 +1162,15 @@ class c42Lib(object):
 			currentPage += 1
 		return fullList
 
+
 	@staticmethod
 	def getArchiveByGuidAndComputerId(guid, targetComputerId):
 		logging.info("getArchiveByGuidAndComputerId-params:guid[" + str(guid) + "]:targetComputerId[" + str(targetComputerId) + "]")
 
-		params = {'guid': str(guid), 'targetComputerId': str(targetComputerId)}
+		params = {}
+		params['guid'] = str(guid)
+		params['targetComputerId'] = str(targetComputerId)
+
 		payload = {}
 
 		r = c42Lib.executeRequest("get", c42Lib.cp_api_archive, params, payload)
@@ -1100,7 +1196,9 @@ class c42Lib(object):
 			
 		# r = c42Lib.executeRequest("get", c42Lib.cp_api_archive, params, payload)
 		
-		params = {'userId': str(userId)}
+		params = {}
+		params['userId'] = str(userId)
+
 		payload = {}
 
 		r = c42Lib.executeRequest("get", c42Lib.cp_api_archive, params, payload)
@@ -1147,23 +1245,99 @@ class c42Lib(object):
 
 	@staticmethod
 	def getRestoreHistoryForOrgId(orgId):
+		logging.info("getRestoreHistoryForOrgId-params:orgId[" + str(orgId) + "]")
 
-		return null
+		params = {}
+		params['strKey'] = 'startDate'
+		params['days'] = '9999'
+		params['strDir'] = 'desc'
+		params['orgId'] = str(orgId)
+
+		currentPage = 1
+		keepLooping = True
+		fullList = []
+		while keepLooping:
+			pagedList = c42Lib.getRestoreHistoryPaged(params,currentPage)
+
+			if pagedList:
+				fullList.extend(pagedList)
+			else:
+				keepLooping = False
+			currentPage += 1
+		return fullList
 
 
 	@staticmethod
 	def getRestoreHistoryForUserId(userId):
+		logging.info("getRestoreHistoryForUserId-params:userId[" + str(userId) + "]")
 
-		return null
+		params = {}
+		params['strKey'] = 'startDate'
+		params['days'] = '9999'
+		params['strDir'] = 'desc'
+		params['userId'] = str(userId)
+
+		currentPage = 1
+		keepLooping = True
+		fullList = []
+		while keepLooping:
+			pagedList = c42Lib.getRestoreHistoryPaged(params,currentPage)
+
+			if pagedList:
+				fullList.extend(pagedList)
+			else:
+				keepLooping = False
+			currentPage += 1
+		return fullList
 
 
 	@staticmethod
-	def getRestoreHistoryForDeviceId(computerId):
+	def getRestoreHistoryForComputerId(computerId):
+		logging.info("getRestoreHistoryForComputerId-params:computerId[" + str(computerId) + "]")
 
-		return null
-		
+		params = {}
+		params['strKey'] = 'startDate'
+		params['days'] = '9999'
+		params['strDir'] = 'desc'
+		params['computerId'] = str(computerId)
 
-	# only 3.6.3.1 and greater - json errors in pervious versions
+		currentPage = 1
+		keepLooping = True
+		fullList = []
+		while keepLooping:
+			pagedList = c42Lib.getRestoreHistoryPaged(params,currentPage)
+
+			if pagedList:
+				fullList.extend(pagedList)
+			else:
+				keepLooping = False
+			currentPage += 1
+		return fullList
+
+
+	@staticmethod
+	def getRestoreHistoryPaged(params, pgNum):
+		logging.info("getRestoreHistoryPaged-params:params[" + str(params) + "]:pgNum[" + str(pgNum) + "]")
+
+		params['pgSize'] = c42Lib.MAX_PAGE_NUM
+		params['pgNum'] = pgNum
+
+		payload = {}
+
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_restoreHistory, params, payload)
+
+		logging.debug(r.text)
+
+		content = r.content
+		binary = json.loads(content)
+		logging.debug(binary)
+
+		archives = binary['data']['restoreEvents']
+
+		return archives
+
+
+	# only 3.6.2.1 and greater - json errors in pervious versions
 	# will return array of info for every file within given archive
 	# performance is not expected to be great when looking at large archives - impacted by number of files in archive
 	# guid is int, decrypt is boolean
@@ -1265,7 +1439,9 @@ class c42Lib(object):
 	def getServersByDestinationId(destinationId):
 		logging.info("getServersByDestinationId-params:destinationId[" + str(destinationId) + "]")
 
-		params = {'destinationId': str(destinationId)}
+		params = {}
+		params['destinationId'] = str(destinationId)
+
 		payload = {}
 
 		r = c42Lib.executeRequest("get", c42Lib.cp_api_server, params, payload)
