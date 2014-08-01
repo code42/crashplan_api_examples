@@ -51,8 +51,9 @@ class c42Lib(object):
 	cp_api_computer = "/api/Computer"
 	cp_api_userMoveProcess = "/api/UserMoveProcess"
 	cp_api_cli = "/api/cli"
-	cp_api_restoreHistory = "/api/restoreHistory"
+	# cp_api_restoreHistory = "/api/restoreHistory"
 	#?pgNum=1&pgSize=50&srtKey=startDate&srtDir=desc&days=9999&orgId=35
+	cp_api_restoreRecord = "/api/RestoreRecord"
 	cp_api_archiveMetadata = "/api/ArchiveMetadata"
 	cp_api_server = "/api/Server"
 	cp_api_storePoint = "/api/StorePoint"
@@ -1238,6 +1239,49 @@ class c42Lib(object):
 
 	# @staticmethod
 	# def getAllArchives():
+
+
+
+	@staticmethod
+	def getRestoreRecordPaged(params, pgNum):
+		logging.info("getRestoreRecordPaged-params:params[" + str(params) + "]:pgNum[" + str(pgNum) + "]")
+
+		params['pgSize'] = c42Lib.MAX_PAGE_NUM
+		params['pgNum'] = pgNum
+
+		payload = {}
+
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_restoreRecord, params, payload)
+
+		logging.debug(r.text)
+
+		content = r.content
+		binary = json.loads(content)
+		logging.debug(binary)
+
+		archives = binary['data']['restoreRecords']
+
+		return archives
+
+
+	@staticmethod
+	def getRestoreRecordAll():
+		logging.info("getRestoreRecordAll")
+
+		params = {}
+
+		currentPage = 1
+		keepLooping = True
+		fullList = []
+		while keepLooping:
+			pagedList = c42Lib.getRestoreRecordPaged(params,currentPage)
+
+			if pagedList:
+				fullList.extend(pagedList)
+			else:
+				keepLooping = False
+			currentPage += 1
+		return fullList
 
 
 	# cp_api_restoreHistory = "/api/restoreHistory"
