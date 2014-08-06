@@ -1,7 +1,7 @@
 #
 # File: c42SharedLibary.py
 # Author: AJ LaVenture, Code 42 Software
-# Last Modified: 5-06-2014
+# Last Modified: 8-06-2014
 #
 # Common and reused functions to allow for rapid script creation
 # 
@@ -144,7 +144,7 @@ class c42Lib(object):
 	# returns: integer
 	# 
 	@staticmethod
-	def getUsersPageCount():
+	def getUsersPageCount_old():
 	    logging.info("getUsersPageCount")
 
 	    # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
@@ -188,7 +188,7 @@ class c42Lib(object):
 	# Note: This is used because of the current REST API resultset limit of 250 results.
 	#
 	@staticmethod
-	def getUsersPageCountByOrg(orgId):
+	def getUsersPageCountByOrg_old(orgId):
 	    logging.info("getUsersPageCountByOrg-params: orgId[" + str(orgId) + "]")
 
 	    # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
@@ -347,6 +347,7 @@ class c42Lib(object):
 				keepLooping = False
 			currentPage += 1
 		return fullList
+
 
 	@staticmethod
 	def generaticLoopUntilEmpty():
@@ -649,7 +650,7 @@ class c42Lib(object):
 	# 
 
 	@staticmethod
-	def getDevicesPageCount():
+	def getDevicesPageCount_old():
 		logging.info("getDevicesPageCount")
 
 		params = {}
@@ -686,7 +687,7 @@ class c42Lib(object):
 	# Returns: integer
 
 	@staticmethod
-	def getDevicesPageCountByOrg(orgId):
+	def getDevicesPageCountByOrg_old(orgId):
 		logging.info("getDevicesPageCountByOrg-params:orgId[" + str(orgId) + "]")
 
 		params = {}
@@ -1026,7 +1027,7 @@ class c42Lib(object):
 
 
 	@staticmethod
-	def getArchivesPageCount(type, id):
+	def getArchivesPageCount_old(type, id):
 		logging.info("getArchivesPageCount-params:type[" + type + "]:id[" + str(id) + "]")
 
 		validTypes = ['storePointId','serverId','destinationId']
