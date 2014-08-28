@@ -4,7 +4,7 @@
 # Last Modified: 8-06-2014
 #
 # Common and reused functions to allow for rapid script creation
-# 
+#
 
 # sudo pip install requests
 # sudo pip install python-dateutil [-update]
@@ -23,7 +23,6 @@ from dateutil.relativedelta import *
 import datetime
 import calendar
 import re
-
 
 
 
@@ -66,7 +65,7 @@ class c42Lib(object):
 
 	#
 	# getRequestHeaders:
-	# Returns the dictionary object containing headers to pass along with all requests to the API, 
+	# Returns the dictionary object containing headers to pass along with all requests to the API,
 	# Params: None
 	# Uses global / class variables for username and password authentication
 	#
@@ -100,7 +99,7 @@ class c42Lib(object):
 	# params: URL parameters to be passed along with the request
 	# payload: json object to be sent in the body of the request
 	# Returns: the response object directly from the call to be parsed by other methods
-	# 
+	#
 
 	@staticmethod
 	def executeRequest(type, cp_api, params, payload):
@@ -130,19 +129,19 @@ class c42Lib(object):
 			logging.debug(r.text)
 			return r
 		else:
-			return None	
+			return None
 
 		# content = r.content
 		# binary = json.loads(content)
 		# logging.debug(binary)
 
-	# 
+	#
 	# getUserPageCount():
-	# Returns how many pages it will take to get all of the users in the system 
+	# Returns how many pages it will take to get all of the users in the system
 	# using MAX_PAGE_NUM global / class variable.
 	# params:
 	# returns: integer
-	# 
+	#
 	@staticmethod
 	def getUsersPageCount_old():
 	    logging.info("getUsersPageCount")
@@ -173,7 +172,7 @@ class c42Lib(object):
 	    numOfRequests = int(math.ceil(totalCount/c42Lib.MAX_PAGE_NUM)+1)
 
 	    logging.info("getUsersPageCount:numOfRequests= " + str(numOfRequests))
-	   
+
 	    return numOfRequests
 
 
@@ -181,7 +180,7 @@ class c42Lib(object):
 	# def getUsersPageCountByOrg(orgId):
 
 	# 	c42Lib.getUsersPageCountByOrg(orgId, None)
-	# 
+	#
 	# getUsersPageCountByOrg(orgId):
 	# Gets the number of page requests needed to return all users within an org.
 	# Uses the MAX_PAGE_NUM global / class variable.
@@ -219,15 +218,15 @@ class c42Lib(object):
 	    numOfRequests = int(math.ceil(totalCount/c42Lib.MAX_PAGE_NUM)+1)
 
 	    logging.info("getUsersPageCountByOrg:numOfRequests= " + str(numOfRequests))
-	   
+
 	    return numOfRequests
 
-	# 
+	#
 	# getUserById(userId):
 	# returns the user json object of the requested userId
 	# params:
 	# userId: the id of the user within the system's database
-	# 
+	#
 	@staticmethod
 	def getUserById(userId):
 		logging.info("getUser-params:userId[" + str(userId) + "]")
@@ -249,7 +248,7 @@ class c42Lib(object):
 
 	#
 	# getUsersByOrgPaged
-	# Returns a list of active users within an orgization by page, 
+	# Returns a list of active users within an orgization by page,
 	# Params:
 	# orgId - integer, that is used to limit the users to an org. Can be set to 0 to return all users.
 	# pgNum - page request for user list (starting with 1)
@@ -272,7 +271,7 @@ class c42Lib(object):
 	    r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
 
 	    logging.debug(r.text)
-	    
+
 	    content = r.content
 	    binary = json.loads(content)
 	    logging.debug(binary)
@@ -281,12 +280,12 @@ class c42Lib(object):
 	    users = binary['data']['users']
 	    return users
 
-	# 
+	#
 	# getUsersPaged(pageNum):
 	# Returns list of active users within the system based on page number
 	# params:
 	# pgNum - page request for user list (starting with 1)
-	# 
+	#
 	@staticmethod
 	def getUsersPaged(pgNum):
 	    logging.info("getUsersPaged-params:pgNum[" + str(pgNum) + "]")
@@ -305,7 +304,7 @@ class c42Lib(object):
 	    r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
 
 	    logging.debug(r.text)
-	    
+
 	    content = r.content
 	    binary = json.loads(content)
 	    logging.debug(binary)
@@ -314,11 +313,11 @@ class c42Lib(object):
 	    return users
 
 
-	# 
+	#
 	# getAllUsers():
 	# Returns json users in single list
 	# no limit or batching, will return all users within the system
-	# 
+	#
 	@staticmethod
 	def getAllUsers_old():
 		logging.info("getAllUsers")
@@ -364,13 +363,13 @@ class c42Lib(object):
 			currentPage += 1
 		return fullList
 
-	# 
+	#
 	# getAllUsersByOrg(orgId):
 	# Returns json users in single list limited by organization
 	# no limit or batching, will return all users within the organization
 	# Params:
 	# orgId - ID of the organization to query for users
-	# 
+	#
 
 	@staticmethod
 	def getAllUsersByOrg_old(orgId):
@@ -401,14 +400,14 @@ class c42Lib(object):
 			currentPage += 1
 		return fullList
 
-	# 
+	#
 	# putUserUpdate(userId, payload):
 	# updates a users information based on the payload passed
 	# params:
 	# userId - id for the user to update
 	# payload - json object containing name / value pairs for values to update
 	# returns: user object after the update
-	# 
+	#
 
 	@staticmethod
 	def putUserUpdate(userId, payload):
@@ -431,14 +430,14 @@ class c42Lib(object):
 			logging.error("putUserUpdate param payload is null or empty")
 
 
-	# 
+	#
 	# postUserMoveProcess(userId, orgId):
 	# posts request to move use into specified organization
 	# params:
 	# userId - id of the user for the move request
 	# orgId - destination org for the user
 	# returns: true if 204, respose object if 500, else false
-	# 
+	#
 
 	@staticmethod
 	def postUserMoveProcess(userId, orgId):
@@ -462,15 +461,15 @@ class c42Lib(object):
 		else:
 			return False
 
-	# 
+	#
 	# getOrg(orgId):
 	# Returns all organization data for specified organization
 	# params:
 	# orgId - id of the organization you want to return
 	# Returns:
 	# json object
-	# 
-	
+	#
+
 	@staticmethod
 	def getOrg(orgId):
 		logging.info("getOrg-params:orgId[" + str(orgId) + "]")
@@ -495,7 +494,7 @@ class c42Lib(object):
 	# returns json list object of all users for the requested page number
 	# params:
 	# pgNum - page request for information (starting with 1)
-	# 
+	#
 
 	@staticmethod
 	def getOrgs(pgNum):
@@ -518,11 +517,11 @@ class c42Lib(object):
 		orgs = binary['data']
 		return orgs
 
-	# 
+	#
 	# getOrgPageCount():
 	# returns number of pages of orgs within the system using MAX_PAGE_NUM
 	# returns: integer
-	# 
+	#
 
 	@staticmethod
 	def getOrgPageCount():
@@ -552,10 +551,10 @@ class c42Lib(object):
 
 		return numOfRequests
 
-	# 
+	#
 	# getAllOrgs():
 	# returns json list of all organizations within the system
-	# 
+	#
 
 	@staticmethod
 	def getAllOrgs_old():
@@ -585,12 +584,12 @@ class c42Lib(object):
 			currentPage += 1
 		return fullList
 
-	# 
+	#
 	# getDeviceByGuid(guid):
 	# returns device information based on guid
 	# params:
 	# guid - guid of device
-	# 
+	#
 
 	@staticmethod
 	def getDeviceByGuid(guid, incAll):
@@ -615,12 +614,12 @@ class c42Lib(object):
 		return device
 
 
-	# 
+	#
 	# getDeviceById(computerId):
 	# returns device information based on computerId
 	# params:
 	# computerId: computerId of device
-	# 
+	#
 
 	@staticmethod
 	def getDeviceById(computerId):
@@ -643,11 +642,11 @@ class c42Lib(object):
 		return device
 
 
-	# 
+	#
 	# getDevicesPageCount():
 	# returns number of pages it will take to return all of the devices based on MAX_PAGE_NUM
 	# Returns: integer
-	# 
+	#
 
 	@staticmethod
 	def getDevicesPageCount_old():
@@ -681,7 +680,7 @@ class c42Lib(object):
 		return numOfRequests
 
 
-	# 
+	#
 	# getDevicesPageCountByOrg(orgId):
 	# returns number of pages it will take to return devices by organization based on MAX_PAGE_NUM
 	# Returns: integer
@@ -718,10 +717,10 @@ class c42Lib(object):
 		return numOfRequests
 
 
-	# 
+	#
 	# getDevices(pgNum):
 	# returns all devices in system for requested page number within a single json object
-	# 
+	#
 
 	@staticmethod
 	def getDevices(pgNum):
@@ -752,10 +751,10 @@ class c42Lib(object):
 		return devices
 
 
-	# 
+	#
 	# getDevicesByOrgPaged(orgId, pgNum):
 	# returns devices by organization for requested page number within a single json object
-	# 
+	#
 
 	@staticmethod
 	def getDevicesByOrgPaged(orgId, pgNum):
@@ -786,10 +785,10 @@ class c42Lib(object):
 		return devices
 
 
-	# 
+	#
 	# getAllDevices():
 	# returns all devices in system within single json object
-	# 
+	#
 
 	@staticmethod
 	def getAllDevices_old():
@@ -878,7 +877,7 @@ class c42Lib(object):
 		payload = {}
 
 		r = c42Lib.executeRequest("put", c42Lib.cp_api_deviceUpgrade + "/" + str(computerId), params, payload)
-		
+
 		logging.debug(r.text)
 		logging.debug(r.status_code)
 
@@ -889,8 +888,8 @@ class c42Lib(object):
 
 
 	#
-	# Adds the role to an individual user. 
-	# Note: attempts to add the role to a user even if it already exists. 
+	# Adds the role to an individual user.
+	# Note: attempts to add the role to a user even if it already exists.
 	#
 	@staticmethod
 	def addUserRole(userId, roleName):
@@ -901,13 +900,13 @@ class c42Lib(object):
 			# headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 			# url = cp_host + ":" + cp_port + cp_api_userRole
 			params = {}
-			
+
 			payload = {}
 			payload['userId'] = userId
 			payload['roleName'] = roleName
 
 			# r = requests.post(url, data=json.dumps(payload), headers=headers)
-			
+
 			r = c42Lib.executeRequest("post", c42Lib.cp_api_userRole, params, payload)
 
 			logging.debug(r.text)
@@ -961,8 +960,8 @@ class c42Lib(object):
 
 
 	#
-	# Remove the role from an individual user. 
-	# Note: attempts to remove the role from a user even if the role doesn't exist. 
+	# Remove the role from an individual user.
+	# Note: attempts to remove the role from a user even if the role doesn't exist.
 	#
 	@staticmethod
 	def removeUserRole(userId, roleName):
@@ -1036,9 +1035,9 @@ class c42Lib(object):
 			params[type] = str(id)
 			params['pgSize'] = '1'
 			params['pgNum'] = '1'
-			
+
 			payload = {}
-			
+
 			r = c42Lib.executeRequest("get", c42Lib.cp_api_archive, params, payload)
 
 			content = r.content
@@ -1154,7 +1153,7 @@ class c42Lib(object):
 		fullList = []
 		params = {}
 		params['destinationId'] = str(destinationId)
-		
+
 		while keepLooping:
 			pagedList = c42Lib.getArchivesPaged(params,currentPage)
 			if pagedList:
@@ -1195,9 +1194,9 @@ class c42Lib(object):
 
 		# params = {type: str(id), 'pgSize': '1', 'pgNum': '1'}
 		# payload = {}
-			
+
 		# r = c42Lib.executeRequest("get", c42Lib.cp_api_archive, params, payload)
-		
+
 		params = {}
 		params['userId'] = str(userId)
 
@@ -1409,7 +1408,7 @@ class c42Lib(object):
 					content = content + chunk
 			binary = json.loads(content)
 			del content
-			# may be missing data by doing this call.. 
+			# may be missing data by doing this call..
 			# but this means the parcing failed and we can't extract the data
 			if 'data' in binary:
 				archiveMetadata = binary['data']
@@ -1422,11 +1421,11 @@ class c42Lib(object):
 
 
 
-	# 
+	#
 	# getServers():
 	# returns servers information
 	# params:
-	# 
+	#
 
 	@staticmethod
 	def getServers():
@@ -1447,11 +1446,11 @@ class c42Lib(object):
 		return servers
 
 
-	# 
+	#
 	# getServer(serverId):
 	# returns server information based on serverId
 	# params: serverId
-	# 
+	#
 
 	@staticmethod
 	def getServer(serverId):
@@ -1473,12 +1472,12 @@ class c42Lib(object):
 
 
 
-	# 
+	#
 	# getServersByDesitnationId(destinationId):
 	# returns server information based on destinationId
 	# params:
 	# destinationId: id of destination
-	# 
+	#
 
 	@staticmethod
 	def getServersByDestinationId(destinationId):
@@ -1505,7 +1504,7 @@ class c42Lib(object):
 	# returns store point information based on the storePointId
 	# params:
 	# storePointId: id of storePoint
-	# 
+	#
 
 	@staticmethod
 	def getStorePointByStorePointId(storePointId):
@@ -1552,13 +1551,13 @@ class c42Lib(object):
 							filemode='w')
 		# define a Handler which writes INFO messages or higher to the sys.stderr
 		console = logging.StreamHandler()
-		
+
 		if(c42Lib.cp_logLevel=="DEBUG"):
 			console.setLevel(logging.DEBUG)
 			# console.setLevel(logging.INFO)
 		else:
 			console.setLevel(logging.INFO)
-		
+
 		# set a format which is simpler for console use
 		formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
 		# tell the handler to use this format
@@ -1570,7 +1569,7 @@ class c42Lib(object):
 	@staticmethod
 	def executeCLICommand(payload):
 		params = {}
-		
+
 		r = c42Lib.executeRequest("post", c42Lib.cp_api_cli, params, payload)
 
 		logging.debug(r.text)
@@ -1580,9 +1579,9 @@ class c42Lib(object):
 
 		return binary['data']
 
-	# 
+	#
 	# credit: http://stackoverflow.com/questions/1094841/reusable-library-to-get-human-readable-version-of-file-size
-	# 
+	#
 	@staticmethod
 	def sizeof_fmt(num):
 		for x in ['bytes','KiB','MiB','GiB']:
@@ -1608,7 +1607,7 @@ class c42Lib(object):
 	def returnHostAndPortFromFullURL(url):
 		p = '(?:http.*://)?(?P<host>[^:/ ]+).?(?P<port>[0-9]*).*'
 		m = re.search(p, str(url))
-		
+
 		# address = [m.group('protocol') +''+ m.group('host'),m.group('port')]
 		# m.group('host') # 'www.abc.com'
 		# m.group('port') # '123'
@@ -1623,5 +1622,3 @@ class c42Lib(object):
 # class OrgClass(object)
 
 # class DeviceClass(object)
-
-
