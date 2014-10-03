@@ -1381,12 +1381,35 @@ class c42Lib(object):
 		return archives
 
 
+
+
+	#
+# http://stackoverflow.com/questions/16694907/how-to-download-large-file-in-python-with-requests-py
+
+	#add in downloading of file:
+	# 
+# def download_file(url):
+#     local_filename = url.split('/')[-1]
+#     # NOTE the stream=True parameter
+#     r = requests.get(url, stream=True)
+    # with open(local_filename, 'wb') as f:
+    #     for chunk in r.iter_content(chunk_size=1024): 
+    #         if chunk: # filter out keep-alive new chunks
+    #             f.write(chunk)
+    #             f.flush()
+    # return local_filename
+
+
+
+
 	# only 3.6.2.1 and greater - json errors in pervious versions
 	# will return array of info for every file within given archive
 	# performance is not expected to be great when looking at large archives - impacted by number of files in archive
 	# guid is int, decrypt is boolean
+
+	# saveToDisk - will write out the response to a .json file
 	@staticmethod
-	def getArchiveMetadata(guid, decrypt):
+	def getArchiveMetadata2(guid, decrypt, saveToDisk):
 		logging.info("getArchiveMetadata-params:guid["+str(guid)+"]:decrypt["+str(decrypt)+"]")
 
 		params = {}
@@ -1401,26 +1424,37 @@ class c42Lib(object):
 		# logging.debug(r.text)
 		#null response on private passwords
 
-		if r.text:
-			content = ""
-			for chunk in r.iter_content(1024):
-				if chunk:
-					content = content + chunk
-			binary = json.loads(content)
-			del content
-			# may be missing data by doing this call..
-			# but this means the parcing failed and we can't extract the data
-			if 'data' in binary:
-				archiveMetadata = binary['data']
-				del binary
-				return archiveMetadata
+		if saveToDisk:
+			# print r.text
+			local_filename = "json/archiveMetadata_"+str(guid)+".json"
+			with open(local_filename, 'wb') as f:
+				for chunk in r.iter_content(chunk_size=1024):
+					if chunk: # filter out keep-alive new chunks
+						f.write(chunk)
+						f.flush()
+				return local_filename
+		else:
+			if r.text:
+				content = ""
+				for chunk in r.iter_content(1024):
+					if chunk:
+						content = content + chunk
+				binary = json.loads(content)
+				del content
+				# may be missing data by doing this call..
+				# but this means the parcing failed and we can't extract the data
+				if 'data' in binary:
+					archiveMetadata = binary['data']
+					del binary
+					return archiveMetadata
+				else:
+					return ""
 			else:
 				return ""
-		else:
-			return ""
 
-
-
+	@staticmethod
+	def getArchiveMetadata(guid, decrypt):
+		c42Lib.getArchiveMetadata2(guid, decrypt, False)
 	#
 	# getServers():
 	# returns servers information
