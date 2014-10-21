@@ -14,10 +14,10 @@
 # Python 2.7
 # REQUIRED MODULE: Requests
 # http://docs.python-requests.org/en/latest/user/install/
-# 
+#
 # Uses relativedelta python module that can be downloaded from:
 # http://labix.org/python-dateutil
-# 
+#
 # API Call: GET api/User
 #
 # Arguments: startMonth, monthsForward(default 1), loggingLevel(optional)
@@ -25,15 +25,15 @@
 # Example Usages:
 # 1) Export user data with start date and how many months in the future
 	# month 8, for 1 month
-# 	python ExportAllUserDataCreationDate.py 8 1 
+# 	python ExportAllUserDataCreationDate.py 8 1
 #
 # 2) Export user data based on date range with debug log level
 #	python ExportAllUserDataCreationDate.py 8/1/2013 1 DEBUG
-# 
+#
 # from datetime import datetime
-# 
+#
 # date_object = datetime.strptime('Jun 1 2005  1:33PM', '%b %d %Y %I:%M%p')
-# 
+#
 # http://docs.python.org/library/datetime.html#datetime.datetime.strptime
 # http://docs.python.org/library/datetime.html#strftime-and-strptime-behavior
 
@@ -119,7 +119,7 @@ def getUserReport():
 		if creationDate is not None:
 			currDateObj = datetime.datetime.strptime(str(creationDate)[:10], "%Y-%m-%d")
 			deltaTime = start_date_object+relativedelta(months=+int(cp_deltaDate))
-		
+
 
 		# logging.info(str(currDateObj) + " delta: " + str(deltaTime))
 		if deltaTime > currDateObj > start_date_object:
@@ -152,7 +152,7 @@ def getUserReport():
 			if 'creationDate' in user:
 				pUserCreationDate = user['creationDate']
 				printRow.extend([pUserCreationDate])
-			
+
 			if 'backupUsage' in user:
 
 				userBackupUsage = user['backupUsage']
@@ -178,7 +178,7 @@ def getUserReport():
 								if (oldestDate > int(key)):
 									oldestDate = int(key)
 									oldestDateBytes = value
-								
+
 								# print newestDate, int(key)
 								if (newestDate <= int(key)):
 									newestDate = int(key)
@@ -202,10 +202,10 @@ def getUserReport():
 							# printRow.extend([str(pArchiveBytesDeltaMonthSanityCheck)])
 							# printRow.extend([c42Lib.sizeof_fmt(pArchiveBytesDeltaMonthSanityCheck)])
 
-							
+
 			# 			else:
 			# 				printUserEmptyBlock()
-					
+
 			# 		else:
 			# 			printUserEmptyBlock()
 
@@ -222,7 +222,7 @@ def getUserReport():
 def performUserExportAction():
 	logging.info("User Export Action: startDate:" + cp_startDate + " | deltaTime: " +
 		str(cp_deltaDate) + " | loggingLevel: " + cp_logLevel)
-	
+
 
 	# print cp_startDate + " " + cp_endDate + " " + cp_logLevel
 	start_date_object = ""

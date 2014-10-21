@@ -18,15 +18,18 @@ c42Lib.cp_port = "4280"
 c42Lib.cp_username = "admin"
 # c42Lib.cp_password = "admin"
 c42Lib.cp_password = getpass.getpass()
-c42Lib.cp_logLevel = "INFO"
+c42Lib.cp_logLevel = "DEBUG"
 c42Lib.cp_logFileName = "sharedLibTest.log"
 c42Lib.setLoggingLevel()
 
 
+# users = c42Lib.generaticLoopUntilEmpty()
+# servers = c42Lib.getServersByDestinationId(2)
+# restoreList = c42Lib.getRestoreHistoryForOrgId(36)
+# restoreList = c42Lib.getRestoreHistoryForUserId(3)
+restoreList = c42Lib.getRestoreHistoryForComputerId(11)
 
-users = c42Lib.generaticLoopUntilEmpty()
-
-print users
+print restoreList
 # payload = {'orgId': '0', 'pgNum': str(1), 'pgSize': str(c42Lib.MAX_PAGE_NUM)}
 
 # r = c42Lib.executeRequest("get", c42Lib.cp_api_user, payload)
@@ -69,4 +72,3 @@ print users
 
 # c42Lib.getArchivesPageCount('serverId',3)
 # c42Lib.getArchiveByServerId(3)
-

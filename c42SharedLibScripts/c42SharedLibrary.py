@@ -1381,27 +1381,6 @@ class c42Lib(object):
 		return archives
 
 
-
-
-	#
-# http://stackoverflow.com/questions/16694907/how-to-download-large-file-in-python-with-requests-py
-
-	#add in downloading of file:
-	# 
-# def download_file(url):
-#     local_filename = url.split('/')[-1]
-#     # NOTE the stream=True parameter
-#     r = requests.get(url, stream=True)
-    # with open(local_filename, 'wb') as f:
-    #     for chunk in r.iter_content(chunk_size=1024): 
-    #         if chunk: # filter out keep-alive new chunks
-    #             f.write(chunk)
-    #             f.flush()
-    # return local_filename
-
-
-
-
 	# only 3.6.2.1 and greater - json errors in pervious versions
 	# will return array of info for every file within given archive
 	# performance is not expected to be great when looking at large archives - impacted by number of files in archive
@@ -1424,6 +1403,7 @@ class c42Lib(object):
 		# logging.debug(r.text)
 		#null response on private passwords
 
+		# http://stackoverflow.com/questions/16694907/how-to-download-large-file-in-python-with-requests-py
 		if saveToDisk:
 			# print r.text
 			local_filename = "json/archiveMetadata_"+str(guid)+".json"

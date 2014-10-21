@@ -20,7 +20,7 @@ import datetime
 import calendar
 import getpass
 
-c42Lib.cp_host = "https://10.10.10.10"
+c42Lib.cp_host = "https://aj-proappliance"
 c42Lib.cp_port = "4285"
 c42Lib.cp_username = "admin"
 c42Lib.cp_password = getpass.getpass('Enter your CrashPlan console password: ')
