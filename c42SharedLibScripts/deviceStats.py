@@ -67,6 +67,6 @@ for index, device in enumerate(devices):
 	totalDeviceData = totalDeviceData + (cur_selectedBytes * (float(cur_percentComplete) / 100))
 
 finalRatio = (1 - (float(totalDestinationData)/totalDeviceData)) * 100
-print "totalDeviceData: ", c42Lib.sizeof_fmt_si(totalDeviceData)
-print "totalDestinationData: ", c42Lib.sizeof_fmt_si(totalDestinationData)
-print "total Compressions and dedup %: ", finalRatio
+print "totalDeviceData: ", '%f' % totalDeviceData, c42Lib.sizeof_fmt_si(totalDeviceData)
+print "totalDestinationData: ", '%f' % totalDestinationData, c42Lib.sizeof_fmt_si(totalDestinationData)
+print "total device to destination ratio %: ", finalRatio
