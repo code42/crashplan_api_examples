@@ -4,7 +4,9 @@
 # Last Modified: 01-24-2014
 #
 # get report data on all users and devices
+# need to set the "destId" to ensure 
 # 
+#
 
 from c42SharedLibrary import c42Lib
 import math
@@ -20,14 +22,18 @@ import datetime
 import calendar
 import getpass
 
-c42Lib.cp_host = "https://aj-proappliance"
+c42Lib.cp_host = "https://aj-ubuntu"
 c42Lib.cp_port = "4285"
 c42Lib.cp_username = "admin"
 c42Lib.cp_password = getpass.getpass('Enter your CrashPlan console password: ')
 
-c42Lib.cp_logLevel = "INFO"
+# Set id of primary destination to get information and stats about
+destId = 15
+
+c42Lib.cp_logLevel = "DEGUG"
 c42Lib.cp_logFileName = "allDeviceReport.log"
 c42Lib.setLoggingLevel()
+
 
 # c42Lib.MAX_PAGE_NUM = 5
 
@@ -104,8 +110,7 @@ def getDeviceReport():
 
 			for backupUsage in deviceObjectBackupUsage:
 
-				#only if SOM-backup
-				if backupUsage['targetComputerId'] == 2:
+				if backupUsage['targetComputerId'] == destId:
 
 					storePointId = backupUsage['storePointId']
 					printValues.extend([str(storePointId)])
