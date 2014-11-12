@@ -5,7 +5,7 @@
 #
 # Common and reused functions to allow for rapid script creation
 #
-
+# install pip
 # sudo pip install requests
 # sudo pip install python-dateutil [-update]
 
@@ -48,6 +48,7 @@ class c42Lib(object):
 	cp_api_archive = "/api/Archive"
 	cp_api_deviceUpgrade = "/api/DeviceUpgrade"
 	cp_api_computer = "/api/Computer"
+	cp_api_computerBlock = "/api/ComputerBlock"
 	cp_api_userMoveProcess = "/api/UserMoveProcess"
 	cp_api_cli = "/api/cli"
 	# cp_api_restoreHistory = "/api/restoreHistory"
@@ -750,7 +751,34 @@ class c42Lib(object):
 		devices = binary['data']['computers']
 		return devices
 
+	#
+	# getDevicesCustomParams(pgNum, parmas):
+	# returns all devices in system for requested page number within a single json object
+	#
 
+	@staticmethod
+	def getDevicesCustomParams(pgNum, params):
+		logging.info("getDevicesCustomParams-params:pgNum[" + str(pgNum) + "]:params[" + str(params) + "]")
+
+		# headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
+		# url = cp_host + ":" + cp_port + cp_api_user
+		if not params and not isinstance(params, dict):
+			params = {}
+
+		params['pgNum'] = str(pgNum)
+		payload = {}
+
+		# r = requests.get(url, params=payload, headers=headers)
+		r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, params, payload)
+
+		logging.debug(r.text)
+
+		content = r.content
+		binary = json.loads(content)
+		logging.debug(binary)
+
+		devices = binary['data']['computers']
+		return devices
 	#
 	# getDevicesByOrgPaged(orgId, pgNum):
 	# returns devices by organization for requested page number within a single json object
@@ -821,6 +849,22 @@ class c42Lib(object):
 		return fullList
 
 
+	
+	@staticmethod
+	def getAllDevicesCustomParams(params):
+		logging.info("getAllDevicesCustomParams:params[" + str(params) + "]")
+		currentPage = 1
+		keepLooping = True
+		fullList = []
+		while keepLooping:
+			pagedList = c42Lib.getDevicesCustomParams(currentPage, params)
+			if pagedList:
+				fullList.extend(pagedList)
+			else:
+				keepLooping = False
+			currentPage += 1
+		return fullList
+
 	@staticmethod
 	def getAllDevicesByOrg_old(orgId):
 		logging.info("getAllDevicesByOrg-params:orgId[" + str(orgId) + "]")
@@ -886,6 +930,41 @@ class c42Lib(object):
 		else:
 			return False
 
+
+	#
+	# attempts to block device
+	# PUT
+	@staticmethod
+	def blockDevice(computerId):
+		logging.info("blockDevice-params: computerId[" + str(computerId) + "]")
+
+		params = {}
+		payload = {}
+
+		r = c42Lib.executeRequest("put", c42Lib.cp_api_computerBlock + "/" + str(computerId), params, payload)
+
+		logging.debug(r.text)
+		logging.debug(r.status_code)
+
+		return True
+
+	#
+	# attempts to unblock device
+	# DELETE
+	@staticmethod
+	def unblockDevice(computerId):
+		#error codes: USER_IS_BLOCKED, USER_IS_DEACTIVATED
+		logging.info("unblockDevice-params: computerId[" + str(computerId) + "]")
+
+		params = {}
+		payload = {}
+
+		r = c42Lib.executeRequest("delete", c42Lib.cp_api_computerBlock + "/" + str(computerId), params, payload)
+
+		logging.debug(r.text)
+		logging.debug(r.status_code)
+
+		return r.text
 
 	#
 	# Adds the role to an individual user.
