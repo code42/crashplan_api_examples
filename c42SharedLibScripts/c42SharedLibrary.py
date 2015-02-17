@@ -1,4 +1,4 @@
-#
+
 # File: c42SharedLibary.py
 # Author: AJ LaVenture, Code 42 Software
 # Last Modified: 8-06-2014
@@ -36,7 +36,6 @@ class c42Lib(object):
 
 	# Test values
 	cp_host = "http://localhost"
-	# cp_host = "http://aj-proappliance"
 	cp_port = "4280"
 	cp_username = "admin"
 	cp_password = "admin"
@@ -57,7 +56,10 @@ class c42Lib(object):
 	cp_api_archiveMetadata = "/api/ArchiveMetadata"
 	cp_api_server = "/api/Server"
 	cp_api_storePoint = "/api/StorePoint"
-
+	cp_api_dataKeyToken = "/api/DataKeyToken"
+	cp_api_webRestoreSession = "/api/WebRestoreSession"
+	cp_api_pushRestoreJob = "/api/PushRestoreJob"
+	
 	cp_logLevel = "INFO"
 	cp_logFileName = "c42SharedLibrary.log"
 	# This number is set to the maximum limit (current ver. 3.5.4) the REST API allows a resultset size to be.
