@@ -35,9 +35,8 @@ class c42Lib(object):
 	#cp_password = "<pw>"
 
 	# Test values
-	cp_host = "https://demo.code42.com"
-	# cp_host = "http://aj-proappliance"
-	cp_port = "4285"
+	cp_host = "http://localhost"
+	cp_port = "4280"
 	cp_username = "admin"
 	cp_password = "admin"
 
