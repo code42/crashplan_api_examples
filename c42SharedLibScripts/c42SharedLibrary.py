@@ -36,7 +36,6 @@ class c42Lib(object):
 
 	# Test values
 	#cp_host = "http://localhost"
-	# cp_host = "http://aj-proappliance"
 	#cp_port = "4280"
 	#cp_username = "admin"
 	#cp_password = "admin"
