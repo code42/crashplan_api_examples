@@ -3,7 +3,7 @@
 # Author: Nick Olmsted, Code 42 Software
 # Last Modified: 01-29-2014
 #
-# Adds or Removes a role from all users. If an orgId is specified than only adds/removes from that Org.
+# Adds or Removes a role from all users. If an orgId is specified then only adds/removes from that Org.
 # Log file: EditUserRoles.log
 #
 # Python 2.7
