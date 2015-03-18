@@ -1,7 +1,7 @@
 #
 # File: EditUserRoles.py
 # Author: Nick Olmsted, Code 42 Software
-# Last Modified: 01-29-2014
+# Last Modified: 03-18-2015  by Todd Ojala, corrected comments/docstring
 #
 # Adds or Removes a role from all users. If an orgId is specified then only adds/removes from that Org.
 # Log file: EditUserRoles.log
