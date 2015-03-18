@@ -1,3 +1,18 @@
+'''
+This script retrieves a list of all users in your Code42 environment.
+
+Arguments: Your admin password. 
+The host, port and username parameters are set in the body of the script.
+
+usage: from the command line enter:
+python ExportAllUsers.py
+
+To send output to a CSV file rather than standard output, redirect to desired filename, e.g.:
+python ExportAllUsers.py > all_users.csv
+
+Last modified: 3-18-2015 by Todd Ojala, to add a description of the script's purpose.
+
+'''
 import json
 
 import httplib
