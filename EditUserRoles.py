@@ -22,7 +22,7 @@
 # python EditUserRoles.py 3 add test
 #
 # 3) Delete 'test' role for orgId 4 users in DEBUG mode
-# python EditUserRoles.py 3 add test DEBUG
+# python EditUserRoles.py 3 delete test DEBUG
 #
 # NOTE: Make sure to set cpc_host, cpc_port, cpc_username, cpc_password to your environments values.
 # Also make sure the role you are trying to add or remove has been added to your PROe environment. 
