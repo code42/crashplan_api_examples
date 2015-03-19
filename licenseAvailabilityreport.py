@@ -1,7 +1,7 @@
-	#
+#
 # File: licenseAvailabilityreport.py
 # Author: Paul Hirst, Nick Olmsted, Code 42 Software
-# Last Modified: 07-18-2013
+# Last Modified: 03-19-2015 by Todd Ojala, corrected description in comments to reflect script purpose and argument list
 #
 # This script lists the "free up" date licenses based on their cold storage expiration date.
 # Only users with all of their devices in cold storage are eligible to release a license.
@@ -9,9 +9,9 @@
 # Uses relativedelta python module that can be downloaded from:
 # http://labix.org/python-dateutil
 #
-# Deactivates users based on the number of months since they have last connected to a master server
 # Params:
 # 1 arg - type of logging (values: verbose, nonverbose)
+# 2 arg - write results to file (1) or not (0)
 #
 # Example usages: 
 # python licenseAvailabilityreport.py verbose 1 
