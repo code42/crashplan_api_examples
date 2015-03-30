@@ -1,7 +1,9 @@
 #
 # File: addLDAPUsers.py
 # Author: Nick Olmsted, Code 42 Software
-# Last Modified: 04-22-2013
+# Last Modified: 03-30-2015 by Todd Ojala. Environment variable names cp_ldap_orgId and cp_csv_file_name changed
+# to ldap_orgId and csv_file_name to match the script below.
+# Also added note to usage of cp_host, which must include http or https 
 #
 # Takes a comma-delimited CSV file of user names and adds those users to a LDAP Org.
 # 
@@ -28,6 +30,7 @@ import requests
 import getpass
 
 # Set to your environments values
+# Note: cp_host must include http or https in front of host name for script to function
 #cp_host = "<HOST OR IP ADDRESS>"
 #cp_port = "<PORT>"
 #cp_username = "<username>"
