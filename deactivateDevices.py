@@ -50,6 +50,7 @@ MAX_PAGE_NUM = 250
 NOW = datetime.now()
 
 # Set to your environments vlaues
+# Note: do not include http or http in the cpc_host environment variable
 cpc_host = "<HOST OR IP ADDRESS>"
 cpc_port = "<PORT>"
 
