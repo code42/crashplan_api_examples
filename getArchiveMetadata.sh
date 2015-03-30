@@ -81,8 +81,10 @@ echo
 echo -n "Enter archive's node's HTTP address (copy serverUrl above): "; read archiveHttp
 
 if [[ 0 == 1 ]]; then
-# A login token is only needed if you've already entered your password on one server
-# and do not want to enter it again on another server.
+# A login token is only needed if you've already entered your password on the authority
+# and do not want to enter it again on the storage node, but it could also be useful for
+# telling you where your backup archive is stored.  In our case, we instead use
+# WebRestoreInfo to find out where an archive is stored.
 echo
 echo
 echo "==== LoginToken ===="
