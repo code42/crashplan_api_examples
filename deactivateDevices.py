@@ -6,7 +6,7 @@
 # Uses relativedelta python module that can be downloaded from:
 # http://labix.org/python-dateutil
 #
-# Deactivates users based on the number of months since they have last connected to a master server
+# Deactivates users devices based on the number of months since they have last connected to a master server
 # Params:
 # 1 arg - number of months (i.e 3)
 # 2 arg - type of logging (values: verbose, nonverbose)
