@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
+
 import com.code42.demo.RestInvoker;
 
 /**
@@ -22,7 +23,7 @@ import com.code42.demo.RestInvoker;
  *  	- commons-codec-1.9.jar
  *  	- httpmime-4.4.jar
  *  
- * Date: 02/09/2014
+ * Date: 02/09/2015
  * 
  * @author amir.kader@code42.com
  * 
@@ -37,6 +38,7 @@ public class AddFileToPlan {
 	private static int serverPort = 4280;
 	private static String username;
 	private static String password;
+	private static Boolean useSSL = false;
 
 	
 	public static void main(String[] args) throws Exception {
@@ -54,14 +56,17 @@ public class AddFileToPlan {
 			 serverHost = args[4];
 			 if(args[5]!=null & args[5].length() > 0) {
 				serverPort = Integer.parseInt(args[5]);
-			}
+			 }
+			 if(args[6]!=null & args[6].length() > 0 ) {
+				 useSSL = Boolean.valueOf(args[6]);
+			 }
 		 }
 		 else {
 			 printHelp();
 			 System.exit(-1);
 		 }
 		 
-		 RestInvoker restInv = new RestInvoker(serverHost, serverPort, username, password);
+		 RestInvoker restInv = new RestInvoker(serverHost, serverPort, username, password, useSSL);
 		 String dataKeyToken = (String) restInv.getAPI("/api/PlanDataKeyToken/" + planId).get("token");
 		 System.out.println("dataKeyToken: " + dataKeyToken);
 		 
@@ -108,9 +113,16 @@ public class AddFileToPlan {
 			 String pass = config.getProperty("Password");
 			 if(pass != null && pass.length() > 0) 
 				 password = pass;
+			 
 			 String f = config.getProperty("File");
 			 if(f != null && f.length() > 0)
 				 filePath = f;
+			 
+			 String ssl = config.getProperty("UseSSL");
+			 if(ssl != null && ssl.length() > 0) {
+				useSSL =  Boolean.valueOf(ssl);
+				System.out.println("useSSL is: " + useSSL);
+			 }
 			 
 		 } catch (IOException ioe) {
 			 System.out.println("unable to load config file: " + propFile);
