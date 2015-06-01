@@ -1,6 +1,9 @@
 package com.code42.demo;
 
 import java.io.File;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -11,6 +14,9 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
@@ -18,10 +24,14 @@ import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+
+import com.code42.demo.RestInvoker;
 
 /**
  * RestInvoker is a generic utility class for invoking Code42 RESTful APIs.
@@ -39,14 +49,17 @@ import org.json.simple.parser.JSONParser;
  *  	- commons-codec-1.9.jar
  *  	- httpmime-4.4.jar
  *  
- * Date: 02/22/2014
+ * Date: 02/22/2015
  * 
  * @author amir.kader@code42.com
  * 
- *
+ *	05/27/15: The code uses the SSLConnectionFactory but should still be modified 
+ * 	for Production environments to properly import certifcates into the Java keystore.
+ * 	The following items should be changed accordingly:      
+ *  - TrustSelfSignedStrategy() in the instantiation of the SSLContextBuilder();
+ *  - NoopHostnameVerifier.INSTANCE: HostNameVerification has been disabled in the SSLConnectionFactory
  */
 
-//TODO: Add support for SSL
 
 public class RestInvoker {
 	private static CredentialsProvider credsProvider;
@@ -55,14 +68,45 @@ public class RestInvoker {
 	private static int sPort;
 	private static String uName;
 	private static String pWord;
-	private Log m_log = LogFactory.getLog(RestInvoker.class);
+	private static Boolean ssl;
+	SSLContextBuilder sslBuilder;
+	SSLConnectionSocketFactory sslsf;
+
+	private static final Log m_log = LogFactory.getLog(RestInvoker.class);
 	
-	public RestInvoker(String host, int hostPort, String userName, String password) {
+	public RestInvoker(String host, int hostPort, String userName, String password, Boolean useSSL) {
 		sHost = host;
 		sPort = hostPort;
 		uName = userName;
 		pWord = password;
-		ePoint = "http://" + sHost + ":" + sPort;
+		ssl = useSSL;
+		if(!ssl) {
+			ePoint = "http://" + sHost + ":" + sPort;
+		} else {
+			// use SSL
+			ePoint = "https://" + sHost + ":" + sPort;
+			sslBuilder = new SSLContextBuilder();
+		    try {
+				sslBuilder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
+			} catch (NoSuchAlgorithmException | KeyStoreException e) {
+				// TODO Auto-generated catch block
+				m_log.error("Unable to build trusted self signed cert");
+				//m_log.debug(e.printStackTrace(), e);
+			}
+		   try {
+			/* the NoopHostnameVerifier turns OFF host verification
+			 * For Production environments you'll want to remove this.   
+			 */
+			sslsf = new SSLConnectionSocketFactory(sslBuilder.build(), NoopHostnameVerifier.INSTANCE);
+		   } catch (KeyManagementException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		   } catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		   }
+		}
+		
 		m_log.info("EndPoint set to: " + ePoint);
 		credsProvider = new BasicCredentialsProvider();
 		credsProvider.setCredentials(
@@ -80,7 +124,13 @@ public class RestInvoker {
 	 * @throws Exception
 	 */
 	public JSONObject getAPI(String urlQuery) throws Exception {
-		CloseableHttpClient httpClient = HttpClients.custom().setDefaultCredentialsProvider(credsProvider).build();
+		HttpClientBuilder hcs;
+		CloseableHttpClient httpClient;
+		hcs = HttpClients.custom().setDefaultCredentialsProvider(credsProvider);
+		if(ssl) {
+			hcs.setSSLSocketFactory(sslsf);
+		}
+		httpClient = hcs.build();
 		JSONObject data;
 		try {
 			HttpGet httpGet = new HttpGet(ePoint + urlQuery);
@@ -113,7 +163,13 @@ public class RestInvoker {
 	 * @throws Exception
 	 */
 	 public JSONObject postAPI(String urlQuery, String payload) throws Exception {
-		 CloseableHttpClient httpClient = HttpClients.custom().setDefaultCredentialsProvider(credsProvider).build();
+		 HttpClientBuilder hcs;
+		 CloseableHttpClient httpClient;
+		 hcs = HttpClients.custom().setDefaultCredentialsProvider(credsProvider);
+		 if(ssl) {
+			hcs.setSSLSocketFactory(sslsf);
+		 }
+		 httpClient = hcs.build();
 		 JSONObject data;
 		 StringEntity payloadEntity = new StringEntity(payload, ContentType.APPLICATION_JSON);
 		 try {
@@ -152,7 +208,13 @@ public class RestInvoker {
 	 public int postFileAPI(String planUid, String sessionId, File file) throws Exception {
 		 
 		int respCode;
-		CloseableHttpClient httpClient = HttpClients.custom().setDefaultCredentialsProvider(credsProvider).build();
+		HttpClientBuilder hcs;
+		CloseableHttpClient httpClient;
+		hcs = HttpClients.custom().setDefaultCredentialsProvider(credsProvider);
+		if(ssl) {
+			hcs.setSSLSocketFactory(sslsf);
+		}
+		httpClient = hcs.build();
 		StringBody planId = new StringBody(planUid, ContentType.TEXT_PLAIN);
 		StringBody sId = new StringBody(sessionId, ContentType.TEXT_PLAIN);
 		
