@@ -1,7 +1,7 @@
 # File: c42SharedLibary.py
-# Author: AJ LaVenture, 
+# Author: AJ LaVenture, Code 42 Software
 # Contributions: Paul Hirst, Code 42 Software
-# Last Modified: 02-13-2015
+# Last Modified: 05-29-2015
 #
 # Common and reused functions to allow for rapid script creation
 #
@@ -117,6 +117,87 @@ class c42Lib(object):
 		url = c42Lib.getRequestUrl(cp_api)
 		# url = cp_host + ":" + cp_port + cp_api
 		# payload = cp_payload
+
+		if type == "get":
+			logging.debug("Payload : " + str(payload))
+			r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=False)
+			logging.debug(r.text)
+			return r
+		elif type == "delete":
+			r = requests.delete(url, params=params, data=json.dumps(payload), headers=header, verify=False)
+			logging.debug(r.text)
+			return r
+		elif type == "post":
+			r = requests.post(url, params=params, data=json.dumps(payload), headers=header, verify=False)
+			logging.debug(r.text)
+			return r
+		elif type == "put":
+			# logging.debug(str(json.dumps(payload)))
+			r = requests.put(url, params=params, data=json.dumps(payload), headers=header, verify=False)
+			logging.debug(r.text)
+			return r
+		else:
+			return None
+
+		# content = r.content
+		# binary = json.loads(content)
+		# logging.debug(binary)
+
+	# Generic Requests are used to access 3rd party APIs to be used in conjunction with the Code42 APIs
+	#
+	# getGenericRequestHeaders:
+	# Returns the dictionary object containing headers to pass along with all requests to the API,
+	# Params: None
+	# Uses global / class variables for username and password authentication
+	#
+	@staticmethod
+	def getGenericRequestHeaders(username, password):
+		header = {}
+		header["Authorization"] = c42Lib.getAuthHeader(username,password)
+		header["Content-Type"] = "application/json"
+
+		# print header
+		return header
+
+	#
+	# getGenericRequestUrl(apiURL, api, port):
+	# Returns the full URL to execute an API call,
+	# Params:
+	# cp_api: what the context root will be following the host and port (global / class variables)
+	#
+
+	@staticmethod
+	def getGenericRequestUrl(apiURL, api, port):
+		if port  == '':  # Some customers have port forwarding and adding a port breaks the API calls
+			url = apiURL + "/" + api
+		else: 
+			url = apiURL + ":" + port + "/" + api
+
+		return url
+
+	#
+	# executeGenericRequest(type, cp_api, params, payload):
+	# Executes the request to the server based on type of request
+	# Params:
+	# username:  Username for API call, if any
+	# password:  Password for user accessing API, if any
+	# type: type of rest call: valid inputs: "get|delete|post|put" - returns None if not specified
+	# apiURL:  URL to be called
+	# api: the context root to be appended after server:port when generating the URL
+	# port: the port to be used, if any, to access the API
+	# params: URL parameters to be passed along with the request
+	# payload: json object to be sent in the body of the request
+	# Returns: the response object directly from the call to be parsed by other methods
+	#
+
+	@staticmethod
+	def executeGenericRequest(username, password, type, apiURL, port, api, params, payload):
+		# logging.debug
+		header = c42Lib.getGenericRequestHeaders(username,password)
+		# print header
+		url = c42Lib.getGenericRequestUrl(apiURL, api, port)
+		# url = url = apiURL + ":" + port + "/" + api
+		# payload = payload
 
 		if type == "get":
 			logging.debug("Payload : " + str(payload))
@@ -1442,9 +1523,14 @@ class c42Lib(object):
 	@staticmethod
 	def getAuthHeader(u,p):
 
-		token = base64.b64encode('%s:%s' % (u,p))
+		encodedUP = ''
 
-		return "Basic %s" % token
+		if (u != '' or u != ''):
+
+			token = base64.b64encode('%s:%s' % (u,p))
+			encodedUP = "Basic %s" % token
+
+		return encodedUP
 
 	#
 	# Sets logger to file and console
