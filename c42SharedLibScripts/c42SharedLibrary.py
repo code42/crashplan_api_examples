@@ -335,7 +335,7 @@ class c42Lib(object):
 	@staticmethod
 	def getUsersPaged(pgNum,params):
 	    logging.info("getUsersPaged-params:pgNum[" + str(pgNum) + "]")
-
+	    params = {}
 	    # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
 	    # url = cp_host + ":" + cp_port + cp_api_user
 	    params['pgNum'] = str(pgNum)
