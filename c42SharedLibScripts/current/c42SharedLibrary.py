@@ -666,24 +666,32 @@ class c42Lib(object):
 
 
     #
-    # putUserDeactivate(userId):
+    # putUserDeactivate(userId, reactive):
     # Deactivates a user based in the userId passed
     # params:
     # userId - id for the user to update
+    # reactivate - attempt to bring user back from deactivation, default true
     # returns: user object after the update
     #
 
     @staticmethod
-    def putUserDeactivate(userId):
-        logging.info("putUserDeactivate-params:userId[" + str(userId) + "]")
-
+    def putUserDeactivate(userId, deactivate):
+        logging.info("putUserDeactivate-params:userId[" + str(userId) + "],deactivate[" + str(deactivate) + "]")
         if (userId is not None and userId != ""):
-            r = c42Lib.executeRequest("put", c42Lib.cp_api_deactivateUser+"/"+str(userId),"","")
-            logging.debug('Deactivate Call Status: '+str(r.status_code))
-            if not (r.status_code == ""):
-                return True
+            if deactivate:
+                r = c42Lib.executeRequest("put", c42Lib.cp_api_deactivateUser+"/"+str(userId),"","")
+                logging.debug('Deactivate Call Status: '+str(r.status_code))
+                if not (r.status_code == ""):
+                    return True
+                else:
+                    return False
             else:
-                return False
+                r = c42Lib.executeRequest("delete", c42Lib.cp_api_deactivateUser+"/"+str(userId),"","")
+                logging.debug('Deactivate Call Status: '+str(r.status_code))
+                if not (r.status_code == ""):
+                    return True
+                else:
+                    return False
         else:
             logging.error("putUserDeactivate has no userID to act on")
 
