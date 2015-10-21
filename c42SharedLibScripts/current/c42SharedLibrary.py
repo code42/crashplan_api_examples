@@ -670,7 +670,7 @@ class c42Lib(object):
     # Deactivates a user based in the userId passed
     # params:
     # userId - id for the user to update
-    # reactivate - attempt to bring user back from deactivation, default true
+    # deactivate - deactivates the user if true, re-activates if false
     # returns: user object after the update
     #
 
