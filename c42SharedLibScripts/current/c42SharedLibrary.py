@@ -103,16 +103,21 @@ class c42Lib(object):
 
         if not c42Lib.cp_authorization:
             if kwargs and 'login_token' in kwargs:
+                logging.info("---- headers eval = login_token ----")
                 header["Authorization"] = "login_token {0}".format(kwargs['login_token'])
             elif kwargs and 'auth_token' in kwargs:
+                logging.info("---- headers eval = auth_token ----")
                 header["Authorization"] = "token {0}".format(kwargs['auth_token'])
             else:
+                logging.info("---- headers eval = create basic_auth ----")
                 header["Authorization"] = c42Lib.getAuthHeader(c42Lib.cp_username,c42Lib.cp_password)
         else:
+            logging.info("---- headers eval = use current basic auth ----")
             header['Authorization'] = c42Lib.cp_authorization
 
         header["Content-Type"] = "application/json"
 
+        # logging.info("-getRequestHeaders: " + str(header))
         return header
 
     #
@@ -210,6 +215,27 @@ class c42Lib(object):
         binary = json.loads(contents)
         return binary['data'] if 'data' in binary else None
 
+
+    # params:
+    # 
+    @staticmethod
+    def requestLoginToken(**kwargs):
+        logging.info("requestLoginToken: " + str(kwargs))
+        payload = {}
+        if kwargs and ('userId' in kwargs) and ('sourceGuid' in kwargs) and ('destinationGuid' in kwargs):
+            payload['userId'] = str(kwargs['userId'])
+            payload['sourceGuid'] = str(kwargs['sourceGuid'])
+            payload['destinationGuid'] = str(kwargs['destinationGuid'])
+        else:
+            return None
+        
+        r = c42Lib.executeRequest("post", c42Lib.cp_api_loginToken, {}, payload, **kwargs)
+        contents = r.content.decode("UTF-8")
+        binary = json.loads(contents)
+        logging.info("requestLoginToken Response: " + str(contents))
+        return binary['data']['loginToken'] if 'data' in binary else None
+
+
     #
     # Params:
     # host (kwargs): host location to use
@@ -219,6 +245,7 @@ class c42Lib(object):
     #
     @staticmethod
     def requestAuthToken(**kwargs):
+        logging.info("^^^^^^^^^^^ requestAuthToken: start" + str(kwargs))
         payload = {
             "sendCookieHeader":True
         }
@@ -227,6 +254,7 @@ class c42Lib(object):
             logging.debug("Failed to get auth token")
             return None
 
+        logging.info("requestAuthToken Response: " + r.content)
         return "-".join(json.loads(r.content.decode("UTF-8"))['data'])
 
     #
@@ -438,6 +466,22 @@ class c42Lib(object):
         binary = json.loads(content)
         return binary['data']['destinations'] if 'data' in binary else None
 
+    #
+    #  Returns: destination know by server or None on failure
+    #
+    @staticmethod
+    def getDestinationById(id, **kwargs):
+        logging.info("getDestinationById")
+        params = {}
+        params['idType'] = "id"
+
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_destination + "/" + str(id), params, {}, **kwargs)
+        logging.debug(r.text)
+        content = r.content.decode("UTF-8")
+        binary = json.loads(content)
+        return binary['data'] if 'data' in binary else None
+
+
     @staticmethod
     def getServersByDestinationId(destinationId, **kwargs):
         logging.info("getServers({0})".format(destinationId))
@@ -477,6 +521,16 @@ class c42Lib(object):
         user = binary['data']
         return user
 
+    @staticmethod
+    def getUserByMy():
+        logging.info("getUserByMy")
+
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_user + "/my", {}, {})
+
+        logging.debug(r.text)
+        content = r.content.decode("UTF-8")
+        binary = json.loads(content)
+        return binary['data'] if 'data' in binary else None
     #
     # getUserByUserName(username):
     # returns the user json object of the requested username
@@ -1627,7 +1681,7 @@ class c42Lib(object):
 
     # saveToDisk - will write out the response to a .json file
     @staticmethod
-    def getArchiveMetadata2(guid, decrypt, saveToDisk):
+    def getArchiveMetadata2(guid, dataKeyToken, decrypt, saveToDisk, **kwargs):
         logging.info("getArchiveMetadata-params:guid["+str(guid)+"]:decrypt["+str(decrypt)+"]")
 
         params = {}
@@ -1635,11 +1689,12 @@ class c42Lib(object):
             params['decryptPaths'] = "true"
         # always stream the response - remove memory limitation on requests library
         params['stream'] = "True"
+        params['dataKeyToken'] = dataKeyToken
         payload = {}
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_archiveMetadata + "/" + str(guid), params, payload)
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_archiveMetadata + "/" + str(guid), params, payload, **kwargs)
 
-        # logging.debug(r.text)
+        # logging.info("*******" + r.text + "*******")
         #null response on private passwords
 
         # http://stackoverflow.com/questions/16694907/how-to-download-large-file-in-python-with-requests-py
@@ -1672,8 +1727,8 @@ class c42Lib(object):
                 return ""
 
     @staticmethod
-    def getArchiveMetadata(guid, decrypt):
-        c42Lib.getArchiveMetadata2(guid, decrypt, False)
+    def getArchiveMetadata(guid, dataKeyToken, decrypt, **kwargs):
+        c42Lib.getArchiveMetadata2(guid, dataKeyToken, decrypt, False, **kwargs)
     #
     # getServers():
     # returns servers information
@@ -1714,7 +1769,7 @@ class c42Lib(object):
 
         r = c42Lib.executeRequest("get", c42Lib.cp_api_server + "/" + str(serverId), params, payload)
 
-        logging.debug(r.text)
+        logging.info("====server response : " + r.text + "====")
 
         content = r.content
         binary = json.loads(content)
