@@ -75,6 +75,7 @@ class c42Lib(object):
     cp_api_webRestoreJob = "/api/WebRestoreJob"
     cp_api_webRestoreTreeNode = "/api/WebRestoreTreeNode"
     cp_api_webRestoreJobResult = "/api/WebRestoreJobResult"
+    cp_api_ekr = "/api/EKR"
 
     cp_api_plan = "/api/Plan"
 
@@ -1801,6 +1802,80 @@ class c42Lib(object):
 
         storePoint = binary['data']
         return storePoint
+
+
+    #EKR
+
+    @staticmethod
+    def ekr_jobCreate(userUid):
+        logging.info("ekr_jobCreate-params:userUid[" + str(userUid) + "]")
+        params = {}
+        payload = {}
+
+        r = c42lib.executeRequest("put", c42Lib.cp_api_ekr + "/" + str(userUid), params, payload)
+
+        logging.debug(r.text)
+
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+        return binary['data']
+
+
+    @staticmethod
+    def ekr_jobStatus(userUid, active):
+        logging.info("ekr_jobStatus-params:userUid[" + str(userUid) + "] | active:[" + str(active) + "]")
+        params = {}
+        params['active'] = active
+        payload = {}
+
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_ekr + "/" + str(userUid), params, payload)
+
+        logging.debug(r.text)
+
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+        return binary['data']
+
+
+    @staticmethod
+    def ekr_jobCancel(userUid):
+        logging.inf("ekr_jobCancel-params:userUid[" + str(userUid) + "]")
+        params = {}
+        payload = {}
+
+        r = c42lib.executeRequest("delete", c42Lib.cp_api_ekr + "/" + str(userUid), params, payload)
+
+        logging.debug(r.text)
+
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+        return binary['data']
+
+    @staticmethod
+    def ekr_jobUpdate(userUid, command):
+        # wakupJob
+        # deleteBackupCopy
+        logging.info("ekr_jobUpdate-params:userUid[" + str(userUid) + "] | command:[" + str(command) + "]")
+        params = {}
+        params['command'] = command
+        payload = {}
+
+        r = c42Lib.executeRequest("post", c42Lib.cp_api_ekr + "/" + str(userUid), params, payload)
+
+        logging.debug(r.text)
+
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+        return binary['data']
+
 
 
     #
