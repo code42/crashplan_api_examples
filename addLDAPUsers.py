@@ -29,15 +29,17 @@ import requests
 
 import getpass
 
+global filename
+
 # Set to your environments values
 # Note: cp_host must include http or https in front of host name for script to function
-#cp_host = "<HOST OR IP ADDRESS>"
-#cp_port = "<PORT>"
-#cp_username = "<username>"
-#cp_password = getpass.getpass('Enter your CrashPlan console password: ') # You will be prompted to enter your password
+cp_host = "http://172.16.233.142"
+cp_port = "4280"
+cp_username = "admin"
+cp_password = getpass.getpass('Enter your CrashPlan console password: ') # You will be prompted to enter your password
 
-#cp_ldap_orgId = "<Org Id>"
-#cp_csv_file_name = "<filename.csv>"
+cp_ldap_orgId = "4"
+csv_file_name = "input.csv"
 cp_api = "/api/user"
 
 #
@@ -77,16 +79,16 @@ def addLDAPUsers():
     logging.debug('BEGIN - addLDAPUsers')
     count = 0
     try:
-        with open(csv_file_name, 'rb') as csvfile:
+        with open(csv_file_name, 'rU') as csvfile:
             csvreader = csv.reader(csvfile, delimiter=',', quotechar='|')
             for row in csvreader:
                 #print ', '.join(row)
                 for item in row:
                     #print item
-                    if (addLDAPUser(item, ldap_orgId)):
+                    if (addLDAPUser(item, cp_ldap_orgId)):
                         count = count + 1
     except csv.Error as e:
-        sys.exit('file %s, line %d: %s' % (filename, reader.line_num, e))
+        sys.exit('file %s, line %d: %s' % (filename, csvreader.line_num, e))
 
     print "Total Users Added: " + str(count)
     logging.debug("Total Users Added: " + str(count))
