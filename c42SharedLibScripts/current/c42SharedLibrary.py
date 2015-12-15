@@ -1820,14 +1820,14 @@ class c42Lib(object):
         binary = json.loads(content)
         logging.debug(binary)
 
-        return binary['data']
+        return binary
 
 
     @staticmethod
-    def ekr_jobStatus(userUid, active):
-        logging.info("ekr_jobStatus-params:userUid[" + str(userUid) + "] | active:[" + str(active) + "]")
+    def ekr_jobStatus(userUid, activeOnly):
+        logging.info("ekr_jobStatus-params:userUid[" + str(userUid) + "] | activeOnly:[" + str(activeOnly) + "]")
         params = {}
-        params['active'] = active
+        params['activeOnly'] = activeOnly
         payload = {}
 
         r = c42Lib.executeRequest("get", c42Lib.cp_api_ekr + "/" + str(userUid), params, payload)
@@ -1838,7 +1838,7 @@ class c42Lib(object):
         binary = json.loads(content)
         logging.debug(binary)
 
-        return binary['data']
+        return binary
 
 
     @staticmethod
@@ -1855,7 +1855,7 @@ class c42Lib(object):
         binary = json.loads(content)
         logging.debug(binary)
 
-        return binary['data']
+        return binary
 
     @staticmethod
     def ekr_jobUpdate(userUid, command):
@@ -1874,7 +1874,7 @@ class c42Lib(object):
         binary = json.loads(content)
         logging.debug(binary)
 
-        return binary['data']
+        return binary
 
 
 
