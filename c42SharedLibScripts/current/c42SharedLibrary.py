@@ -2060,7 +2060,7 @@ class c42Lib(object):
             itemsToWriteeEncoded = ''
 
             for stufftowrite in listtowrite:
-                if (isinstance (stufftowrite,(int)) or isinstance(stufftowrite,(float)),or isinstance(stufftowrite,(long))):
+                if (isinstance (stufftowrite,(int)) or isinstance(stufftowrite,(float)) or isinstance(stufftowrite,(long))):
                     itemsToWriteeEncoded = stufftowrite
             
                 elif stufftowrite is not None: 
@@ -2079,7 +2079,7 @@ class c42Lib(object):
             output = open(filenametowrite, writeType) # Open the file to append to it
 
             
-            if (isinstance (listtowrite,(int)) or isinstance(listtowrite,(float)),or isinstance(stufftowrite,(long))):
+            if (isinstance (listtowrite,(int)) or isinstance(listtowrite,(float)) or isinstance(stufftowrite,(long))):
                 itemsToWriteeEncoded = listtowrite # if the item is an integer, just add it to the list
             
             elif listtowrite is not None: 
