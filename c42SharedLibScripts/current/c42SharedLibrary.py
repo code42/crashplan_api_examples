@@ -37,7 +37,7 @@ class c42Lib(object):
     #cp_port = "4280"
     #cp_username = "admin"
     #cp_password = "admin"
-    cp_magic_restoreRecordKey = '987db1c5-8840-41f1-8c97-460d03347895'
+    #cp_magic_restoreRecordKey = '987db1c5-8840-41f1-8c97-460d03347895'
 
     # REST API Calls
     cp_api_authToken = "/api/AuthToken"
@@ -501,12 +501,12 @@ class c42Lib(object):
     # userId: the id of the user within the system's database
     #
     @staticmethod
-    def getUserById(userId):
+    def getUserById(userId,idType):
         logging.info("getUser-params:userId[" + str(userId) + "]")
 
         params = {}
         params['incAll'] = 'true'
-        # params['idType'] = 'uid' # Needed for the 4.x series and beyond
+        params['idType'] = idType # Needed for the 4.x series and beyond
         payload = {}
 
 
@@ -690,20 +690,23 @@ class c42Lib(object):
         return fullList
 
     #
-    # putUserUpdate(userId, payload):
+    # putUserUpdate(userId, idType payload):
     # updates a users information based on the payload passed
     # params:
     # userId - id for the user to update
+    # idType - to specify idType for 4.2+ (uid is now the standard)
     # payload - json object containing name / value pairs for values to update
     # returns: user object after the update
     #
 
     @staticmethod
-    def putUserUpdate(userId, payload):
+    def putUserUpdate(userId, idType, payload):
         logging.info("putUserUpdate-params:userId[" + str(userId) + "],payload[" + str(payload) + "]")
 
         if (payload is not None and payload != ""):
             params = {}
+            params['idType'] = idType
+
             r = c42Lib.executeRequest("put", c42Lib.cp_api_user + "/" + str(userId), params, payload)
             logging.debug(str(r.status_code))
             content = r.content
@@ -781,6 +784,44 @@ class c42Lib(object):
         else:
             return False
 
+
+    #
+    # createOrg(newOrgInfo):
+    # Creates a new orginization based on the information passed
+    # params:
+    # parentOrgId - id of the parent organization.  Will default to 2, which is assumed to be the default org
+    # Returns:
+    # 204?
+    #
+
+    @staticmethod
+    def createOrg(params):
+        logging.info("createOrg-params: a list of things")
+
+        if params['parentOrgId'] is None:
+            params['parentOrgId'] = "2"
+
+        payload = {}
+
+        r = c42Lib.executeRequest("post", c42Lib.cp_api_org + "/" + str(orgId), params, payload)
+
+        logging.debug(r.text)
+
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+        
+        if (r.status_code == 204):
+            return True
+        elif (r.status_code == 500):
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+            return False
+        else:
+            return False
+
+
     #
     # getOrg(orgId):
     # Returns all organization data for specified organization
@@ -806,8 +847,13 @@ class c42Lib(object):
         binary = json.loads(content)
         logging.debug(binary)
 
-        org = binary['data']
+        if binary['data']:
+            org = binary['data']
+        else:
+            org = None
+
         return org
+
 
     #
     # getOrgs(pgNum):
@@ -1775,8 +1821,13 @@ class c42Lib(object):
         binary = json.loads(content)
         logging.debug(binary)
 
-        server = binary['data']
+        if binary['data']:
+            server = binary['data']
+        else:
+            server = None
+
         return server
+
 
     # getStorePoitnByStorePointId(storePointId):
     # returns store point information based on the storePointId
