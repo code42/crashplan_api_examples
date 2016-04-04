@@ -19,6 +19,7 @@
 # Author: AJ LaVenture
 # Author: Paul Hirst
 # Author: Hank Brekke
+# Author: Jack Phinney
 #
 # Common and reused functions to allow for rapid script creation
 #
@@ -637,7 +638,7 @@ class c42Lib(object):
     # pgNum - page request for user list (starting with 1)
     #
     @staticmethod
-    def getUsersPaged(pgNum,params = {}):
+    def getUsersPaged(pgNum,params):
         logging.info("getUsersPaged-params:pgNum[" + str(pgNum) + "]")
 
         # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
@@ -668,6 +669,28 @@ class c42Lib(object):
         fullList = []
         while keepLooping:
             pagedList = c42Lib.getUsersPaged(currentPage)
+            if pagedList:
+                fullList.extend(pagedList)
+            else:
+                keepLooping = False
+            currentPage += 1
+        return fullList
+
+# getAllUsersActiveBackup():
+# returns AllUser info + backup usage for active users
+# - Jack Phinney
+
+    @staticmethod
+    def getAllUsersActiveBackup():
+        logging.info("getAllUsersActiveBackup")
+        currentPage = 1
+        keepLooping = True
+        fullList = []
+        params={}
+        params['incBackupUsage'] = True
+        params['active'] = True
+        while keepLooping:
+            pagedList = c42Lib.getUsersPaged(currentPage,params)
             if pagedList:
                 fullList.extend(pagedList)
             else:
