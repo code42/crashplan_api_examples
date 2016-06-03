@@ -516,6 +516,27 @@ class c42Lib(object):
         return binary['data']['servers'] if 'data' in binary else None
 
 
+    @staticmethod
+    def getUser(params):
+        logging.info("getUser-params:userId[" + str(params) + "]")
+
+        if params and (('username' in params) or ('userId' in params) or ('userUid' in params) or ('q' in params)):
+            payload = {}
+
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
+
+            logging.debug(r.text)
+            content = r.content
+            r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+            return binary['data']
+            # binary['data']['users'][0]['userUid']
+        else:
+            return None
+        
+
+
     #
     # getUserById(userId):
     # returns the user json object of the requested userId
@@ -568,7 +589,7 @@ class c42Lib(object):
         params['incAll'] = 'true'
         payload = {}
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_user + "?" ,params, payload)
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
 
         logging.debug(r.text)
 
