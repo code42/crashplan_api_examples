@@ -94,6 +94,9 @@ class c42Lib(object):
     cp_api_webRestoreTreeNode = "/api/WebRestoreTreeNode"
     cp_api_webRestoreJobResult = "/api/WebRestoreJobResult"
     cp_api_ekr = "/api/EKR"
+    cp_api_legalHoldMembershipSummary = "/api/LegalHoldMembershipSummary"
+    cp_api_legalHoldMembership = "/api/LegalHoldMembership"
+    cp_api_legalHoldMembershipDeactivation = "/api/LegalHoldMembershipDeactivation"
 
     cp_api_plan = "/api/Plan"
 
@@ -1365,6 +1368,7 @@ class c42Lib(object):
     #
     # Adds a role for all users per org
     #
+    @staticmethod
     def addAllUsersRoleByOrg(orgId, roleName):
         logging.info("addAllUsersRoleByOrg-params: orgId[" + str(orgId) + "]:userRole[" + roleName + "]")
 
@@ -1384,6 +1388,7 @@ class c42Lib(object):
     #
     # Adds a role for all users per org
     #
+    @staticmethod
     def addAllUsersRole(roleName):
         logging.info("addAllUsersRole-params: roleName[" + roleName + "]")
 
@@ -1430,6 +1435,7 @@ class c42Lib(object):
     #
     # Removes the role for all users within an org
     #
+    @staticmethod
     def removeAllUsersRoleByOrg(orgId, roleName):
         logging.info("removeAllUsersRoleByOrg-params:orgId[" + str(orgId) + "]:roleName[" + roleName + "]")
 
@@ -1450,6 +1456,7 @@ class c42Lib(object):
     #
     # Removes the role for all users
     #
+    @staticmethod
     def removeAllUsersRole(roleName):
         logging.info("removeAllUsersRole-params:roleName[" + roleName + "]")
 
@@ -1468,7 +1475,90 @@ class c42Lib(object):
 
 
 
+    #
+    # returns list of users in legal hold: active only
+    #
+    @staticmethod
+    def getLegalHoldMembershipSummary(legalHoldUid):
+        logging.info("getLegalHoldMembershipSummary-params:legalHoldUid[" + str(legalHoldUid) + "]")
+        # Request URL:https://172.16.27.13:4285/api/legalHoldMembershipSummary/?legalHoldUid=741239804344030230&activeState=ALL
+        # data.legalHoldMemberships.[0].user.username
+        params = {}
+        params['legalHoldUid'] = legalHoldUid
+        params['activeState'] = "active"
 
+        payload = {}
+        logging.info(str(payload))
+        # r = requests.get(url, params=payload, headers=headers)
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHoldMembershipSummary, params, payload)
+
+        logging.debug(r.text)
+
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+
+        users = binary['data']['legalHoldMemberships']
+
+        return users
+
+    
+    @staticmethod
+    def addUserToLegalHold(legalHoldUid, userUid):
+# {
+#   "legalHoldUid":12938712892791283,
+#   "userUid":"0cc175b9c0f1b6a8"
+# }
+        logging.info("addUserToLegalHold-params:legalHoldUid[" + str(legalHoldUid) + "]|userUid[" + str(userUid) + "]")
+        params = {}
+
+        payload = {}
+        payload["legalHoldUid"] = legalHoldUid
+        payload["userUid"] = userUid
+
+        logging.info(str(payload))
+        # r = requests.get(url, params=payload, headers=headers)
+        r = c42Lib.executeRequest("post", c42Lib.cp_api_legalHoldMembership, params, payload)
+        logging.debug(r.status_code)
+
+        if (r.status_code == 201):
+            logging.debug(r.text)
+
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+
+
+            response = binary['data']
+
+            return response
+        elif (r.status_code == 400):
+            return False
+        else:
+            return False
+        
+
+    @staticmethod
+    def deactivateUserFromLegalHoldMembership(legalHoldMembershipUid):
+        logging.info("deactivateUserFromLegalHoldMembership-params:legalHoldMembershipUid[" + str(legalHoldUid) + "]")
+        params = {}
+
+        payload = {}
+        payload["legalHoldMembershipUid"] = legalHoldMembershipUid
+
+        logging.info(str(payload))
+        # r = requests.get(url, params=payload, headers=headers)
+        r = c42Lib.executeRequest("post", c42Lib.cp_api_legalHoldMembershipDeactivation, params, payload)
+        logging.debug(r.status_code)
+
+
+        if (r.status_code == 204):
+            return True
+        elif (r.status_code == 400):
+            return False
+        else:
+            return False
 
 
 ## TO BE DELETED
