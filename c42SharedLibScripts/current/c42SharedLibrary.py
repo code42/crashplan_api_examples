@@ -530,7 +530,7 @@ class c42Lib(object):
             r.content
             binary = json.loads(content)
             logging.debug(binary)
-            return binary['data']
+            return binary['data']['users']
             # binary['data']['users'][0]['userUid']
         else:
             return None
@@ -1562,7 +1562,7 @@ class c42Lib(object):
 
     @staticmethod
     def deactivateUserFromLegalHoldMembership(legalHoldMembershipUid):
-        logging.info("deactivateUserFromLegalHoldMembership-params:legalHoldMembershipUid[" + str(legalHoldUid) + "]")
+        logging.info("deactivateUserFromLegalHoldMembership-params:legalHoldMembershipUid[" + str(legalHoldMembershipUid) + "]")
         params = {}
 
         payload = {}
