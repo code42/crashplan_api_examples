@@ -2420,6 +2420,36 @@ class c42Lib(object):
         return server
 
     #
+    # getColdStorage(params):
+    # Returns the cold storage archives using the supplied parameters
+    # params:
+    # returns: cold storage list for params
+    #
+
+    @staticmethod
+    def getColdStorage(params):
+        logging.info("getColdStorage - params [" + str(params)+ "]")
+
+        
+        payload = {}
+
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_coldStorage, params, payload)
+            
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+        if binary['data']:
+            
+            return binary['data']
+
+        else:
+            
+            return None
+
+
+
+    #
     # getColdStorageByOrg(orgId):
     # Returns the cold storage archives in the supplied org
     # params:
