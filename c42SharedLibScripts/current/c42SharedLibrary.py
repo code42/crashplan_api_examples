@@ -1,8 +1,5 @@
 # Copyright (c) 2016 Code42, Inc.
-<<<<<<< HEAD
 
-=======
->>>>>>> b124bb19642a5667d86ede434a38781ac28e2b71
 # Permission is hereby granted, free of charge, to any person obtaining a copy 
 # of this software and associated documentation files (the "Software"), to deal 
 # in the Software without restriction, including without limitation the rights 
@@ -11,10 +8,7 @@
 # furnished to do so, subject to the following conditions:
 # The above copyright notice and this permission notice shall be included in all 
 # copies or substantial portions of the Software.
-<<<<<<< HEAD
 
-=======
->>>>>>> b124bb19642a5667d86ede434a38781ac28e2b71
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
@@ -24,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 03-19-2016
+# Last Modified: 06-07-2016
 
 # Author: AJ LaVenture
 # Author: Paul Hirst
@@ -109,18 +103,15 @@ class c42Lib(object):
     cp_api_userRole = "/api/UserRole"
     cp_api_webRestoreJob = "/api/WebRestoreJob"
     cp_api_webRestoreJobResult = "/api/WebRestoreJobResult"
-<<<<<<< HEAD
     cp_api_webRestoreSearch = "/api/WebRestoreSearch"
     cp_api_webRestoreSession = "/api/WebRestoreSession"
     cp_api_webRestoreTreeNode = "/api/WebRestoreTreeNode"
-=======
     cp_api_ekr = "/api/EKR"
     cp_api_legalHoldMembershipSummary = "/api/LegalHoldMembershipSummary"
     cp_api_legalHoldMembership = "/api/LegalHoldMembership"
     cp_api_legalHoldMembershipDeactivation = "/api/LegalHoldMembershipDeactivation"
-
     cp_api_plan = "/api/Plan"
->>>>>>> b124bb19642a5667d86ede434a38781ac28e2b71
+
 
     # Overwrite `cp_authorization` to use something other than HTTP-Basic auth.
     cp_authorization = None
@@ -729,7 +720,7 @@ class c42Lib(object):
         return binary['data']['servers'] if 'data' in binary else None
 
 
-<<<<<<< HEAD
+
     # getStorePointsByServerId(severId):
     # returns the storpoints on a given server
     # Note that the API uses 'nodeId' for serverId
@@ -758,7 +749,7 @@ class c42Lib(object):
         storePoint = binary['data']
 
         return storePoint if 'data' in binary else None
-=======
+
     @staticmethod
     def getUser(params):
         logging.info("getUser-params:userId[" + str(params) + "]")
@@ -779,7 +770,7 @@ class c42Lib(object):
             return None
         
 
->>>>>>> b124bb19642a5667d86ede434a38781ac28e2b71
+
 
     #
     # getUserById(userId):
