@@ -1161,9 +1161,12 @@ class c42Lib(object):
         binary = json.loads(content)
         logging.debug(binary)
 
-        if binary['data']:
-            org = binary['data']
-        else:
+        try:
+            if binary['data']:
+                org = binary['data']
+
+        except TypeError:
+
             org = None
 
         return org
