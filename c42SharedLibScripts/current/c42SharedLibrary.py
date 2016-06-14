@@ -90,7 +90,6 @@ class c42Lib(object):
     cp_api_orgSettings = "/api/OrgSettings"
     cp_api_ping = "/api/Ping"
     cp_api_plan = "/api/Plan"
-    cp_api_plan = "/api/Plan"
     cp_api_pushRestoreJob = "/api/PushRestoreJob"
     cp_api_restoreRecord = "/api/RestoreRecord"
     cp_api_server = "/api/Server"
@@ -690,8 +689,13 @@ class c42Lib(object):
     @staticmethod
     def getDestinationById(id, **kwargs):
         logging.info("getDestinationById")
-        params = {}
-        params['idType'] = kwargs['idType']
+
+        if not kwargs:
+            params = {}
+        else:
+            params = kwargs['params']
+            kwargs = {}
+
 
         r = c42Lib.executeRequest("get", c42Lib.cp_api_destination + "/" + str(id), params, {}, **kwargs)
         logging.debug(r.text)
@@ -1140,10 +1144,12 @@ class c42Lib(object):
     def getOrg(orgId,**kwargs):
         logging.info("getOrg-params:orgId[" + str(orgId) + "]")
 
+        params = {}
+
         if not kwargs:
             params['incAll'] = 'true'
         else:
-            params = kwargs
+            params = kwargs['params']
 
         payload = {}
 
@@ -1461,9 +1467,8 @@ class c42Lib(object):
 
     @staticmethod
     def getDevicesByOrgPaged(orgId, params):
-        logging.info("getDevicesByOrgPaged-params:orgId[" + str(orgId) + "]:pgNum[" + str(pgNum) + "]")
+        logging.info("getDevicesByOrgPaged-params:orgId[" + str(orgId) + "]:params[" + str(params) + "]")
 
-        
         if not params:
 
             params = {}
@@ -2526,6 +2531,32 @@ class c42Lib(object):
             logging.error("putColdStorageUpdate param payload is null or empty")
 
 
+    @staticmethod
+    def purgeColdStorage(guid,params):
+        logging.debug("purgeColdStorage - guid: [" + str(guid) + "]")
+
+        payload = {}
+ 
+        r = c42Lib.executeRequest("delete", c42Lib.cp_api_coldStorage+"/"+str(guid), params, payload)
+
+        logging.debug(r.text)
+
+        coldStoragePurged = False
+
+        if r.status_code == 200:
+
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+
+            coldStoragePurged = binary['data']
+
+            #print coldStoragePurged
+            #raw_input()
+
+        return coldStoragePurged
+
+
 
     # getStorePoitnByStorePointId(storePointId):
     # returns store point information based on the storePointId
@@ -2759,7 +2790,7 @@ class c42Lib(object):
             itemsToWriteeEncoded = ''
 
             for stufftowrite in listtowrite:
-                if (isinstance (stufftowrite,(int)) or isinstance(stufftowrite,(float)) or isinstance(stufftowrite,(long))):
+                if (isinstance (stufftowrite,(int)) or isinstance(stufftowrite,(float)) or isinstance(stufftowrite,(long)) or isinstance(stufftowrite,(datetime.date))):
                     itemsToWriteeEncoded = stufftowrite
             
                 elif stufftowrite is not None: 
@@ -2778,7 +2809,7 @@ class c42Lib(object):
             output = open(filenametowrite, writeType) # Open the file to append to it
 
             
-            if (isinstance (listtowrite,(int)) or isinstance(listtowrite,(float)) or isinstance(stufftowrite,(long))):
+            if (isinstance (listtowrite,(int)) or isinstance(listtowrite,(float)) or isinstance(stufftowrite,(long)) or isinstance(stufftowrite,(datetime.date))):
                 itemsToWriteeEncoded = listtowrite # if the item is an integer, just add it to the list
             
             elif listtowrite is not None: 
