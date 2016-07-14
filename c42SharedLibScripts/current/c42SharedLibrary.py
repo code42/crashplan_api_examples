@@ -1261,7 +1261,10 @@ class c42Lib(object):
     def getDeviceByGuid(guid, **kwargs):
         logging.debug("getDeviceByGuid-params:guid[" + str(guid) + "]")
 
-        params = {}
+        if kwargs and 'params' in kwargs:
+            params = kwargs['params']
+        else:
+            params = {}
         if kwargs and 'incBackupUsage' in kwargs:
                 params["incBackupUsage"] = "{0}".format(kwargs['incBackupUsage'])
         params['idType'] = "guid"
