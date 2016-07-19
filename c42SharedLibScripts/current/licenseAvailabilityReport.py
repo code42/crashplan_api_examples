@@ -541,7 +541,8 @@ licensesAvailableList()
 
 
 logging.info("===============================================================================================")
-logging.info("             Days Since Last Connected : " + str(cp_deviceDays))
-logging.info("               Total Devices processed : " + str(totalcount))
-logging.info("             Total licensesAvailable Devices : " + str(totalAvailableCount))
+logging.info("")
+logging.info("        Total Devices processed : " + str(totalcount))
+logging.info("Total licensesAvailable Devices : " + str(totalAvailableCount))
+logging.info("")
 logging.info("===============================================================================================")
