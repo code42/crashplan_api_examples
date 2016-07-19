@@ -50,9 +50,6 @@
 
 from docopt import docopt
 import sys
-
-sys.path.insert(0, '/Users/paul.hirst/Git/crashplan_api_examples/c42SharedLibScripts/current/')
-
 import requests
 import json
 import csv
