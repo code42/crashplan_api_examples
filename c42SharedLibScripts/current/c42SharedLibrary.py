@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 06-07-2016
+# Last Modified: 07-18-2016
 
 # Author: AJ LaVenture
 # Author: Paul Hirst
@@ -878,10 +878,11 @@ class c42Lib(object):
         # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
         # url = cp_host + ":" + cp_port + cp_api_user
         params = {}
-        params['orgId'] = orgId
-        params['pgNum'] = str(pgNum)
-        params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
-        params['active'] = 'true'
+        params['orgId']        = orgId
+        params['pgNum']        = str(pgNum)
+        params['pgSize']       = str(c42Lib.MAX_PAGE_NUM)
+        params['active']       = 'true'
+        params['incChildOrgs'] = 'false'
 
         payload = {}
         logging.info(str(payload))
