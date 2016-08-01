@@ -534,6 +534,14 @@ print "User Authentication Type: " + str(userAuth)
 print ""
 print "================================="
 
+if not c42Lib.validateUserCredentials():
+	print ""
+	print "========== Invalid Credentials =========="
+	print ""
+	print "Please check the credentials and try again."
+	print ""
+	sys.exit(0)
+
 
 cpServerInfo()
 createCSVFiles()
