@@ -135,29 +135,33 @@ orgList = None
 if cp_onlyTheseOrgs:
 	orgList = map(int, cp_onlyTheseOrgs.split(',')) # split the orgIds into a list
 
+global licensesAvailableFile
+global licensesAvailableRawFile
 
 
 def createCSVFiles():
 
 	global todayonly
 	global cp_filePath
+	global licensesAvailableFile
+	global licensesAvailableRawFile
 
 # CSV File Names
 
-filepath = ''
-if cp_filePath:
-	filepath = cp_filePath
+	filepath = ''
+	if cp_filePath:
+		filepath = cp_filePath
 
-licensesAvailableFile    = filepath+'licensesAvailable-01-Users-'+todayisshort+'.csv'
-licensesAvailableRawFile = filepath+'licensesAvailable-02-All-'+todayisshort+'.csv'
+	licensesAvailableFile    = filepath+'licensesAvailable-01-Users-'+todayisshort+'.csv'
+	licensesAvailableRawFile = filepath+'licensesAvailable-02-All-'+todayisshort+'.csv'
 
-# Generate  CSV file headers
-licensesAvailableHeader = ("UserID","UserUid","UserName","First Name","Last Name","Email","OrgId","Org","Archive Guid","Device Name","Archive Size","Expire Date")
+	# Generate  CSV file headers
+	licensesAvailableHeader = ("UserID","UserUid","UserName","First Name","Last Name","Email","OrgId","Org","Archive Guid","Device Name","Archive Size","Expire Date")
 
-# Write CSV File Headers
+	# Write CSV File Headers
 
-c42Lib.writeCSVappend (licensesAvailableHeader, licensesAvailableFile,'w') # Write the headers to the license available list file
-c42Lib.writeCSVappend (licensesAvailableHeader, licensesAvailableRawFile,'w') # Write the headers to the license available list file
+	c42Lib.writeCSVappend (licensesAvailableHeader, licensesAvailableFile,'w') # Write the headers to the license available list file
+	c42Lib.writeCSVappend (licensesAvailableHeader, licensesAvailableRawFile,'w') # Write the headers to the license available list file
 
 
 # Get the backup Usage Info for a device - return the archive size if only one destination,
@@ -290,6 +294,8 @@ def licensesAvailableList ():
 	global elapsed_time
 	global todayonly
 	global orgList
+	global licensesAvailableFile
+	global licensesAvailableRawFile
 
 	totalcount = 0
 	totalAvailableCount = 0
@@ -402,6 +408,9 @@ def licensesAvailableList ():
 							thisExpireDate = datetime.strptime(thisExpireDate, '%Y-%m-%d %H:%M:%S.%f')
 							thisExpireDate = datetime.date(thisExpireDate)
 
+							rawDeviceRow = (device['sourceUserId'],userInfo['userUid'],userInfo['username'],device['sourceUserFirstName'],device['sourceUserLastName'],device['sourceUserEmail'],device['orgId'],device['orgName'],device['archiveGuid'],device['sourceComputerName'],device['archiveBytes'],thisExpireDate)
+							c42Lib.writeCSVappend (rawDeviceRow, licensesAvailableRawFile,'a+')
+
 							# Compare expire dates - if the current cold storage date is sooner, use it instead
 							if thisExpireDate > listExpireDate:
 
@@ -429,7 +438,7 @@ def licensesAvailableList ():
 								# Write this out to the raw file that will show every cold storage device
 
 								replaceDeviceRow = (device['sourceUserId'],userInfo['userUid'],userInfo['username'],device['sourceUserFirstName'],device['sourceUserLastName'],device['sourceUserEmail'],device['orgId'],device['orgName'],device['archiveGuid'],device['sourceComputerName'],device['archiveBytes'],thisExpireDate)
-								c42Lib.writeCSVappend (replaceDeviceRow, licensesAvailableRawFile,'a+')
+								c42Lib.writeCSVappend (replaceDeviceRow, licensesAvailableFile,'a+')
 
 								#print usersInColdStorage[device['sourceUserId']]
 								#raw_input()
@@ -466,10 +475,14 @@ def licensesAvailableList ():
 							usersInColdStorage[device['sourceUserId']] = newUserInCold
 							totalAvailableCount += 1
 
+							# Add to raw list
+							rawDeviceRow = (device['sourceUserId'],userInfo['userUid'],userInfo['username'],device['sourceUserFirstName'],device['sourceUserLastName'],device['sourceUserEmail'],device['orgId'],device['orgName'],device['archiveGuid'],device['sourceComputerName'],device['archiveBytes'],listExpireDate)
+							c42Lib.writeCSVappend (rawDeviceRow, licensesAvailableRawFile,'a+')
+
 							# Write this out to the raw file that will show every cold storage device
 
 							newDeviceRow = (device['sourceUserId'],userInfo['userUid'],userInfo['username'],device['sourceUserFirstName'],device['sourceUserLastName'],device['sourceUserEmail'],device['orgId'],device['orgName'],device['archiveGuid'],device['sourceComputerName'],device['archiveBytes'],listExpireDate)
-							c42Lib.writeCSVappend (newDeviceRow, licensesAvailableRawFile,'a+')
+							c42Lib.writeCSVappend (newDeviceRow, licensesAvailableFile,'a+')
 
 							#print usersInColdStorage[device['sourceUserId']]
 							#raw_input()
@@ -534,13 +547,13 @@ print "User Authentication Type: " + str(userAuth)
 print ""
 print "================================="
 
-if not c42Lib.validateUserCredentials():
-	print ""
-	print "========== Invalid Credentials =========="
-	print ""
-	print "Please check the credentials and try again."
-	print ""
-	sys.exit(0)
+#if not c42Lib.validateUserCredentials():
+#	print ""
+#	print "========== Invalid Credentials =========="
+#	print ""
+#	print "Please check the credentials and try again."
+#	print ""
+#	sys.exit(0)
 
 
 cpServerInfo()
