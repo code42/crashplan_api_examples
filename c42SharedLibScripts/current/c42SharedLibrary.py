@@ -1,4 +1,5 @@
 # Copyright (c) 2016 Code42, Inc.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy 
 # of this software and associated documentation files (the "Software"), to deal 
 # in the Software without restriction, including without limitation the rights 
@@ -7,6 +8,7 @@
 # furnished to do so, subject to the following conditions:
 # The above copyright notice and this permission notice shall be included in all 
 # copies or substantial portions of the Software.
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
@@ -16,6 +18,8 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
+# Last Modified: 07-25-2016
+
 # Author: AJ LaVenture
 # Author: Paul Hirst
 # Author: Hank Brekke
@@ -58,44 +62,55 @@ class c42Lib(object):
     #cp_magic_restoreRecordKey = '987db1c5-8840-41f1-8c97-460d03347895'
 
     # REST API Calls
-    cp_api_authToken = "/api/AuthToken"
-    cp_api_storageAuthToken = "/api/StorageAuthToken"
-    cp_api_loginToken = "/api/LoginToken"
-    cp_api_networkTest = "/api/NetworkTest"
-    cp_api_plan = "/api/Plan"
-    cp_api_fileContent = "/api/FileContent"
-    cp_api_fileMetadata = "/api/FileMetadata"
-    cp_api_storage = "/api/Storage"
-    cp_api_ping = "/api/Ping"
-    cp_api_userRole = "/api/UserRole"
-    cp_api_user = "/api/User"
-    cp_api_org = "/api/Org"
-    cp_api_orgSettings = "/api/OrgSettings"
-    cp_api_archive = "/api/Archive"
-    cp_api_deviceUpgrade = "/api/DeviceUpgrade"
-    cp_api_computer = "/api/Computer"
-    cp_api_destination = "/api/Destination"
-    cp_api_computerBlock = "/api/ComputerBlock"
-    cp_api_userMoveProcess = "/api/UserMoveProcess"
-    cp_api_deactivateUser = "/api/UserDeactivation"
-    cp_api_deacivateDevice = "/api/ComputerDeactivation"
-    cp_api_cli = "/api/cli"
+
     # cp_api_restoreHistory = "/api/restoreHistory"
     #?pgNum=1&pgSize=50&srtKey=startDate&srtDir=desc&days=9999&orgId=35
-    cp_api_restoreRecord = "/api/RestoreRecord"
+    cp_api_archive = "/api/Archive"
     cp_api_archiveMetadata = "/api/ArchiveMetadata"
-    cp_api_server = "/api/Server"
-    cp_api_storePoint = "/api/StorePoint"
+    cp_api_authToken = "/api/AuthToken"
+    cp_api_cli = "/api/cli"
+    cp_api_coldStorage = "/api/ColdStorage"
+    cp_api_computer = "/api/Computer"
+    cp_api_computerBlock = "/api/ComputerBlock"
     cp_api_dataKeyToken = "/api/DataKeyToken"
-    cp_api_webRestoreSession = "/api/WebRestoreSession"
-    cp_api_pushRestoreJob = "/api/PushRestoreJob"
-    cp_api_webRestoreSearch = "/api/WebRestoreSearch"
-    cp_api_webRestoreJob = "/api/WebRestoreJob"
-    cp_api_webRestoreTreeNode = "/api/WebRestoreTreeNode"
-    cp_api_webRestoreJobResult = "/api/WebRestoreJobResult"
+    cp_api_deacivateDevice = "/api/ComputerDeactivation"
+    cp_api_deactivateUser = "/api/UserDeactivation"
+    cp_api_destination = "/api/Destination"
+    cp_api_deviceBackupReport = "/api/DeviceBackupReport"
+    cp_api_deviceUpgrade = "/api/DeviceUpgrade"
     cp_api_ekr = "/api/EKR"
-
+    cp_api_fileContent = "/api/FileContent"
+    cp_api_fileMetadata = "/api/FileMetadata"
+    cp_api_legaHold = "/api/LegalHold"
+    cp_api_legalHoldMembership = "/api/LegalHoldMembership"
+    cp_api_legalHoldMembershipDeactivation = "/api/LegalHoldMembershipDeactivation"
+    cp_api_loginToken = "/api/LoginToken"
+    cp_api_networkTest = "/api/NetworkTest"
+    cp_api_org = "/api/Org"
+    cp_api_orgSettings = "/api/OrgSettings"
+    cp_api_ping = "/api/Ping"
     cp_api_plan = "/api/Plan"
+    cp_api_pushRestoreJob = "/api/PushRestoreJob"
+    cp_api_restoreRecord = "/api/RestoreRecord"
+    cp_api_server = "/api/Server"
+    cp_api_storage = "/api/Storage"
+    cp_api_storageAuthToken = "/api/StorageAuthToken"
+    cp_api_storedBytesHistory = "/api/StoredBytesHistory"
+    cp_api_storePoint = "/api/StorePoint"
+    cp_api_user = "/api/User"
+    cp_api_userMoveProcess = "/api/UserMoveProcess"
+    cp_api_userRole = "/api/UserRole"
+    cp_api_webRestoreJob = "/api/WebRestoreJob"
+    cp_api_webRestoreJobResult = "/api/WebRestoreJobResult"
+    cp_api_webRestoreSearch = "/api/WebRestoreSearch"
+    cp_api_webRestoreSession = "/api/WebRestoreSession"
+    cp_api_webRestoreTreeNode = "/api/WebRestoreTreeNode"
+    cp_api_ekr = "/api/EKR"
+    cp_api_legalHoldMembershipSummary = "/api/LegalHoldMembershipSummary"
+    cp_api_legalHoldMembership = "/api/LegalHoldMembership"
+    cp_api_legalHoldMembershipDeactivation = "/api/LegalHoldMembershipDeactivation"
+    cp_api_plan = "/api/Plan"
+
 
     # Overwrite `cp_authorization` to use something other than HTTP-Basic auth.
     cp_authorization = None
@@ -188,6 +203,10 @@ class c42Lib(object):
 
     @staticmethod
     def executeRequest(type, cp_api, params={}, payload={}, **kwargs):
+
+        requests.packages.urllib3.disable_warnings()
+        logging.getLogger("urllib3").setLevel(logging.WARNING)
+        
         header = c42Lib.getRequestHeaders(**kwargs)
         url = c42Lib.getRequestUrl(cp_api, **kwargs)
 
@@ -215,6 +234,197 @@ class c42Lib(object):
             return r
         else:
             return None
+
+
+    #
+    # getRequestHeaders:
+    # Returns the dictionary object containing headers to pass along with all requests to the API,
+    # Params: None
+    # Uses global / class variables for username and password authentication
+    #
+    @staticmethod
+    def getGenericRequestHeaders(username,password):
+        header = {}
+        header["Authorization"] = c42Lib.getAuthHeader(username,password)
+        header["Content-Type"] = "application/json"
+
+        # print header
+        return header
+
+    #
+    # getRequestUrl(cp_api):
+    # Returns the full URL to execute an API call,
+    # Params:
+    # cp_api: what the context root will be following the host and port (global / class variables)
+    #
+
+    @staticmethod
+    def getGenericRequestUrl(url,port,apiCall):
+        if port  == '':           # Some customers have port forwarding and adding a port breaks the API calls
+            url = url + apiCall
+        else: 
+            url = url + ":" + str(port) + apiCall
+
+        return url
+
+    #
+    # executeRequest(type, cp_api, params, payload):
+    # Executes the request to the server based on type of request
+    # Params:
+    # type: type of rest call: valid inputs: "get|delete|post|put" - returns None if not specified
+    # cp_api: the context root to be appended after server:port when generating the URL
+    # params: URL parameters to be passed along with the request
+    # payload: json object to be sent in the body of the request
+    # Returns: the response object directly from the call to be parsed by other methods
+    #
+
+    @staticmethod
+    def executeGenericRequest( username, password, type, api_URL, api_Port, apiCall ,params, payload):
+        # logging.debug
+        header = c42Lib.getGenericRequestHeaders(username,password)
+        # print header
+        url = c42Lib.getGenericRequestUrl(api_URL,api_Port,apiCall)
+        # url = cp_host + ":" + cp_port + cp_api
+        # payload = cp_payload
+        #print url
+        #raw_input()
+        if type == "get":
+            logging.debug("Payload : " + str(payload))
+            r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=False)
+            #print r.text
+            #raw_input()
+            logging.debug(r.text)
+            return r
+        elif type == "delete":
+            r = requests.delete(url, params=params, data=json.dumps(payload), headers=header, verify=False)
+            logging.debug(r.text)
+            return r
+        elif type == "post":
+            r = requests.post(url, params=params, data=json.dumps(payload), headers=header, verify=False)
+            logging.debug(r.text)
+            return r
+        elif type == "put":
+            # logging.debug(str(json.dumps(payload)))
+            r = requests.put(url, params=params, data=json.dumps(payload), headers=header, verify=False)
+            logging.debug(r.text)
+            return r
+        else:
+            return None
+
+        # content = r.content
+        # binary = json.loads(content)
+        # logging.debug(binary)
+
+
+    # Validates User Credentials by trying to look up the user's own info based on their username.deviceList = c42Lib.getDevicesCustomParams(currentPage,params)
+
+    @staticmethod
+    def validateUserCredentials():
+
+        # Check if username/password combination is valid
+
+        isValidUser = False
+
+        params = {}
+        params['username'] = c42Lib.cp_username
+
+        getUserInfo = c42Lib.getUser(params)
+
+        if getUserInfo is not None:
+            isValidUser = True
+
+        return isValidUser
+
+
+
+    #
+    # Params: cp_enterUserName - manually entered username & password,cp_userName - hardcoded username ,cp_useCustomerCredFile - use credentials file ,cp_credentialFile - name of credentials file
+    # Returns: True once authentication parameters are entered.  Does not verify these are valid for the script.
+    #
+    @staticmethod
+    def authenticateScriptUser(cp_enterUserName,cp_userName,cp_useCustomerCredFile,cp_credentialFile):
+
+        userInfoSet = False
+
+        userAuthType = 'Hardcoded' 
+
+        logging.debug ("=========== Authenticate User")
+
+        if cp_useCustomerCredFile: # If using a credentials file
+            
+            with open(str(cp_credentialFile)) as f:
+                c42Lib.cp_username = base64.b64decode(f.readline().strip())
+                c42Lib.cp_password = base64.b64decode(f.readline().strip())
+
+            userAuthType = 'Credentials File'
+            userInfoSet = True
+
+        if cp_enterUserName:
+
+            print ""
+            c42Lib.cp_password = getpass.getpass('=========== Please enter the password for user ' + str(cp_userName) + ' : ')
+            c42Lib.cp_username = cp_userName
+
+            userAuthType = 'Entered Password'
+            userInfoSet= True
+
+        if userAuthType == 'Hardcoded':
+
+            if c42Lib.cp_username == 'admin':
+                print ""
+                print "Username is set to 'admin'!  If this is really your username you should change it."
+                print ""
+                raw_input("Please press 'Enter' to proceed.")
+                print ""
+
+            else:
+                print "Username has been hardcoded to : " + c42Lib.cp_username
+
+            if c42Lib.cp_password == 'admin':
+                print ""
+                print "Username is set to 'admin'!  If this is really your password you should change it."
+                print ""
+                raw_input("Please press 'Enter' to proceed.")
+                print ""
+            else:
+                print "Password has been hardcoded.  Not shown."
+
+            userInfoSet = True
+
+        return userInfoSet
+
+
+    #
+    # Params: cp_serverInfoFile,cp_serverInfoFileName,cp_serverEntryFlag,cp_serverHostURL,cp_serverHostPort
+    # Returns: True once authentication parameters are entered.  Does not verify these are valid for the script.
+    #
+    @staticmethod
+    def cpServerInfo(cp_serverInfoFile,cp_serverInfoFileName,cp_serverEntryFlag,cp_serverHostURL,cp_serverHostPort):
+
+        serverInfoSet = False
+
+        serverInfoType = 'Hardcoded' 
+
+        logging.debug ("=========== Set CP Server Info")
+
+        if cp_serverInfoFile: # If using a credentials file
+            
+            with open(str(cp_serverInfoFileName)) as f:
+                c42Lib.cp_host = f.readline().strip()
+                c42Lib.cp_port = f.readline().strip()
+
+            serverInfoType = 'Server Info File'
+
+        if cp_serverEntryFlag:
+
+            print ""
+            c42Lib.cp_host = cp_serverHostURL
+            c42Lib.cp_port = cp_serverHostPort
+
+            serverInfoType = 'Manually Entered'
+
+        return serverInfoSet
+
 
     #
     # Params:
@@ -289,8 +499,15 @@ class c42Lib(object):
         params = {}
         payload = {'computerGuid': computerGuid}
         r = c42Lib.executeRequest("post", c42Lib.cp_api_dataKeyToken, params, payload, **kwargs)
-        binary = json.loads(r.content.decode('UTF-8'))
-        return binary['data']['dataKeyToken'] if 'data' in binary else None
+        # print "========== r below "
+        # print r
+        # print "========== binary below"
+        if r.status_code != 200:
+            return False
+        else: 
+            binary = json.loads(r.content.decode('UTF-8'))
+            # print "========== end of get datakeytoken"
+            return binary['data']['dataKeyToken'] if 'data' in binary else None
 
     #
     # Params:
@@ -491,8 +708,13 @@ class c42Lib(object):
     @staticmethod
     def getDestinationById(id, **kwargs):
         logging.info("getDestinationById")
-        params = {}
-        params['idType'] = "id"
+
+        if not kwargs:
+            params = {}
+        else:
+            params = kwargs['params']
+            kwargs = {}
+
 
         r = c42Lib.executeRequest("get", c42Lib.cp_api_destination + "/" + str(id), params, {}, **kwargs)
         logging.debug(r.text)
@@ -500,6 +722,14 @@ class c42Lib(object):
         binary = json.loads(content)
         return binary['data'] if 'data' in binary else None
 
+
+
+    # getServersByDestinationId(destinationId, **kwargs):
+    # returns the servers in a given destination
+    # Note that the API uses 'nodeId' for serverId
+    # params:
+    # destinationId: id of destination
+    #
 
     @staticmethod
     def getServersByDestinationId(destinationId, **kwargs):
@@ -513,6 +743,68 @@ class c42Lib(object):
         return binary['data']['servers'] if 'data' in binary else None
 
 
+
+    # getStorePointsByServerId(severId):
+    # returns the storpoints on a given server
+    # Note that the API uses 'nodeId' for serverId
+    # params:
+    # storePointId: id of storePoint
+    #
+
+    @staticmethod
+    def getStorePointsByServerId(serverId):
+        logging.info("getStorePointsByServerId-params:serverId[" + str(serverId) + "]")
+
+
+        storePoint = ""
+        params = {}
+        payload = {}
+        params['nodeId'] = serverId
+
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_storePoint, params, payload)
+
+        logging.debug(r.text)
+
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+        storePoint = binary['data']
+
+        return storePoint if 'data' in binary else None
+
+    @staticmethod
+    def getUser(params):
+        logging.info("getUser-params:userId[" + str(params) + "]")
+
+        if params and (('username' in params) or ('userId' in params) or ('userUid' in params) or ('q' in params)):
+            payload = {}
+
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
+
+            logging.debug(r.text)
+            content = r.content
+            r.content
+            binary = json.loads(content)
+
+            logging.debug(binary)
+
+            try:
+                return binary['data']['users']
+
+            except TypeError:
+                
+                return None
+
+            # binary['data']['users'][0]['userUid']
+        
+        else:
+        
+            return None
+        
+
+
+
     #
     # getUserById(userId):
     # returns the user json object of the requested userId
@@ -520,12 +812,16 @@ class c42Lib(object):
     # userId: the id of the user within the system's database
     #
     @staticmethod
-    def getUserById(userId,idType):
+    def getUserById(userId,**kwargs):
         logging.info("getUser-params:userId[" + str(userId) + "]")
 
         params = {}
-        params['incAll'] = 'true'
-        params['idType'] = idType # Needed for the 4.x series and beyond
+        if not kwargs:
+            params['incAll'] = 'true'
+            params['idType'] = 'uid' # Needed for the 4.x series and beyond
+        else:
+            params = kwargs
+
         payload = {}
 
 
@@ -565,7 +861,7 @@ class c42Lib(object):
         params['incAll'] = 'true'
         payload = {}
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_user + "?" ,params, payload)
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
 
         logging.debug(r.text)
 
@@ -611,10 +907,11 @@ class c42Lib(object):
         # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
         # url = cp_host + ":" + cp_port + cp_api_user
         params = {}
-        params['orgId'] = orgId
-        params['pgNum'] = str(pgNum)
-        params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
-        params['active'] = 'true'
+        params['orgId']        = orgId
+        params['pgNum']        = str(pgNum)
+        params['pgSize']       = str(c42Lib.MAX_PAGE_NUM)
+        params['active']       = 'true'
+        params['incChildOrgs'] = 'false'
 
         payload = {}
         logging.info(str(payload))
@@ -795,22 +1092,23 @@ class c42Lib(object):
 
 
     #
-    # postUserMoveProcess(userId, orgId):
+    # postUserMoveProcess(userUid, orgUid):
     # posts request to move use into specified organization
     # params:
-    # userId - id of the user for the move request
-    # orgId - destination org for the user
+    # userUid - Uid of the user for the move request
+    # orgUid - Uid of destination org for the user
     # returns: true if 204, respose object if 500, else false
     #
+    # Changed from ids to uids in 4.3+
 
     @staticmethod
-    def postUserMoveProcess(userId, orgId):
-        logging.info("postUserMoveProcess-params:userId[" + str(userId) + "],orgId[" + str(orgId) + "]")
+    def postUserMoveProcess(userUid, orgUid):
+        logging.info("postUserMoveProcess-params:userUid[" + str(userUid) + "],orgUid[" + str(orgUid) + "]")
 
         params = {}
         payload = {}
-        payload["userId"] = userId
-        payload["parentOrgId"] = orgId
+        payload["userId"] = userUid
+        payload["parentOrgId"] = orgUid
 
         r = c42Lib.executeRequest("post", c42Lib.cp_api_userMoveProcess, params, payload)
         logging.debug(r.status_code)
@@ -873,11 +1171,16 @@ class c42Lib(object):
     #
 
     @staticmethod
-    def getOrg(orgId):
+    def getOrg(orgId,**kwargs):
         logging.info("getOrg-params:orgId[" + str(orgId) + "]")
 
         params = {}
-        params['incAll'] = 'true'
+
+        if not kwargs:
+            params['incAll'] = 'true'
+        else:
+            params = kwargs['params']
+
         payload = {}
 
         r = c42Lib.executeRequest("get", c42Lib.cp_api_org + "/" + str(orgId), params, payload)
@@ -888,9 +1191,12 @@ class c42Lib(object):
         binary = json.loads(content)
         logging.debug(binary)
 
-        if binary['data']:
-            org = binary['data']
-        else:
+        try:
+            if binary['data']:
+                org = binary['data']
+
+        except TypeError:
+
             org = None
 
         return org
@@ -985,7 +1291,10 @@ class c42Lib(object):
     def getDeviceByGuid(guid, **kwargs):
         logging.debug("getDeviceByGuid-params:guid[" + str(guid) + "]")
 
-        params = {}
+        if kwargs and 'params' in kwargs:
+            params = kwargs['params']
+        else:
+            params = {}
         if kwargs and 'incBackupUsage' in kwargs:
                 params["incBackupUsage"] = "{0}".format(kwargs['incBackupUsage'])
         params['idType'] = "guid"
@@ -1079,6 +1388,42 @@ class c42Lib(object):
         return device
 
     #
+    # getDeviceBackupReport(params):
+    # returns the DeviceBackupReport
+    # params:
+    # params - These can be passed in to maximize the utility of the function.
+    #          Report will page automatically.
+    #
+
+    @staticmethod
+    def getDeviceBackupReport(params):
+        logging.info("getDeviceBackupReport-params:[" + str(params) + "]")
+
+        # set default params for paging and sorting if none passed in
+
+        if not params['pgNum']:
+            params['pgNum'] = 1              # Begin w/ Page 1
+            params['pgSize'] = MAX_PAGE_NUM  # Limit page size to 250 per page
+
+        if not params['srtKey']:
+            params['srtKey'] = 'archiveBytes' # Sort on archiveBytes
+
+        currentPage = params['pgNum']
+        keepLooping = True
+        fullList = []
+        while keepLooping:
+            logging.debug("getDeviceBackupReport-page:[" + str(currentPage) + "]")
+            deviceList = c42Lib.getDeviceBackupReport(params)
+            if deviceList:
+                fullDeviceList.extend(deviceList)
+            else:
+                keepLooping = False
+            currentPage += 1
+
+        return fullDeviceList
+
+
+    #
     # getDevicesPageCount():
     # returns number of pages it will take to return all of the devices based on MAX_PAGE_NUM
     # Returns: integer
@@ -1157,16 +1502,18 @@ class c42Lib(object):
     #
 
     @staticmethod
-    def getDevicesByOrgPaged(orgId, pgNum):
-        logging.info("getDevicesByOrgPaged-params:orgId[" + str(orgId) + "]:pgNum[" + str(pgNum) + "]")
+    def getDevicesByOrgPaged(orgId, params):
+        logging.info("getDevicesByOrgPaged-params:orgId[" + str(orgId) + "]:params[" + str(params) + "]")
 
-        params = {}
-        params['orgId'] = orgId
-        params['pgNum'] = str(pgNum)
-        params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
-        params['active'] = 'true'
-        params['incBackupUsage'] = 'true'
-        params['incHistory'] = 'true'
+        if not params:
+
+            params = {}
+            params['orgId'] = orgId
+            params['pgNum'] = str(pgNum)
+            params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
+            params['active'] = 'true'
+            params['incBackupUsage'] = 'true'
+            params['incHistory'] = 'true'
 
         payload = {}
 
@@ -1365,6 +1712,7 @@ class c42Lib(object):
     #
     # Adds a role for all users per org
     #
+    @staticmethod
     def addAllUsersRoleByOrg(orgId, roleName):
         logging.info("addAllUsersRoleByOrg-params: orgId[" + str(orgId) + "]:userRole[" + roleName + "]")
 
@@ -1384,6 +1732,7 @@ class c42Lib(object):
     #
     # Adds a role for all users per org
     #
+    @staticmethod
     def addAllUsersRole(roleName):
         logging.info("addAllUsersRole-params: roleName[" + roleName + "]")
 
@@ -1430,6 +1779,7 @@ class c42Lib(object):
     #
     # Removes the role for all users within an org
     #
+    @staticmethod
     def removeAllUsersRoleByOrg(orgId, roleName):
         logging.info("removeAllUsersRoleByOrg-params:orgId[" + str(orgId) + "]:roleName[" + roleName + "]")
 
@@ -1450,6 +1800,7 @@ class c42Lib(object):
     #
     # Removes the role for all users
     #
+    @staticmethod
     def removeAllUsersRole(roleName):
         logging.info("removeAllUsersRole-params:roleName[" + roleName + "]")
 
@@ -1466,9 +1817,283 @@ class c42Lib(object):
 
         logging.info("Total Users affected: " + str(count))
 
+    #
+    # getPlan(params):
+    # returns destination information
+    # params:
+    # See API reference
+
+    @staticmethod
+    def getPlan(params):
+        logging.debug("getPlan - params: [" + str(params) + "]")
+
+        payload = {}
+
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_plan, params, payload)
+
+        logging.debug(r.text)
+
+        if r.status_code == 200:
+
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+
+            plan = binary['data']
+
+        return plan
+
+    # get a user's legal hold membership info
+    # Minimum argument is userUid    
+
+    @staticmethod
+    def getUserLegalHoldMemberships(**kwargs):
+        logging.info("getUserLegalHoldMembership-kwargs:userUid[" + str(kwargs['userUid']) + "]")
+
+        params['userUid'] = kwargs['userUid']
+        if kwargs['activeState']:
+            params ['activeState'] = kwargs['activeState']  #Specifiy only the inactive, active or all memberships
+        payload = {}
+
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHoldMembership, params, payload)
+
+        logging.debug(r.text)
+
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+        if binary['data']['legalHoldMemberships']:
+
+            legalHoldMembershipInfo = binary['data']['legalHoldMemberships']
+            return legalHoldMembershipInfo
+
+        else:
+
+            return False
+
+
+    #
+    # updateLegalHoldMembership(legalHoldUid,userUid,actionType):
+    # Either adds a user to a Legal Hold or removes them
+    # params:
+    # legalHoldUid - Uid of the LegalHold to place the user into
+    # userUid - Uid of the user being added or removed
+    # actionType - "add" or "remove" depending on what you'd like to have happen
+    # returns: for adding, returns a body with the legal hold info for that user
+    #          for removing, returns a 204 if successfully removed
+    #
+
+
+    @staticmethod
+    def userLegalHoldAction(actionType, **kwargs):
+        
+        logging.info("userLegalHoldAction-params:actionType[" + str(actionType) + "],legalHoldUid[" + str(kwargs['legalHoldUid']) + "],userUid[" + str(kwargs['userUid']) + "]")
+
+        actionResults = False
+
+        if actionType == 'add':
+
+            params = {}
+            payload = {}
+            payload["userUid"]      = kwargs['userUid']
+            payload["legalHoldUid"] = kwargs['legalHoldUid']
+
+            r = c42Lib.executeRequest("post", c42Lib.cp_api_legalHoldMembership, params, payload)
+            logging.debug(r.status_code)
+
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+
+            if binary['data']:
+                actionResults = binary['data']
+
+        elif actionType == 'remove':
+
+            #First, get the user's legal hold memberships to find the legalHoldMembershipUid to be able to deactivate the user
+
+            userLegalHoldInfo = c42Lib.getUserLegalHoldMemberships(userUid=kwargs['userUid'],activeState='ACTIVE')
+
+            actionResults = False
+
+            if userLegalHoldInfo:
+
+                for index,legalHold in userLegalHoldInfo:
+
+                    if legalHold['legalHold']['legalHoldUid'] == kwargs['legalHoldUid']:
+
+                        params = {}
+                        payload = {}
+                        payload["legalHoldMembershipUid"] = legalHold["legalHoldMembershipUid"]
+
+                        r = c42Lib.executeRequest("post", c42Lib.cp_api_legalHoldMembershipDeactivation, params, payload)
+                        logging.debug(r.status_code)
+
+                        if (r.status_code == 204):
+                            actionResults = True
+                            break
+
+        return actionResults
+
+    #
+    # Params: Uid/Guid/Id - currently the API wants the ID not the GUID or UID
+    # destinationId (kwargs): get storage history for destination
+    # serverId (kwargs): get storage history for server
+    # orgId (kwargs): get storage history for org
+    # userId (kwargs): get storage history for destination
+    # Returns: 30 days of storage history for the given type
+    #
+    @staticmethod
+    def getStoredBytesHistory(Uid, **kwargs):
+        logging.info("getStoredBytesHistory-params:Uid[" + str(Uid) + "], kwargs " + str(kwargs))
+
+        params  = {}
+        payload = {}
+
+        if kwargs['destination']:
+            params['destinationId'] = str(Uid)
+
+        if kwargs['server']:
+            params['serverId'] = str(Uid)
+
+        if kwargs['org']:
+            params['orgId'] = str(Uid)
+
+        if kwargs['user']:
+            params['userId'] = str(Uid)
+
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_storedBytesHistory, params, payload)
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+        if binary['data']:
+            actionResults = binary['data']
+
+        else:
+
+            actionResults = False
+
+        return actionResults
 
 
 
+    #
+    # returns list of users in legal hold: active only
+    #
+    @staticmethod
+    def getLegalHoldMembershipSummary(legalHoldUid):
+        logging.info("getLegalHoldMembershipSummary-params:legalHoldUid[" + str(legalHoldUid) + "]")
+        # Request URL:https://172.16.27.13:4285/api/legalHoldMembershipSummary/?legalHoldUid=741239804344030230&activeState=ALL
+        # data.legalHoldMemberships.[0].user.username
+        params = {}
+        params['legalHoldUid'] = legalHoldUid
+        params['activeState'] = "active"
+
+        payload = {}
+        logging.info(str(payload))
+        # r = requests.get(url, params=payload, headers=headers)
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHoldMembershipSummary, params, payload)
+
+        logging.debug(r.text)
+
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+
+        users = binary['data']['legalHoldMemberships']
+
+        return users
+
+    
+    @staticmethod
+    def addUserToLegalHold(legalHoldUid, userUid):
+# {
+#   "legalHoldUid":12938712892791283,
+#   "userUid":"0cc175b9c0f1b6a8"
+# }
+        logging.info("addUserToLegalHold-params:legalHoldUid[" + str(legalHoldUid) + "]|userUid[" + str(userUid) + "]")
+        params = {}
+
+        payload = {}
+        payload["legalHoldUid"] = legalHoldUid
+        payload["userUid"] = userUid
+
+        logging.info(str(payload))
+        # r = requests.get(url, params=payload, headers=headers)
+        r = c42Lib.executeRequest("post", c42Lib.cp_api_legalHoldMembership, params, payload)
+        logging.debug(r.status_code)
+
+        if (r.status_code == 201):
+            logging.debug(r.text)
+
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+
+
+            response = binary['data']
+
+            return response
+        elif (r.status_code == 400):
+            return False
+        else:
+            return False
+        
+
+    @staticmethod
+    def deactivateUserFromLegalHoldMembership(legalHoldMembershipUid):
+        logging.info("deactivateUserFromLegalHoldMembership-params:legalHoldMembershipUid[" + str(legalHoldMembershipUid) + "]")
+        params = {}
+
+        payload = {}
+        payload["legalHoldMembershipUid"] = legalHoldMembershipUid
+
+        logging.info(str(payload))
+        # r = requests.get(url, params=payload, headers=headers)
+        r = c42Lib.executeRequest("post", c42Lib.cp_api_legalHoldMembershipDeactivation, params, payload)
+        logging.debug(r.status_code)
+
+
+        if (r.status_code == 204):
+            return True
+        elif (r.status_code == 400):
+            return False
+        else:
+            return False
+
+
+    # Get Archives by entering by userUid - entered in the Params
+
+    @staticmethod
+    def getArchivesByUserId(params):
+        logging.info("getArchivesByUserId-params: " + str(params))
+
+
+        # params = {type: str(id), 'pgSize': '1', 'pgNum': '1'}
+        # payload = {}
+        # r = c42Lib.executeRequest("get", c42Lib.cp_api_archive, params, payload)
+
+
+        payload = {}
+
+        archives = None
+
+        if params and (('userId' in params) or ('userUid' in params)):
+
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_archive, params, payload)
+
+            logging.debug(r.text)
+
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+
+            archives = binary['data']['archives']
+
+        return archives
 
 
 ## TO BE DELETED
@@ -1477,12 +2102,12 @@ class c42Lib(object):
 
 
     @staticmethod
-    def getArchiveByStorePointId(storePointId):
+    def getArchiveByStorePointId(storePointId,params):
         logging.info("getArchiveByStorePointId-params:storePointId[" + str(storePointId) + "]")
         currentPage = 1
         keepLooping = True
         fullList = []
-        params = {}
+        # params = {}
         params['storePointId'] =  str(storePointId)
         while keepLooping:
             pagedList = c42Lib.getArchivesPaged(params,currentPage)
@@ -1603,9 +2228,6 @@ class c42Lib(object):
 
         return archives
 
-
-    # @staticmethod
-    # def getAllArchives():
 
 
 
@@ -1856,7 +2478,7 @@ class c42Lib(object):
 
         r = c42Lib.executeRequest("get", c42Lib.cp_api_server + "/" + str(serverId), params, payload)
 
-        logging.info("====server response : " + r.text + "====")
+        # logging.info("====server response : " + r.text + "====")
 
         content = r.content
         binary = json.loads(content)
@@ -1868,6 +2490,139 @@ class c42Lib(object):
             server = None
 
         return server
+
+    #
+    # getColdStorage(params):
+    # Returns the cold storage archives using the supplied parameters
+    # params:
+    # returns: cold storage list for params
+    #
+
+    @staticmethod
+    def getColdStorage(params):
+        logging.info("getColdStorage - params [" + str(params)+ "]")
+
+        
+        payload = {}
+
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_coldStorage, params, payload)
+            
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+        if binary['data']:
+            
+            return binary['data']
+
+        else:
+            
+            return None
+
+
+
+    #
+    # getColdStorageByOrg(orgId):
+    # Returns the cold storage archives in the supplied org
+    # params:
+    # orgId - id for the archive to update
+    # returns: cold storage list for org object
+    #
+
+    @staticmethod
+    def getColdStorageByOrg(orgId):
+        logging.info("ColdStorageByOrg")
+
+        params = {}
+        params['pgSize'] = '250'
+        params['pgNum'] = 1
+        params['orgId'] = orgId
+        params['srtKey'] = 'sourceUserName'
+        params['srtDir'] = 'asc'
+        params['active'] = 'true' # Only check against active orgs
+
+        payload = {}
+
+        currentPage = 1
+        keepLooping = True
+        fullList = []
+        while keepLooping:
+            pagedList = c42Lib.executeRequest("get", c42Lib.cp_api_coldStorage, params, payload)
+            
+            print 'Page :' + str(currentPage)
+            content = pagedList.content
+            binary = json.loads(content)
+            list = binary['data']['coldStorageRows']
+            
+            if list:
+
+                fullList.extend(list)
+            else:
+                keepLooping = False
+            currentPage += 1
+            params['pgNum'] = currentPage
+            
+
+        return fullList
+
+
+    #
+    # putColdStorageUpdate(userId, payload):
+    # updates an archive's cold storage information based on the payload passed
+    # params:
+    # archiveId - id for the archive to update
+    # payload - json object containing name / value pairs for values to update
+    # returns: user object after the update
+    #
+
+    @staticmethod
+    def putColdStorageUpdate(archiveGUID, payload):
+        logging.info("putColdStorageUpdate-params:archiveGUID[" + str(archiveGUID) + "],payload[" + str(payload) + "]")
+
+        params = {}
+        params['idType'] = 'guid'
+
+        if (payload is not None and payload != ""):
+            r = c42Lib.executeRequest("put", c42Lib.cp_api_coldStorage + "/" + str(archiveGUID), params, payload)
+            logging.debug(str(r.status_code))
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+            coldStorageArchive = binary['data']
+            return coldStorageArchive
+            # if (r.status_code == 200):
+                # return True
+            # else:
+                # return False
+        else:
+            logging.error("putColdStorageUpdate param payload is null or empty")
+
+
+    @staticmethod
+    def purgeColdStorage(guid,params):
+        logging.debug("purgeColdStorage - guid: [" + str(guid) + "]")
+
+        payload = {}
+ 
+        r = c42Lib.executeRequest("delete", c42Lib.cp_api_coldStorage+"/"+str(guid), params, payload)
+
+        logging.debug(r.text)
+
+        coldStoragePurged = False
+
+        if r.status_code == 200:
+
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+
+            coldStoragePurged = binary['data']
+
+            #print coldStoragePurged
+            #raw_input()
+
+        return coldStoragePurged
+
 
 
     # getStorePoitnByStorePointId(storePointId):
@@ -2075,9 +2830,30 @@ class c42Lib(object):
         csvfile = open(csvFileName, 'rU')
         reader = csv.reader(csvfile, dialect=csv.excel_tab)
         for row in reader:
-            fileList.append(row)
+
+            if len(row) != 0:  #Don't include the row if it's blank or empty
+                fileList.append(row)
 
         return fileList
+
+    # Read a CSV file
+
+    @staticmethod
+    def readCSVFiletoDictionary(csvFileName):
+        logging.info("readCSVfile:file - [" + csvFileName + "]")
+
+        fileList = []
+
+        #with open(csvfileName,mode='r') as csvfile:
+        #    reader = csv.reader(csvfile)
+        #    with open('csvfileName',mode='w')
+
+        #csvfile = open(csvFileName, 'rU')
+        #fileList = [{k: int(v) for k, v in row.items()}
+        #    for row in csv.DictReader(csvfile, skipinitialspace=True)
+
+        #return fileList
+
 
 
     # CSV Write & Append Method
@@ -2100,7 +2876,7 @@ class c42Lib(object):
             itemsToWriteeEncoded = ''
 
             for stufftowrite in listtowrite:
-                if (isinstance (stufftowrite,(int)) or isinstance(stufftowrite,(float)) or isinstance(stufftowrite,(long))):
+                if (isinstance (stufftowrite,(int)) or isinstance(stufftowrite,(float)) or isinstance(stufftowrite,(long)) or isinstance(stufftowrite,(datetime.date))):
                     itemsToWriteeEncoded = stufftowrite
             
                 elif stufftowrite is not None: 
@@ -2119,7 +2895,7 @@ class c42Lib(object):
             output = open(filenametowrite, writeType) # Open the file to append to it
 
             
-            if (isinstance (listtowrite,(int)) or isinstance(listtowrite,(float)) or isinstance(stufftowrite,(long))):
+            if (isinstance (listtowrite,(int)) or isinstance(listtowrite,(float)) or isinstance(stufftowrite,(long)) or isinstance(stufftowrite,(datetime.date))):
                 itemsToWriteeEncoded = listtowrite # if the item is an integer, just add it to the list
             
             elif listtowrite is not None: 
