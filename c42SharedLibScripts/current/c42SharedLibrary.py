@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 08-26-2016
+# Last Modified: 08-29-2016
 
 # Author: AJ LaVenture
 # Author: Paul Hirst
@@ -315,6 +315,25 @@ class c42Lib(object):
         # binary = json.loads(content)
         # logging.debug(binary)
 
+
+    # Validates User Credentials by trying to look up the user's own info based on their username.deviceList = c42Lib.getDevicesCustomParams(currentPage,params)
+
+    @staticmethod
+    def validateUserCredentials():
+
+        # Check if username/password combination is valid
+
+        isValidUser = False
+
+        params = {}
+        params['username'] = c42Lib.cp_username
+
+        getUserInfo = c42Lib.getUser(params)
+
+        if getUserInfo is not None:
+            isValidUser = True
+
+        return isValidUser
 
 
 
@@ -767,16 +786,26 @@ class c42Lib(object):
             content = r.content
             r.content
             binary = json.loads(content)
+
             logging.debug(binary)
-            return binary['data']['users']
+
+            try:
+                return binary['data']['users']
+
+            except TypeError:
+                
+                return None
+
             # binary['data']['users'][0]['userUid']
+        
         else:
+        
             return None
         
 
 
 
-    #
+#
     # getUserById(userId):
     # returns the user json object of the requested userId
     # params:
@@ -1079,8 +1108,8 @@ class c42Lib(object):
 
         params = {}
         payload = {}
-        payload["userUid"] = userUid
-        payload["parentOrgUid"] = orgUid
+        payload["userId"] = userUid
+        payload["parentOrgId"] = orgUid
 
         r = c42Lib.executeRequest("post", c42Lib.cp_api_userMoveProcess, params, payload)
         logging.debug(r.status_code)
@@ -2037,6 +2066,37 @@ class c42Lib(object):
             return False
 
 
+    # Get Archives by entering by userUid - entered in the Params
+
+    @staticmethod
+    def getArchivesByUserId(params):
+        logging.info("getArchivesByUserId-params: " + str(params))
+
+
+        # params = {type: str(id), 'pgSize': '1', 'pgNum': '1'}
+        # payload = {}
+        # r = c42Lib.executeRequest("get", c42Lib.cp_api_archive, params, payload)
+
+
+        payload = {}
+
+        archives = None
+
+        if params and (('userId' in params) or ('userUid' in params)):
+
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_archive, params, payload)
+
+            logging.debug(r.text)
+
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+
+            archives = binary['data']['archives']
+
+        return archives
+
+
 ## TO BE DELETED
 ##========================================================================================
 
@@ -2776,6 +2836,25 @@ class c42Lib(object):
                 fileList.append(row)
 
         return fileList
+
+    # Read a CSV file
+
+    @staticmethod
+    def readCSVFiletoDictionary(csvFileName):
+        logging.info("readCSVfile:file - [" + csvFileName + "]")
+
+        fileList = []
+
+        #with open(csvfileName,mode='r') as csvfile:
+        #    reader = csv.reader(csvfile)
+        #    with open('csvfileName',mode='w')
+
+        #csvfile = open(csvFileName, 'rU')
+        #fileList = [{k: int(v) for k, v in row.items()}
+        #    for row in csv.DictReader(csvfile, skipinitialspace=True)
+
+        #return fileList
+
 
 
     # CSV Write & Append Method
