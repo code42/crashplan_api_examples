@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 07-18-2016
+# Last Modified: 08-26-2016
 
 # Author: AJ LaVenture
 # Author: Paul Hirst
