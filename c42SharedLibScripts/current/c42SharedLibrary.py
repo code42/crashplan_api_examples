@@ -1979,7 +1979,8 @@ class c42Lib(object):
 
 
 
-    #
+    # DO NOT USE, this api is un-paged and will cause performance issues
+    # You've been warned
     # returns list of users in legal hold: active only
     #
     @staticmethod
@@ -1992,7 +1993,6 @@ class c42Lib(object):
         params['activeState'] = "active"
 
         payload = {}
-        logging.info(str(payload))
         # r = requests.get(url, params=payload, headers=headers)
         r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHoldMembershipSummary, params, payload)
 
@@ -2006,6 +2006,57 @@ class c42Lib(object):
         users = binary['data']['legalHoldMemberships']
 
         return users
+
+    @staticmethod
+    def getAllLegalHoldMemberships(legalHoldUid, **kwargs):
+        logging.info("getAllLegalHoldMemberships-params:legalHoldUid[" + str(legalHoldUid) + "]")
+        if kwargs:
+            logging.info("kwargs params: " + str(kwargs))
+
+        currentPage = 1
+        keepLooping = True
+        fullList = []
+        while keepLooping:
+            pagedList = c42Lib.getAllLegalHoldMemberhipsPaged(legalHoldUid, currentPage, **kwargs)
+            if pagedList:
+                fullList.extend(pagedList)
+            else:
+                keepLooping = False
+            currentPage += 1
+        return fullList
+
+
+    @staticmethod
+    def getAllLegalHoldMemberhipsPaged(legalHoldUid, currentPage, **kwargs):
+        logging.info("getAllLegalHoldMemberhipsPaged-params:legalHoldUid[" + str(legalHoldUid) + "]")
+        if kwargs:
+            logging.info("kwargs params: " + str(kwargs))
+        logging.info("currentPage: " + str(currentPage))
+
+        params = {}
+        params['legalHoldUid'] = legalHoldUid
+        params['pgNum'] = currentPage
+        # default is 100... not sure if need to set
+        # params['pgSize'] = "100"
+
+        # spec says default is "Active", but not trusting it, so setting "Active" if no params inputted
+        if kwargs and 'activeState' in kwargs:
+            params['activeState'] = kwargs['activeState']
+        else:
+            params['activeState'] = "active"
+
+        payload = {}
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHoldMembership, params, payload)
+        logging.debug(r.text)
+
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+        users = binary['data']['legalHoldMemberships']
+        logging.info("number of users returned: " + str(len(users)))
+        return users
+
 
     
     @staticmethod
