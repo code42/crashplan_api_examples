@@ -21,7 +21,7 @@
 #  * Archive adoption (or original owner) not requried.
 # 
 # Author: Marc Johnson, Code 42 Software
-# Last Modified: 04-07-2014 
+# Last Modified: 09-19-2016 by Jack Phinney, Code42 Software 
 # 
 # --------
 #
@@ -49,10 +49,10 @@
 ###################################
 
 # PROe Master Server (e.g. http/4280 or https/4285)
-MASTER='https://127.0.01:4285' 
+MASTER='http://192.168.0.11:4280' 
 
 # Restore credentials 
-CPLOGIN='admin:admin' 
+CPLOGIN='admin:admin00' 
 
 # Computers (both can be remote and different)
 sourceComputer=C02HT6EGF57J
@@ -68,11 +68,11 @@ getDirs=(
 	"/Users/mjohnson/Documents/test"
 	"/Users/mjohnson/Documents/Scratch Projects"
 )
-getFiles=(
-	"/Users/mjohnson/Desktop/test.pdf" 
-	"/Users/mjohnson/Desktop/test2.pdf"  
-	"/Users/mjohnson/Desktop/test3.pdf"
-)
+# getFiles=(
+#	"/Users/mjohnson/Desktop/test.pdf" 
+#	"/Users/mjohnson/Desktop/test2.pdf"  
+#	"/Users/mjohnson/Desktop/test3.pdf"
+#)
 # Timeout limit for Web Restore
 TIMEOUT=900 #seconds
 
@@ -132,7 +132,7 @@ serverName=`jsonValue serverName "${JSON}"`
 # If provider node
 if [[ "${serverName}" == *ProviderNode* ]]; then
 	echo "Detected Public Cloud storage source..."
-	destGuid=`echo ${JSON} | sed 's/^.*ProviderMountPoint: node: //; s/".*$//'`
+	destGuid=`echo ${JSON} | python -mjson.tool | grep serverGuid | cut -d'"' -f4`
 else
 	# Get destination data is stored on
 	echo "Detected MPC storage source..."

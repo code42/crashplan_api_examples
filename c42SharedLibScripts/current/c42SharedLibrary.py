@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 07-25-2016
+# Last Modified: 08-29-2016
 
 # Author: AJ LaVenture
 # Author: Paul Hirst
@@ -805,27 +805,27 @@ class c42Lib(object):
 
 
 
-    #
+#
     # getUserById(userId):
     # returns the user json object of the requested userId
     # params:
     # userId: the id of the user within the system's database
     #
     @staticmethod
-    def getUserById(userId,**kwargs):
-        logging.info("getUser-params:userId[" + str(userId) + "]")
+    def getUserById(userNumber,**kwargs):
+        logging.info("getUser-params:userNumber[" + str(userNumber) + "]")
 
         params = {}
-        if not kwargs:
+        if kwargs:
+            params = kwargs
+        else:
             params['incAll'] = 'true'
             params['idType'] = 'uid' # Needed for the 4.x series and beyond
-        else:
-            params = kwargs
 
         payload = {}
 
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_user + "/" + str(userId), params, payload)
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_user + "/" + str(userNumber), params, payload)
 
         logging.debug(r.text)
 
@@ -834,7 +834,8 @@ class c42Lib(object):
         logging.debug(binary)
 
         user = binary['data']
-        return user
+
+        return binary
 
     @staticmethod
     def getUserByMy():
