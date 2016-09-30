@@ -423,6 +423,8 @@ class c42Lib(object):
 
             serverInfoType = 'Manually Entered'
 
+        
+
         return serverInfoSet
 
 
@@ -1935,6 +1937,79 @@ class c42Lib(object):
                             break
 
         return actionResults
+
+
+    #
+    # legalHoldHinfo(legalHoldUid):
+    # Returns the info available for a Legal Hold
+    # params:
+    # legalHoldUid - Uid of the LegalHold to get/put info
+    # userUid - Uid of the user being added or removed
+    # actionType - "add" or "put" depending on what you'd like to have happen
+    # returns: returns a 204 if successfully removed
+    #
+
+
+    @staticmethod
+    def legalHoldInfo(**kwargs):
+        
+        logging.info("legalHoldInfo-params: " + str(kwargs)
+
+        actionResults = False
+
+        if actionType == 'get':
+
+            params = {}
+            payload = {}
+            payload["legalHoldUid"] = kwargs['legalHoldUid']
+
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHold, params, payload)
+            logging.debug(r.status_code)
+
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+
+            if binary['data']:
+                actionResults = binary['data']
+
+        elif actionType == 'put':
+
+            #First, get the user's legal hold memberships to find the legalHoldMembershipUid to be able to deactivate the user
+
+            actionResults = False
+
+            params = {}
+            payload = {}
+            payload["legalHoldUid"] = kwargs['legalHoldUid']
+            if kwargs['name']:
+                payload['name'] = kwargs['name']
+            if kwargs['description']:
+                payload['description'] = kwargs['description']
+            if kwargs['notes']:
+                payload['notes'] = kwargs['notes']
+            if kwargs['holdExtRef']:
+                payload['holdExtRef'] = kwargs['holdExtRef']
+            if kwargs['active']:
+                payload['active'] = kwargs['active']
+            if kwargs['creationDate']:
+                payload['creationDate'] = kwargs['creationDate']
+            if kwargs['lastModified']:
+                payload['lastModified'] = kwargs['lastModified']
+            if kwargs['creator']:
+                payload['creator'] = kwargs['creator']
+            if kwargs['configOverride']:
+                payload['configOverride'] = kwargs['configOverride']
+
+            r = c42Lib.executeRequest("put", c42Lib.cp_api_legalHold, params, payload)
+            logging.debug(r.status_code)
+
+            if (r.status_code == 204):
+                actionResults = True
+                break
+
+        return actionResults
+
 
     #
     # Params: Uid/Guid/Id - currently the API wants the ID not the GUID or UID
