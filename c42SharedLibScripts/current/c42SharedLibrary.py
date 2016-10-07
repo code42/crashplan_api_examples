@@ -775,7 +775,7 @@ class c42Lib(object):
 
     @staticmethod
     def getUser(params):
-        logging.info("getUser-params:userId[" + str(params) + "]")
+        logging.info("getUser-params:params[" + str(params) + "]")
 
         if params and (('username' in params) or ('userId' in params) or ('userUid' in params) or ('q' in params)):
             payload = {}
