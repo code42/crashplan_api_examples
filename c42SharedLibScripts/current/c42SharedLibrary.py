@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 07-25-2016
+# Last Modified: 08-29-2016
 
 # Author: AJ LaVenture
 # Author: Paul Hirst
@@ -401,7 +401,7 @@ class c42Lib(object):
     @staticmethod
     def cpServerInfo(cp_serverInfoFile,cp_serverInfoFileName,cp_serverEntryFlag,cp_serverHostURL,cp_serverHostPort):
 
-        serverInfoSet = False
+        serverInfoType = False
 
         serverInfoType = 'Hardcoded' 
 
@@ -423,7 +423,13 @@ class c42Lib(object):
 
             serverInfoType = 'Manually Entered'
 
-        return serverInfoSet
+        canConnect = False
+        canConnect = c42Lib.reachableNetworkTest(c42Lib.cp_host)
+
+        if not canConnect:
+            serverInfoType = False
+
+        return serverInfoType
 
 
     #
@@ -432,7 +438,28 @@ class c42Lib(object):
     # Returns: Check if address is reachable. None on failure
     #
     @staticmethod
+    def URLPing(private_address):
+
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_ping, {}, {})
+
+        contents = r.content.decode("UTF-8")
+        binary = json.loads(contents)
+        return binary['data'] if 'data' in binary else None
+
+    #
+    # Params:
+    # private address: address to check if reachbale
+    # Returns: Check if address is reachable. None on failure
+    #
+    @staticmethod
     def reachableNetworkTest(private_address, **kwargs):
+
+        # strip off http or https if testing connectivity to URL that's more than a ping.
+        if private_address[:5] == "https":
+            private_address = private_address[8:]
+        if private_address[:4] == "http":
+            private_address = private_address[7:]
+
         payload = {
             "testType":"reachable",
             "address":private_address,
@@ -805,27 +832,27 @@ class c42Lib(object):
 
 
 
-    #
+#
     # getUserById(userId):
     # returns the user json object of the requested userId
     # params:
     # userId: the id of the user within the system's database
     #
     @staticmethod
-    def getUserById(userId,**kwargs):
-        logging.info("getUser-params:userId[" + str(userId) + "]")
+    def getUserById(userNumber,**kwargs):
+        logging.info("getUser-params:userNumber[" + str(userNumber) + "]")
 
         params = {}
-        if not kwargs:
+        if kwargs:
+            params = kwargs
+        else:
             params['incAll'] = 'true'
             params['idType'] = 'uid' # Needed for the 4.x series and beyond
-        else:
-            params = kwargs
 
         payload = {}
 
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_user + "/" + str(userId), params, payload)
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_user + "/" + str(userNumber), params, payload)
 
         logging.debug(r.text)
 
@@ -834,7 +861,8 @@ class c42Lib(object):
         logging.debug(binary)
 
         user = binary['data']
-        return user
+
+        return binary
 
     @staticmethod
     def getUserByMy():
@@ -1848,11 +1876,19 @@ class c42Lib(object):
 
     @staticmethod
     def getUserLegalHoldMemberships(**kwargs):
-        logging.info("getUserLegalHoldMembership-kwargs:userUid[" + str(kwargs['userUid']) + "]")
+        logging.info("getUserLegalHoldMembership-kwargs:userUid[" + str(kwargs) + "]")
 
-        params['userUid'] = kwargs['userUid']
-        if kwargs['activeState']:
+        params = {}
+
+        if 'params' in kwargs:
+
+            params = kwargs['params']
+        
+        if 'activeState' in kwargs:
             params ['activeState'] = kwargs['activeState']  #Specifiy only the inactive, active or all memberships
+
+        if 'userUid' in kwargs:
+            params ['userUid'] = kwargs['userUid']
         payload = {}
 
         r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHoldMembership, params, payload)
@@ -1873,68 +1909,49 @@ class c42Lib(object):
             return False
 
 
+    
     #
-    # updateLegalHoldMembership(legalHoldUid,userUid,actionType):
-    # Either adds a user to a Legal Hold or removes them
+    # legalHoldHinfo(legalHoldUid):
+    # Returns the info available for a Legal Hold
     # params:
-    # legalHoldUid - Uid of the LegalHold to place the user into
+    # legalHoldUid - Uid of the LegalHold to get/put info
     # userUid - Uid of the user being added or removed
-    # actionType - "add" or "remove" depending on what you'd like to have happen
-    # returns: for adding, returns a body with the legal hold info for that user
-    #          for removing, returns a 204 if successfully removed
+    # actionType - "add" or "put" depending on what you'd like to have happen
+    # returns: returns a 204 if successfully removed
     #
 
 
     @staticmethod
-    def userLegalHoldAction(actionType, **kwargs):
-        
-        logging.info("userLegalHoldAction-params:actionType[" + str(actionType) + "],legalHoldUid[" + str(kwargs['legalHoldUid']) + "],userUid[" + str(kwargs['userUid']) + "]")
+    def legalHoldInfo(**kwargs):
+  
+        logging.info("legalHoldInfo-params: " + str(kwargs))
 
-        actionResults = False
+        legalHoldInfo = False
 
-        if actionType == 'add':
+        payload = {}
 
+        if 'legalHoldUid' in kwargs:
             params = {}
-            payload = {}
-            payload["userUid"]      = kwargs['userUid']
-            payload["legalHoldUid"] = kwargs['legalHoldUid']
+            params["legalHoldUid"] = kwargs['legalHoldUid']
+        
+        elif 'params' in kwargs:
+            params = kwargs['params']
+        else:
+            params = {}
 
-            r = c42Lib.executeRequest("post", c42Lib.cp_api_legalHoldMembership, params, payload)
-            logging.debug(r.status_code)
 
-            content = r.content
-            binary = json.loads(content)
-            logging.debug(binary)
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_legaHold, params, payload)
+        logging.debug(r.status_code)
 
-            if binary['data']:
-                actionResults = binary['data']
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
 
-        elif actionType == 'remove':
+        if binary['data']['legalHolds']:
+            legalHoldInfo = binary['data']['legalHolds']     
 
-            #First, get the user's legal hold memberships to find the legalHoldMembershipUid to be able to deactivate the user
+        return legalHoldInfo
 
-            userLegalHoldInfo = c42Lib.getUserLegalHoldMemberships(userUid=kwargs['userUid'],activeState='ACTIVE')
-
-            actionResults = False
-
-            if userLegalHoldInfo:
-
-                for index,legalHold in userLegalHoldInfo:
-
-                    if legalHold['legalHold']['legalHoldUid'] == kwargs['legalHoldUid']:
-
-                        params = {}
-                        payload = {}
-                        payload["legalHoldMembershipUid"] = legalHold["legalHoldMembershipUid"]
-
-                        r = c42Lib.executeRequest("post", c42Lib.cp_api_legalHoldMembershipDeactivation, params, payload)
-                        logging.debug(r.status_code)
-
-                        if (r.status_code == 204):
-                            actionResults = True
-                            break
-
-        return actionResults
 
     #
     # Params: Uid/Guid/Id - currently the API wants the ID not the GUID or UID
@@ -1976,6 +1993,35 @@ class c42Lib(object):
             actionResults = False
 
         return actionResults
+
+    #
+    # Get general legal hold info
+
+
+    @staticmethod
+    def getLegalHoldInfo(**kwargs):
+        logging.info("getLegalHoldInfo-params:[" + str(kwargs) + "]")
+        params = {}
+
+
+
+
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHold, params, payload)
+
+        logging.debug(r.status_code)
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+        if binary['data']:
+            actionResults = binary['data']
+
+        else:
+
+            actionResults = False
+
+        return actionResults
+
 
 
 
@@ -2879,9 +2925,10 @@ class c42Lib(object):
         fileList = []
 
         csvfile = open(csvFileName, 'rU')
-        reader = csv.reader(csvfile, dialect=csv.excel_tab)
+        fileDialect = csv.Sniffer().sniff(csvfile.read(1024))
+        csvfile.seek(0)
+        reader = csv.reader(csvfile, delimiter=",",dialect=fileDialect)
         for row in reader:
-
             if len(row) != 0:  #Don't include the row if it's blank or empty
                 fileList.append(row)
 
