@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 08-29-2016
+# Last Modified: 11-04-2016
 
 # Author: AJ LaVenture
 # Author: Paul Hirst
@@ -334,6 +334,55 @@ class c42Lib(object):
             isValidUser = True
 
         return isValidUser
+
+    # User Authentication
+
+    @staticmethod
+    def authenticateUser(enteredUserName,userName,userCustomerCredFile,credentialFile):
+
+        userAuthType = 'Hardcoded' 
+
+        logging.debug ("=========== Authenticate User")
+
+        if userCustomerCredFile: # If using a credentials file
+            
+            with open(str(credentialFile)) as f:
+                c42Lib.cp_username = base64.b64decode(f.readline().strip())
+                c42Lib.cp_password = base64.b64decode(f.readline().strip())
+
+            userAuthType = 'Credentials File'
+
+        if enterUserName:
+
+            print ""
+            c42Lib.cp_password = getpass.getpass('=========== Please enter the password for user ' + str(userName) + ' : ')
+            c42Lib.cp_username = userName
+
+            userAuthType = 'Entered Password'
+
+        if userAuthType == 'Hardcoded':
+
+            if c42Lib.cp_username == 'admin':
+                print ""
+                print "Username is set to 'admin'!  If this is really your username you should change it."
+                print ""
+                raw_input("Please press 'Enter' to proceed.")
+                print ""
+
+            else:
+                print "Username has been hardcoded to : " + c42Lib.cp_username
+
+            if c42Lib.cp_password == 'admin':
+                print ""
+                print "Username is set to 'admin'!  If this is really your password you should change it."
+                print ""
+                raw_input("Please press 'Enter' to proceed.")
+                print ""
+            else:
+                print "Password has been hardcoded.  Not shown."
+
+        
+        return userAuthType
 
 
 
@@ -860,7 +909,15 @@ class c42Lib(object):
         binary = json.loads(content)
         logging.debug(binary)
 
-        user = binary['data']
+        try:
+            user = binary['data']
+        except TypeError:
+
+            logging.info("There was an error getting the user [ " + str(userNumber) + " ] ")
+            logging.info("This is the returned response : ")
+            logging.info( binary )
+
+            user = False
 
         return binary
 
@@ -1100,16 +1157,18 @@ class c42Lib(object):
     @staticmethod
     def putUserDeactivate(userId, deactivate):
         logging.info("putUserDeactivate-params:userId[" + str(userId) + "],deactivate[" + str(deactivate) + "]")
+        params = {}
+        payload = {}
         if (userId is not None and userId != ""):
             if deactivate:
-                r = c42Lib.executeRequest("put", c42Lib.cp_api_deactivateUser+"/"+str(userId),"","")
+                r = c42Lib.executeRequest("put", c42Lib.cp_api_deactivateUser+"/"+str(userId), params, payload)
                 logging.debug('Deactivate Call Status: '+str(r.status_code))
                 if not (r.status_code == ""):
                     return True
                 else:
                     return False
             else:
-                r = c42Lib.executeRequest("delete", c42Lib.cp_api_deactivateUser+"/"+str(userId),"","")
+                r = c42Lib.executeRequest("delete", c42Lib.cp_api_deactivateUser+"/"+str(userId), params, payload)
                 logging.debug('Deactivate Call Status: '+str(r.status_code))
                 if not (r.status_code == ""):
                     return True
@@ -1522,7 +1581,11 @@ class c42Lib(object):
         binary = json.loads(content)
         logging.debug(binary)
 
-        devices = binary['data']['computers']
+        try:
+            devices = binary['data']['computers']
+        except TypeError:
+            devices = False
+
         return devices
     #
     # getDevicesByOrgPaged(orgId, pgNum):
