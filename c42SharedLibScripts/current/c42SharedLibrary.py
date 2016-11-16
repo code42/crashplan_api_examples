@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 11-04-2016
+# Last Modified: 11-15-2016
 
 # Author: AJ LaVenture
 # Author: Paul Hirst
@@ -45,6 +45,7 @@ from dateutil.relativedelta import *
 import datetime
 import calendar
 import re
+import getpass
 
 class c42Lib(object):
 
@@ -87,12 +88,14 @@ class c42Lib(object):
     cp_api_loginToken = "/api/LoginToken"
     cp_api_networkTest = "/api/NetworkTest"
     cp_api_org = "/api/Org"
+    cp_api_orgDeactivation = "/api/OrgDeactivation"
     cp_api_orgSettings = "/api/OrgSettings"
     cp_api_ping = "/api/Ping"
     cp_api_plan = "/api/Plan"
     cp_api_pushRestoreJob = "/api/PushRestoreJob"
     cp_api_restoreRecord = "/api/RestoreRecord"
     cp_api_server = "/api/Server"
+    cp_api_smartsearch = "/api/SmartSearch"
     cp_api_storage = "/api/Storage"
     cp_api_storageAuthToken = "/api/StorageAuthToken"
     cp_api_storedBytesHistory = "/api/StoredBytesHistory"
@@ -352,7 +355,7 @@ class c42Lib(object):
 
             userAuthType = 'Credentials File'
 
-        if enterUserName:
+        if enteredUserName:
 
             print ""
             c42Lib.cp_password = getpass.getpass('=========== Please enter the password for user ' + str(userName) + ' : ')
@@ -888,8 +891,8 @@ class c42Lib(object):
     # userId: the id of the user within the system's database
     #
     @staticmethod
-    def getUserById(userNumber,**kwargs):
-        logging.info("getUser-params:userNumber[" + str(userNumber) + "]")
+    def getUserById(userId,**kwargs):
+        logging.info("getUser-params:userId[" + str(userId) + "]")
 
         params = {}
         if kwargs:
@@ -901,7 +904,7 @@ class c42Lib(object):
         payload = {}
 
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_user + "/" + str(userNumber), params, payload)
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_user + "/" + str(userId), params, payload)
 
         logging.debug(r.text)
 
@@ -913,7 +916,7 @@ class c42Lib(object):
             user = binary['data']
         except TypeError:
 
-            logging.info("There was an error getting the user [ " + str(userNumber) + " ] ")
+            logging.info("There was an error getting the user [ " + str(userId) + " ] ")
             logging.info("This is the returned response : ")
             logging.info( binary )
 
@@ -1023,10 +1026,13 @@ class c42Lib(object):
     def getUsersPaged(pgNum,params):
         logging.info("getUsersPaged-params:pgNum[" + str(pgNum) + "]")
 
-        # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
-        # url = cp_host + ":" + cp_port + cp_api_user
+        try:
+            if not params['pgSize']:
+                params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
+        except:
+            params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
+
         params['pgNum'] = str(pgNum)
-        params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
 
         payload = {}
 
@@ -1249,6 +1255,58 @@ class c42Lib(object):
 
 
     #
+    # deactivateOrg(orgId):
+    # Deactivates an orginization based orgId
+    # params:
+    # orgId - id of the organization.
+    # Returns:
+    # 201 - Deactivated?
+    # 204 - Already Deactivated
+    # 404 - Not Found
+
+    @staticmethod
+    def deactivateOrg(**kwargs):
+        logging.info("deactivatedOrg-orgId:" + str(kwargs))
+
+        params  = {}
+        payload = {}
+
+        action = ''
+
+        if kwargs:
+            if kwargs['action']:
+                if kwargs['action'] =='reactivate':
+                    action = 'delete'  # Reactivate org (or remove deactivation)
+
+                if kwargs['action'] == 'deactivate':
+                    action = 'put'     # Deactivate org
+
+            if action == '':
+                return 500 # No action was passed along so return error code 500
+
+            if kwargs['orgId']:
+                
+                orgId = kwargs['orgId']
+
+                r = c42Lib.executeRequest(action, c42Lib.cp_api_org + "/" + str(orgId), params, payload)
+
+                logging.debug(r.text)
+
+                content = r.content
+                binary = json.loads(content)
+                logging.debug(binary)
+                
+                return int(r.status_code)
+                    # 201 - Deactivated?
+                    # 204 - Already Deactivated
+                    # 404 - Not Found
+
+        else:
+
+            return 500  # Didn't provide an action
+
+
+    #
     # getOrg(orgId):
     # Returns all organization data for specified organization
     # params:
@@ -1438,6 +1496,50 @@ class c42Lib(object):
         return device
 
     #
+    # getDeviceByParams(params):
+    # returns device information based on custom parameters
+    # params:
+    # any of the device parameters
+    #
+
+    @staticmethod
+    def getDeviceParams(**kwargs):
+        logging.info("getDeviceByName-params: [" + str(kwargs))
+
+        params = {}
+
+        if kwargs['params']:
+            params = kwargs['params']
+
+            payload = {}
+
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_computer + "/", params, payload)
+
+            logging.debug(r.text)
+
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+
+            binary_length = len(binary['data']['computers'])
+
+            if binary_length > 0:
+
+                device = binary['data']['computers'][0]
+
+            else:
+
+                device = None # If the result is null
+
+        else:
+
+            device = None
+
+        return device
+
+
+
+    #
     # getDeviceByName(deviceName):
     # returns device information based on computerId
     # params:
@@ -1445,12 +1547,18 @@ class c42Lib(object):
     #
 
     @staticmethod
-    def getDeviceByName(deviceName, incAll):
-        logging.info("getDeviceByName-params:name[" + deviceName + "]")
+    def getDeviceByName(deviceName, **kwargs):
+        logging.info("getDeviceByName-params:name[" + deviceName + "],  " + str(kwargs))
 
         params = {}
-        params['q'] = deviceName
-        params['incAll'] = incAll
+
+        if kwargs['params']:
+            params = kwargs['params']
+
+        else:
+
+            params['q'] = deviceName
+            params['incAll'] = incAll
 
         payload = {}
 
@@ -2883,6 +2991,24 @@ class c42Lib(object):
         return binary
 
 
+    # params:
+    # 
+    @staticmethod
+    def smartsearch(**kwargs):
+        logging.info("requestSmartSearch: " + str(kwargs))
+        payload = {}
+        if kwargs:
+            params=kwargs['params']
+        else:
+            return None
+        
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_smartsearch + "?", params, payload)
+        contents = r.content.decode("UTF-8")
+        binary = json.loads(contents)
+        logging.info("requestSmartSearch Response: " + str(contents))
+        return binary['data'] if 'data' in binary else None
+
+
 
     #
     # Compute base64 representation of the authentication token.
@@ -2902,8 +3028,17 @@ class c42Lib(object):
     # Sets logger to file and console
     #
     @staticmethod
-    def setLoggingLevel():
+    def setLoggingLevel(**kwargs):
         # set up logging to file
+
+        showInConsole = True
+
+        if kwargs:
+            if kwargs['logFileName']:
+                c42Lib.cp_logFileName = kwargs['logFileName']
+            if not kwargs['showInConsole']:
+                showInConsole = kwargs['showInConsole']  # Let's you turn off logging to the console if you like.
+
         logging.basicConfig(
                             #level=logging.DEBUG,
                             level = logging.INFO,
@@ -2915,11 +3050,25 @@ class c42Lib(object):
         # define a Handler which writes INFO messages or higher to the sys.stderr
         console = logging.StreamHandler()
 
-        if(c42Lib.cp_logLevel=="DEBUG"):
-            console.setLevel(logging.DEBUG)
-            # console.setLevel(logging.INFO)
+
+        if showInConsole:
+
+            # print ""
+            # print "---------- Logging set to show in console."
+            # print ""
+
+            if(c42Lib.cp_logLevel=="DEBUG"):
+                console.setLevel(logging.DEBUG)
+                # console.setLevel(logging.INFO)
+            else:
+                console.setLevel(logging.INFO)
         else:
-            console.setLevel(logging.INFO)
+
+            # print ""
+            # print "---------- No logging will be show in the console."
+            # print ""
+
+            console.setLevel(logging.ERROR) # Only show errors in the console
 
         # set a format which is simpler for console use
         formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
