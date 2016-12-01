@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 11-15-2016
+# Last Modified: 12-01-2016
 
 # Author: AJ LaVenture
 # Author: Paul Hirst
@@ -537,11 +537,14 @@ class c42Lib(object):
         else:
             return None
         
-        r = c42Lib.executeRequest("post", c42Lib.cp_api_loginToken, {}, payload, **kwargs)
-        contents = r.content.decode("UTF-8")
-        binary = json.loads(contents)
-        logging.info("requestLoginToken Response: " + str(contents))
-        return binary['data']['loginToken'] if 'data' in binary else None
+        try:
+            r = c42Lib.executeRequest("post", c42Lib.cp_api_loginToken, {}, payload, **kwargs)
+            contents = r.content.decode("UTF-8")
+            binary = json.loads(contents)
+            logging.info("requestLoginToken Response: " + str(contents))
+            return binary['data']['loginToken'] if 'data' in binary else None
+        except KeyError:
+            return None
 
 
     #
@@ -1504,7 +1507,7 @@ class c42Lib(object):
 
     @staticmethod
     def getDeviceParams(**kwargs):
-        logging.info("getDeviceByName-params: [" + str(kwargs))
+        logging.info("getDeviceParams-params: [" + str(kwargs))
 
         params = {}
 
@@ -3137,9 +3140,17 @@ class c42Lib(object):
         fileList = []
 
         csvfile = open(csvFileName, 'rU')
-        fileDialect = csv.Sniffer().sniff(csvfile.read(1024))
-        csvfile.seek(0)
-        reader = csv.reader(csvfile, delimiter=",",dialect=fileDialect)
+
+        if (',' in csvfile.read(1024)):
+            csvfile.seek(0) # Return to beginning of file
+            fileDialect = csv.Sniffer().sniff(csvfile.read(1024),'\n')
+            csvfile.seek(0) # Return to beginning of file
+            reader = csv.reader(csvfile, delimiter=fileDialect.delimiter,dialect=fileDialect)
+
+        else:  # Use for single column without a delimiter
+            csvfile.seek(0) # Return to beginning of file
+            reader = csv.reader(csvfile)
+
         for row in reader:
             if len(row) != 0:  #Don't include the row if it's blank or empty
                 fileList.append(row)
