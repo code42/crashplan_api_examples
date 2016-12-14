@@ -1258,6 +1258,50 @@ class c42Lib(object):
 
 
     #
+    # updateOrg(orgUid):
+    # Updates Org values
+    # params:
+    # orgUid - id of the organization.
+    # idType - should be orgUid, orgId is being deprecated
+
+    @staticmethod
+    def modifyOrg(**kwargs):
+        logging.info("modifyOrg-orgId:" + str(kwargs))
+
+        if kwargs:
+
+            params  = {}
+            payload = {}
+
+            if kwargs['orgUid'] and kwargs['payload']:
+                
+                params['idType'] = 'orgUid'
+                payload = {kwargs['payload']}
+
+                r = c42Lib.executeRequest('put', c42Lib.cp_api_org + "/" + str(orgUid), params, payload)
+
+                logging.debug(r.text)
+
+                content = r.content
+                binary = json.loads(content)
+                logging.debug(binary)
+
+                try:
+                    orgData = binary['data']
+
+                    return orgData
+
+                except TypeError:
+
+                    return int(r.status_code)
+
+        else:
+
+            return 500  # Didn't provide an action
+
+
+
+    #
     # deactivateOrg(orgId):
     # Deactivates an orginization based orgId
     # params:
@@ -1291,7 +1335,7 @@ class c42Lib(object):
                 
                 orgId = kwargs['orgId']
 
-                r = c42Lib.executeRequest(action, c42Lib.cp_api_org + "/" + str(orgId), params, payload)
+                r = c42Lib.executeRequest(action, c42Lib.cp_api_orgDeactivation + "/" + str(orgId), params, payload)
 
                 logging.debug(r.text)
 
@@ -1362,6 +1406,13 @@ class c42Lib(object):
         logging.info("getOrgs-params:pgNum[" + str(pgNum) + "]")
 
         params = {}
+
+        if kwargs:
+            logging.info("getOrgs-params:kwargs[" + str(kwargs) + "]")
+
+            if kwargs['params']:
+                params = kwargs['params']
+
         params['pgNum'] = str(pgNum)
         params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
 
@@ -1377,6 +1428,44 @@ class c42Lib(object):
 
         orgs = binary['data']
         return orgs
+
+
+    #
+    # getOrgsNew(**kwargs):
+    # returns json list object of all users for the requested page number
+    # params:
+    # pgNum - page request for information (starting with 1)
+    #
+
+    @staticmethod
+    def getOrgsNew(**kwargs):
+        logging.info("getOrgs")
+
+        params = {}
+
+        if kwargs:
+            logging.info("getOrgs-params:kwargs[" + str(kwargs) + "]")
+
+            if kwargs['params']:
+                params = kwargs['params']
+            else:
+                params['pgNum'] = 1
+
+        params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
+
+        payload = {}
+
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_org, params, payload)
+
+        logging.debug(r.text)
+
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+        orgs = binary['data']
+        return orgs
+
 
     #
     # getOrgPageCount():
