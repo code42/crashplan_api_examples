@@ -408,9 +408,6 @@ def licensesAvailableList ():
 							thisExpireDate = datetime.strptime(thisExpireDate, '%Y-%m-%d %H:%M:%S.%f')
 							thisExpireDate = datetime.date(thisExpireDate)
 
-							rawDeviceRow = (device['sourceUserId'],userInfo['userUid'],userInfo['username'],device['sourceUserFirstName'],device['sourceUserLastName'],device['sourceUserEmail'],device['orgId'],device['orgName'],device['archiveGuid'],device['sourceComputerName'],device['archiveBytes'],thisExpireDate)
-							c42Lib.writeCSVappend (rawDeviceRow, licensesAvailableRawFile,'a+')
-
 							# Compare expire dates - if the current cold storage date is sooner, use it instead
 							if thisExpireDate > listExpireDate:
 
@@ -436,6 +433,8 @@ def licensesAvailableList ():
 								usersInColdStorage[device['sourceUserId']]  = replaceUserInCold
 
 								# Write this out to the raw file that will show every cold storage device
+								rawDeviceRow = (device['sourceUserId'],userInfo['userUid'],userInfo['username'],device['sourceUserFirstName'],device['sourceUserLastName'],device['sourceUserEmail'],device['orgId'],device['orgName'],device['archiveGuid'],device['sourceComputerName'],device['archiveBytes'],thisExpireDate)
+								c42Lib.writeCSVappend (rawDeviceRow, licensesAvailableRawFile,'a+')
 
 								replaceDeviceRow = (device['sourceUserId'],userInfo['userUid'],userInfo['username'],device['sourceUserFirstName'],device['sourceUserLastName'],device['sourceUserEmail'],device['orgId'],device['orgName'],device['archiveGuid'],device['sourceComputerName'],device['archiveBytes'],thisExpireDate)
 								c42Lib.writeCSVappend (replaceDeviceRow, licensesAvailableFile,'a+')
@@ -446,6 +445,9 @@ def licensesAvailableList ():
 								print "           This device has an earlier expire date.  NOT Swapping it out."
 								print "               In List : " + str(listExpireDate)
 								print "           This Device : " + str(thisExpireDate)
+								
+								rawDeviceRow = (device['sourceUserId'],userInfo['userUid'],userInfo['username'],device['sourceUserFirstName'],device['sourceUserLastName'],device['sourceUserEmail'],device['orgId'],device['orgName'],device['archiveGuid'],device['sourceComputerName'],device['archiveBytes'],thisExpireDate)
+								c42Lib.writeCSVappend (rawDeviceRow, licensesAvailableRawFile,'a+')
 
 
 						else:
