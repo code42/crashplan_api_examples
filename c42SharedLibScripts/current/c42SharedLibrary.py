@@ -64,7 +64,7 @@ class c42Lib(object):
 
     # REST API Calls
 
-    # cp_api_restoreHistory = "/api/restoreHistory"
+    cp_api_restoreHistory = "/api/restoreHistory"
     #?pgNum=1&pgSize=50&srtKey=startDate&srtDir=desc&days=9999&orgId=35
     cp_api_archive = "/api/Archive"
     cp_api_archiveMetadata = "/api/ArchiveMetadata"
@@ -859,7 +859,7 @@ class c42Lib(object):
     def getUser(params):
         logging.info("getUser-params:params[" + str(params) + "]")
 
-        if params and (('username' in params) or ('userId' in params) or ('userUid' in params) or ('q' in params)):
+        if params:
             payload = {}
 
             r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
@@ -2725,10 +2725,20 @@ class c42Lib(object):
     def getRestoreHistoryPaged(params, pgNum):
         logging.info("getRestoreHistoryPaged-params:params[" + str(params) + "]:pgNum[" + str(pgNum) + "]")
 
-        params['pgSize'] = c42Lib.MAX_PAGE_NUM
+        #Let the page size be set in the params if it exists.
+
+        try:
+            if not params['pgSize']:
+                params['pgSize'] = c42Lib.MAX_PAGE_NUM
+        
+        except TypeError:
+            params['pgSize'] = params['pgSize']
+
         params['pgNum'] = pgNum
 
         payload = {}
+
+        archives = False
 
         r = c42Lib.executeRequest("get", c42Lib.cp_api_restoreHistory, params, payload)
 
@@ -2738,7 +2748,13 @@ class c42Lib(object):
         binary = json.loads(content)
         logging.debug(binary)
 
-        archives = binary['data']['restoreEvents']
+        try:
+
+            archives = binary['data']['restoreEvents']
+        
+        except TypeError:
+        
+            archives = False
 
         return archives
 
