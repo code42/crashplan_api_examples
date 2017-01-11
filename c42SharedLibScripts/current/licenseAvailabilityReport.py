@@ -15,7 +15,7 @@
 #
 # File: licenseAvailabilityReport.py
 # Author: P. Hirst, Code 42 Software
-# Last Modified: 06-06-2016
+# Last Modified: 01-11-2016
 #
 # Creates a list of users whos license useage will expire at a future date
 
@@ -371,8 +371,6 @@ def licensesAvailableList ():
 
 				for deviceIndex, device in enumerate(coldStorageList):
 
-					# print device
-
 					# Get User Info
 
 					userParams = {}
@@ -384,9 +382,34 @@ def licensesAvailableList ():
 
 					userInfo = userInfo[0]
 
+					# print device
+
+					if not device['sourceComputerName']:
+						device['sourceComptuerName'] = 'NO_DEVICE_NAME'
+
+					userIsActive = userInfo['active']
+
+					userHasBackupUseage = False
+
+					if userInfo['backupUsage']:
+						userHasBackupUseage = True
+
+
+					print ""
+					if userIsActive and userHasBackupUseage:
+
+						print "========== " + device['sourceComputerName'] + " | " + str(userInfo['username']) + " | Backup Devices : " + str(len(userInfo['backupUsage'])) + " | Status : " + str(userInfo['status'])
+
+					
+					else:
+
+						print "========== " + device['sourceComputerName'] + " | " + str(userInfo['username']) + " | Not Active"
+					
+					print ""
+
 					totalcount += 1
 
-					if not userInfo['backupUsage']: # User does not have any other archives!  Can be on the list!
+					if not userInfo['backupUsage'] or userInfo['active'] == False : # User does not have any other archives!  Can be on the list!
 
 						print "++++++++++ " + str(totalcount).zfill(6) + " | Device : " + device['sourceComputerName'] + " | " + userInfo['username'] + " has NO other active devices."
 

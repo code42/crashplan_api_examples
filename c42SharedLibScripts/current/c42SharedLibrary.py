@@ -1402,7 +1402,7 @@ class c42Lib(object):
     #
 
     @staticmethod
-    def getOrgs(pgNum):
+    def getOrgs(pgNum,**kwargs):
         logging.info("getOrgs-params:pgNum[" + str(pgNum) + "]")
 
         params = {}
