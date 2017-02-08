@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Code42, Inc.
+# Copyright (c) 2016, 2017 Code42, Inc.
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy 
 # of this software and associated documentation files (the "Software"), to deal 
@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 12-21-2016
+# Last Modified: 02-07-2017
 
 # Author: AJ LaVenture
 # Author: Paul Hirst
@@ -2425,6 +2425,52 @@ class c42Lib(object):
             return False
 
 
+    # Get an Archive
+
+    @staticmethod
+    def getArchive(**kwargs):
+        logging.info("getArchive-params: " + str(kwargs))
+
+        params = {}
+
+        try:
+            #If only a GUID is supplied, it's enough.
+
+            guid = kwargs['guid']
+            logging.info("getArchive-Guid:" + str(guid))
+
+        except:
+
+            try:
+                params = kwargs['params']
+                logging.info("getArchive-Params:" + str(params))
+
+            except:
+
+                logging.info("getArchive-No archiveGUID or Params provided.  Returning None.")
+                return None
+
+        payload = {}
+
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_archive, params, payload)
+
+        logging.debug(r.text)
+
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+        try:
+            archive = binary['data']['archives']
+        
+        except TypeError:
+                
+            return None
+
+    return archive
+
+    #End getArchive
+
     # Get Archives by entering by userUid - entered in the Params
 
     @staticmethod
@@ -2943,7 +2989,7 @@ class c42Lib(object):
 
 
     #
-    # putColdStorageUpdate(userId, payload):
+    # putColdStorageUpdate(archiveGuid, payload):
     # updates an archive's cold storage information based on the payload passed
     # params:
     # archiveId - id for the archive to update
@@ -2972,6 +3018,7 @@ class c42Lib(object):
                 # return False
         else:
             logging.error("putColdStorageUpdate param payload is null or empty")
+            return None
 
 
     @staticmethod
