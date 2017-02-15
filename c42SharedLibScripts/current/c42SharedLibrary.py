@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 02-07-2017
+# Last Modified: 02-15-2017
 
 # Author: AJ LaVenture
 # Author: Paul Hirst
@@ -2467,7 +2467,7 @@ class c42Lib(object):
                 
             return None
 
-    return archive
+        return archive
 
     #End getArchive
 
@@ -3010,8 +3010,18 @@ class c42Lib(object):
             content = r.content
             binary = json.loads(content)
             logging.debug(binary)
-            coldStorageArchive = binary['data']
-            return coldStorageArchive
+
+            try:
+
+                coldStorageArchive = binary['data']
+                return coldStorageArchive
+                logging.error("putColdStorageUpdate param payload is :" + str(coldStorageArchive))
+
+            except TypeError:
+
+                logging.error("putColdStorageUpdate returned nothing.")
+                return None
+
             # if (r.status_code == 200):
                 # return True
             # else:
