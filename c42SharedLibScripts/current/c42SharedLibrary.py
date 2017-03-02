@@ -2833,11 +2833,18 @@ class c42Lib(object):
             # print r.text
             local_filename = "json/archiveMetadata_"+str(guid)+".json"
             with open(local_filename, 'wb') as f:
+                counter = 0
                 for chunk in r.iter_content(chunk_size=1024):
                     if chunk: # filter out keep-alive new chunks
+                        counter += 1
                         f.write(chunk)
                         f.flush()
+                        if counter % 100 == 0:
+                            sys.stdout.write('.')
+                            sys.stdout.flush()
+                print ""
                 return local_filename
+            print ""
         else:
             if r.text:
                 content = ""
@@ -2849,6 +2856,11 @@ class c42Lib(object):
                 # may be missing data by doing this call..
                 # but this means the parcing failed and we can't extract the data
                 if 'data' in binary:
+                    
+                    sys.stdout.write('*')
+                    sys.stdout.flush()
+                    print ""
+                    
                     archiveMetadata = binary['data']
                     del binary
                     return archiveMetadata
@@ -3071,6 +3083,8 @@ class c42Lib(object):
         params = {}
         payload = {}
 
+        storePoint = False
+
         r = c42Lib.executeRequest("get", c42Lib.cp_api_storePoint + "/" + str(storePointId), params, payload)
 
         logging.debug(r.text)
@@ -3079,7 +3093,14 @@ class c42Lib(object):
         binary = json.loads(content)
         logging.debug(binary)
 
-        storePoint = binary['data']
+        try:
+            storePoint = binary['data']
+
+        except TypeError:
+
+            storePoint = None
+
+
         return storePoint
 
 
@@ -3394,6 +3415,42 @@ class c42Lib(object):
     
         return
 
+    # CSV Creates files.  Single funciton that's used a lot to create output files in scripts.
+    # params:   csvFileName - the base file name
+    #           fileList - an array with a file name extension and the headers for the files to create
+    #                       ['filetype':'whatisinthisfile','fileheaders':(header1,header2,header3,header4)]
+    #           filedate - the timestamp for the files
+    #           testMode - if anything except "execute" is passed to it the file
+
+    @staticmethod
+    def setupCSVFiles (csvFileName,fileList,fileDate,testMode,writeMode):
+        logging.info("setupCSVFiles:base file name - [" + csvFileName + "]")
+
+        # Add 'Test' to file name if a test
+        fileNameTest = ''
+        if testMode:
+            fileNameTest = 'TEST'
+
+        counter = 0
+        fileNames = []
+
+        for index, fileHeader in enumerate(fileList):
+
+            counter += 1
+
+            fileType        = fileHeader['filetype']
+            fileHeaderNames = fileHeader['fileheaders']
+
+            fileName = str(counter).zfill(2) + '-' + csvFileName + '-' + fileType + '-' + fileDate + '-' + fileNameTest + '.csv'
+
+            c42Lib.writeCSVappend (fileHeaderNames,fileName,writeMode)
+            fileNames.append(fileName)
+
+
+        logging.info ("---------- CSV Files Created --------------------------------")
+        return fileNames
+
+        #End setupCSVFiles
 
 # class UserClass(object)
 
