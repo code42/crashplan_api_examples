@@ -3429,7 +3429,7 @@ class c42Lib(object):
         # Add 'Test' to file name if a test
         fileNameTest = ''
         if testMode:
-            fileNameTest = 'TEST'
+            fileNameTest = '-TEST'
 
         counter = 0
         fileNames = []
@@ -3438,10 +3438,10 @@ class c42Lib(object):
 
             counter += 1
 
-            fileType        = fileHeader['filetype']
-            fileHeaderNames = fileHeader['fileheaders']
+            fileDesc       = fileHeader['fileDesc']
+            fileHeaderNames = fileHeader['fileHeaders']
 
-            fileName = str(counter).zfill(2) + '-' + csvFileName + '-' + fileType + '-' + fileDate + '-' + fileNameTest + '.csv'
+            fileName = str(counter).zfill(2) + '-' + csvFileName + '-' + fileDesc + '-' + fileDate + fileNameTest + '.csv'
 
             c42Lib.writeCSVappend (fileHeaderNames,fileName,writeMode)
             fileNames.append(fileName)
