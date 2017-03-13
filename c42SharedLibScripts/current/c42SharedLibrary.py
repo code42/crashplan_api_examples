@@ -18,7 +18,8 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 02-15-2017
+# Last Modified: 03-15-2017
+#   Modified By: Paul H.
 
 # Author: AJ LaVenture
 # Author: Paul Hirst
@@ -218,25 +219,28 @@ class c42Lib(object):
         if cp_api == c42Lib.cp_api_fileContent:
             assert 'restoreRecordKey' in params and params['restoreRecordKey'] is cp_magic_restoreRecordKey
 
-        if type == "get":
-            logging.debug("Payload : " + str(payload))
-            r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
-            logging.debug(r.text)
-            return r
-        elif type == "delete":
-            r = requests.delete(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
-            logging.debug(r.text)
-            return r
-        elif type == "post":
-            r = requests.post(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
-            logging.debug(r.text)
-            return r
-        elif type == "put":
-            r = requests.put(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
-            logging.debug(r.text)
-            return r
-        else:
-            return None
+        try:
+            if type == "get":
+                logging.debug("Payload : " + str(payload))
+                r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
+                logging.debug(r.text)
+                return r
+            elif type == "delete":
+                r = requests.delete(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
+                logging.debug(r.text)
+                return r
+            elif type == "post":
+                r = requests.post(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
+                logging.debug(r.text)
+                return r
+            elif type == "put":
+                r = requests.put(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
+                logging.debug(r.text)
+                return r
+            else:
+                return None
+        except requests.exceptions.RequestException as e:
+            return e
 
 
     #
@@ -338,69 +342,41 @@ class c42Lib(object):
 
         return isValidUser
 
-    # User Authentication
-
-    @staticmethod
-    def authenticateUser(enteredUserName,userName,userCustomerCredFile,credentialFile):
-
-        userAuthType = 'Hardcoded' 
-
-        logging.debug ("=========== Authenticate User")
-
-        if userCustomerCredFile: # If using a credentials file
-            
-            with open(str(credentialFile)) as f:
-                c42Lib.cp_username = base64.b64decode(f.readline().strip())
-                c42Lib.cp_password = base64.b64decode(f.readline().strip())
-
-            userAuthType = 'Credentials File'
-
-        if enteredUserName:
-
-            print ""
-            c42Lib.cp_password = getpass.getpass('=========== Please enter the password for user ' + str(userName) + ' : ')
-            c42Lib.cp_username = userName
-
-            userAuthType = 'Entered Password'
-
-        if userAuthType == 'Hardcoded':
-
-            if c42Lib.cp_username == 'admin':
-                print ""
-                print "Username is set to 'admin'!  If this is really your username you should change it."
-                print ""
-                raw_input("Please press 'Enter' to proceed.")
-                print ""
-
-            else:
-                print "Username has been hardcoded to : " + c42Lib.cp_username
-
-            if c42Lib.cp_password == 'admin':
-                print ""
-                print "Username is set to 'admin'!  If this is really your password you should change it."
-                print ""
-                raw_input("Please press 'Enter' to proceed.")
-                print ""
-            else:
-                print "Password has been hardcoded.  Not shown."
-
-        
-        return userAuthType
-
-
-
     #
-    # Params: cp_enterUserName - manually entered username & password,cp_userName - hardcoded username ,cp_useCustomerCredFile - use credentials file ,cp_credentialFile - name of credentials file
+    # KWARGS: cp_enterUserName - manually entered username & password,cp_userName - hardcoded username ,cp_useCustomerCredFile - use credentials file ,cp_credentialFile - name of credentials file
     # Returns: True once authentication parameters are entered.  Does not verify these are valid for the script.
     #
     @staticmethod
-    def authenticateScriptUser(cp_enterUserName,cp_userName,cp_useCustomerCredFile,cp_credentialFile):
-
-        userInfoSet = False
-
-        userAuthType = 'Hardcoded' 
+    def authenticateUser(**kwargs):
 
         logging.debug ("=========== Authenticate User")
+
+        userInfoSet = False
+        warningText = False
+        userAuthType = 'Hardcoded' 
+
+        if kwargs:
+            
+            # If no KWARGS it will use 'admin'/'admin' and proceed.
+            
+            if ('cp_userName' in kwargs):
+                c42Lib.cp_username = kwargs['cp_userName']
+                cp_userName = kwargs['cp_userName']
+                cp_enterUserName = True
+            else:
+                cp_enterUserName = False
+                warningText = 'Check Entered userName'
+                cp_userName = cpLib.cp_username
+
+            if ('cp_credentialFile' in kwargs) and not cp_enteredUserName:
+                cp_credentialFile = kwargs['cp_credentialFile']
+                cp_useCustomerCredFile = True
+            else:
+                cp_useCustomerCredFile = False
+                warningText = 'Check Credential File Parameters - cannot be used if username is supplied.'
+                cp_credentialFile = ''
+
+        # end if
 
         if cp_useCustomerCredFile: # If using a credentials file
             
@@ -414,7 +390,7 @@ class c42Lib(object):
         if cp_enterUserName:
 
             print ""
-            c42Lib.cp_password = getpass.getpass('=========== Please enter the password for user ' + str(cp_userName) + ' : ')
+            c42Lib.cp_password = getpass.getpass('=========== Please enter the password for user ' + str(c42Lib.cp_username) + ' : ')
             c42Lib.cp_username = cp_userName
 
             userAuthType = 'Entered Password'
@@ -443,6 +419,13 @@ class c42Lib(object):
 
             userInfoSet = True
 
+        if warningText != '' and not userInfoSet:
+            print ""
+            print "**********"
+            print "********** " + warningText
+            print "**********"
+            print ""
+
         return userInfoSet
 
 
@@ -451,13 +434,38 @@ class c42Lib(object):
     # Returns: True once authentication parameters are entered.  Does not verify these are valid for the script.
     #
     @staticmethod
-    def cpServerInfo(cp_serverInfoFile,cp_serverInfoFileName,cp_serverEntryFlag,cp_serverHostURL,cp_serverHostPort):
-
-        serverInfoType = False
-
-        serverInfoType = 'Hardcoded' 
+    def cpServerInfo(**kwargs):
 
         logging.debug ("=========== Set CP Server Info")
+
+        serverInfoType     = 'Hardcoded'
+        warningText        = ''
+        cp_serverInfoFile  = False
+        cp_serverEntryFlag = False 
+
+        if kwargs:
+            
+            # If no KWARGS it will use 'admin'/'admin' and proceed.
+            
+            if ('cp_serverHostURL' in kwargs) and ('cp_serverHostPort' in kwargs):
+                cp_serverHostURL  = kwargs['cp_serverHostURL']
+                cp_serverHostPort = kwargs['cp_serverHostPort']
+                cp_serverEntryFlag = True
+            else:
+                cp_serverEntryFlag = False
+                warningText = 'Check Server URL & Port (no colon between URL & port)'
+                cp_serverHostURL  = c42Lib.cp_host
+                cp_serverHostPort = c42Lib.cp_port
+
+            if ('cp_serverInfoFileName' in kwargs) and not cp_serverEntryFlag:
+                cp_serverInfoFileName = kwargs['cp_serverInfoFileName']
+                cp_serverInfoFile = True
+            elif not cp_serverEntryFlag:
+                cp_serverInfoFile = False
+                warningText = 'Check Server File Info'
+                cp_serverInfoFileName = ''
+
+        # end if
 
         if cp_serverInfoFile: # If using a credentials file
             
@@ -480,6 +488,15 @@ class c42Lib(object):
 
         if not canConnect:
             serverInfoType = False
+            warningText = 'Connection to ' + str(c42Lib.cp_host)+":"+str(c42Lib.cp_port)+" Failed."
+
+        if warningText != '' and not serverInfoType:
+            print ""
+            print "**********"
+            print "********** " + warningText
+            print "**********"
+            print ""
+            sys.exit(1)
 
         return serverInfoType
 
@@ -506,6 +523,12 @@ class c42Lib(object):
     @staticmethod
     def reachableNetworkTest(private_address, **kwargs):
 
+        print ""
+        print "Testing Connection to " + str(private_address)
+        print ""
+
+        connectionGood = False
+
         # strip off http or https if testing connectivity to URL that's more than a ping.
         if private_address[:5] == "https":
             private_address = private_address[8:]
@@ -519,9 +542,21 @@ class c42Lib(object):
         }
 
         r = c42Lib.executeRequest("post", c42Lib.cp_api_networkTest, {}, payload, **kwargs)
-        contents = r.content.decode("UTF-8")
-        binary = json.loads(contents)
-        return binary['data'] if 'data' in binary else None
+
+        try:
+            contents = r.content.decode("UTF-8")
+            binary = json.loads(contents)
+            binary['data'] if 'data' in binary else None
+
+            print ""
+            print "Connection to " + str(private_address) + " Appears to Be Valid"
+            print ""
+
+            return binary
+
+        except AttributeError:
+
+            return False
 
 
     # params:
@@ -1647,10 +1682,7 @@ class c42Lib(object):
         if kwargs['params']:
             params = kwargs['params']
 
-        else:
-
-            params['q'] = deviceName
-            params['incAll'] = incAll
+        params['q'] = deviceName     
 
         payload = {}
 
