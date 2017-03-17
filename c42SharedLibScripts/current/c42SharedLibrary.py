@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 03-15-2017
+# Last Modified: 03-13-2017
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -351,34 +351,44 @@ class c42Lib(object):
 
         logging.debug ("=========== Authenticate User")
 
+        cp_enterUserName = False
+        cp_useCustomerCredFile = False
         userInfoSet = False
         warningText = False
-        userAuthType = 'Hardcoded' 
+        userAuthType = 'Hardcoded'
+
+        if not kwargs:
+            kwargs = False
 
         if kwargs:
             
-            # If no KWARGS it will use 'admin'/'admin' and proceed.
+            # If no KWARGS it will use hardcoded values.
             
             if ('cp_userName' in kwargs):
+                print "Entered Username..."
                 c42Lib.cp_username = kwargs['cp_userName']
                 cp_userName = kwargs['cp_userName']
                 cp_enterUserName = True
+                userAuthType = 'Manually Entered'
+                warningText = ''
             else:
+                print "Did not enter username..."
                 cp_enterUserName = False
                 warningText = 'Check Entered userName'
-                cp_userName = cpLib.cp_username
+                # cp_userName = c42Lib.cp_username
 
-            if ('cp_credentialFile' in kwargs) and not cp_enteredUserName:
+            if ('cp_credentialFile' in kwargs):
+                print "Using credentials file..."
                 cp_credentialFile = kwargs['cp_credentialFile']
                 cp_useCustomerCredFile = True
             else:
-                cp_useCustomerCredFile = False
-                warningText = 'Check Credential File Parameters - cannot be used if username is supplied.'
-                cp_credentialFile = ''
+                warningText = ''
 
         # end if
 
         if cp_useCustomerCredFile: # If using a credentials file
+
+            print "Looking for credentials file..."
             
             with open(str(cp_credentialFile)) as f:
                 c42Lib.cp_username = base64.b64decode(f.readline().strip())
@@ -426,7 +436,10 @@ class c42Lib(object):
             print "**********"
             print ""
 
-        return userInfoSet
+        if userInfoSet:
+            return userAuthType
+        else:
+            return userInfoSet
 
 
     #
@@ -549,12 +562,16 @@ class c42Lib(object):
             binary['data'] if 'data' in binary else None
 
             print ""
-            print "Connection to " + str(private_address) + " Appears to Be Valid"
+            print "Connection to " + str(private_address) + " appears to be valid."
             print ""
 
             return binary
 
         except AttributeError:
+
+            print ""
+            print "Connection to " + str(private_address) + " does not appear to be valid."
+            print ""
 
             return False
 
@@ -1589,7 +1606,7 @@ class c42Lib(object):
 
         else:
 
-            device = 'NONE'
+            device = None
 
         return device
 
@@ -2242,8 +2259,11 @@ class c42Lib(object):
         binary = json.loads(content)
         logging.debug(binary)
 
-        if binary['data']['legalHolds']:
-            legalHoldInfo = binary['data']['legalHolds']     
+        try:
+            if binary['data']['legalHolds']:
+                legalHoldInfo = binary['data']['legalHolds']
+        except TypeError:
+            legalHoldInfo = False   
 
         return legalHoldInfo
 
