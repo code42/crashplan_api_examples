@@ -428,7 +428,7 @@ class c42Lib(object):
                 print "Password has been hardcoded.  Not shown."
 
             userInfoSet = True
-
+            
         if warningText != '' and not userInfoSet:
             print ""
             print "**********"
@@ -1811,7 +1811,7 @@ class c42Lib(object):
 
     @staticmethod
     def getDevicesCustomParams(pgNum, params):
-        logging.info("getDevicesCustomParams-params:pgNum[" + str(pgNum) + "]:params[" + str(params) + "]")
+        logging.debug("getDevicesCustomParams-params:pgNum[" + str(pgNum) + "]:params[" + str(params) + "]")
 
         # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
         # url = cp_host + ":" + cp_port + cp_api_user
@@ -3195,7 +3195,7 @@ class c42Lib(object):
 
     @staticmethod
     def ekr_jobCancel(userUid):
-        logging.inf("ekr_jobCancel-params:userUid[" + str(userUid) + "]")
+        logging.info("ekr_jobCancel-params:userUid[" + str(userUid) + "]")
         params = {}
         payload = {}
 
@@ -3269,51 +3269,130 @@ class c42Lib(object):
     def setLoggingLevel(**kwargs):
         # set up logging to file
 
-        showInConsole = True
+        if not kwargs:
 
-        if kwargs:
-            if kwargs['logFileName']:
-                c42Lib.cp_logFileName = kwargs['logFileName']
-            if not kwargs['showInConsole']:
-                showInConsole = kwargs['showInConsole']  # Let's you turn off logging to the console if you like.
+            # Legacy Logging Setup
+            if c42Lib.cp_logLevel == 'INFO':
 
-        logging.basicConfig(
-                            #level=logging.DEBUG,
-                            level = logging.INFO,
-                            format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                            datefmt='%m-%d %H:%M',
-                            # filename='EditUserRoles.log',
-                            filename = str(c42Lib.cp_logFileName),
-                            filemode='w')
-        # define a Handler which writes INFO messages or higher to the sys.stderr
-        console = logging.StreamHandler()
+                logging.basicConfig(
+                                    level = logging.INFO,
+                                    format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] %(message)s',
+                                    datefmt='%m-%d %H:%M',
+                                    # filename='EditUserRoles.log',
+                                    filename = str(c42Lib.cp_logFileName),
+                                    filemode='w')
 
+            else:
 
-        if showInConsole:
+                logging.basicConfig(
+                                    level = logging.DEBUG,
+                                    format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] %(message)s',
+                                    datefmt='%m-%d %H:%M',
+                                    # filename='EditUserRoles.log',
+                                    filename = str(c42Lib.cp_logFileName),
+                                    filemode='w')
 
-            # print ""
-            # print "---------- Logging set to show in console."
-            # print ""
+            # define a Handler which writes INFO messages or higher to the sys.stderr
+            console = logging.StreamHandler()
+
 
             if(c42Lib.cp_logLevel=="DEBUG"):
                 console.setLevel(logging.DEBUG)
                 # console.setLevel(logging.INFO)
             else:
                 console.setLevel(logging.INFO)
+           # set a format which is simpler for console use
+            formatter = logging.Formatter('%(asctime)s [%(name)-8s] [ %(levelname)-6s ] %(message)s')
+            # tell the handler to use this format
+            console.setFormatter(formatter)
+            # add the handler to the root logger
+            logging.getLogger('').addHandler(console)
+
+            print "Logging Level " + str(c42Lib.cp_logLevel)
+
         else:
 
-            # print ""
-            # print "---------- No logging will be show in the console."
-            # print ""
+            # Fancy Split Logging - requires the use of KWARGS when calling the logging function.
 
-            console.setLevel(logging.ERROR) # Only show errors in the console
+            showInConsole = True
 
-        # set a format which is simpler for console use
-        formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-        # tell the handler to use this format
-        console.setFormatter(formatter)
-        # add the handler to the root logger
-        logging.getLogger('').addHandler(console)
+            if kwargs:
+                if 'showInConsole' in kwargs:
+                    showInConsole = kwargs['showInConsole']  # Let's you turn off logging to the console if you like.
+                if 'loggingLevel' in kwargs:
+                    c42Lib.cp_logLevel = kwargs['loggingLevel']
+                else:
+                    kwargs['loggingLevel'] = c42Lib.cp_logLevel
+
+            print "Logging Level Set : " + str(c42Lib.cp_logLevel)
+
+            if c42Lib.cp_logLevel == 'INFO':
+
+                logging.basicConfig(
+                                    level=logging.INFO,
+                                    format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
+                                    datefmt='%m-%d %H:%M',
+                                    filename = str(c42Lib.cp_logFileName),
+                                    filemode='w')
+
+            if c42Lib.cp_logLevel == 'WARNING':
+
+                logging.basicConfig(
+                                    level=logging.WARNING,
+                                    format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
+                                    datefmt='%m-%d %H:%M',
+                                    filename = str(c42Lib.cp_logFileName),
+                                    filemode='w')
+
+            if c42Lib.cp_logLevel == 'DEBUG':
+
+                logging.basicConfig(
+                                    level=logging.DEBUG,
+                                    format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
+                                    datefmt='%m-%d %H:%M',
+                                    filename = str(c42Lib.cp_logFileName),
+                                    filemode='w')
+
+            if c42Lib.cp_logLevel == 'ERROR':
+
+                logging.basicConfig(
+                                    level=logging.ERROR,
+                                    format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
+                                    datefmt='%m-%d %H:%M',
+                                    filename = str(c42Lib.cp_logFileName),
+                                    filemode='w')
+
+            if c42Lib.cp_logLevel == 'CRITICAL':
+
+                logging.basicConfig(
+                                    level=logging.CRITICAL,
+                                    format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
+                                    datefmt='%m-%d %H:%M',
+                                    filename = str(c42Lib.cp_logFileName),
+                                    filemode='w')
+
+            # Set log file format
+            loggingFormatter = logging.Formatter('%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s')
+            logfile = logging.FileHandler(str(c42Lib.cp_logFileName))
+            logfile.setFormatter(loggingFormatter)
+
+            # set a format which is simpler for console use
+            console = logging.StreamHandler()
+            console.setFormatter(loggingFormatter)
+
+            # add the handler to the root logger
+            logging.getLogger('').addHandler(logfile)
+            
+            if not showInConsole:
+
+                print "Suppress Logging Output to Console"
+                logging.getLogger('').removeHandler(console)
+
+            else:
+
+                logging.getLogger('').addHandler(console)
+
+            logging.debug('end: setLoggingLevel ' + str(c42Lib.cp_logLevel))
 
 
     @staticmethod
@@ -3503,6 +3582,36 @@ class c42Lib(object):
         return fileNames
 
         #End setupCSVFiles
+
+
+    # Print Text File Contents to Screen.
+    # Prints to the contents of a (text) file to the screen.
+    # Used for printing disclaimer text out in executable script builds
+
+    @staticmethod
+    def printFileToScreen (filename):
+
+        logging.info("printFileToScreen: filename - [" + str(filename) + "]")
+
+        try:
+
+            fileToPrint = open(filename, 'r')
+            contentsToPrint = fileToPrint.read()
+            print (contentsToPrint)
+            fileToPrint.close()
+
+        except IOError:
+
+            print ""
+            print "**********"
+            print "********** Error Reading File [ " + str(filename) + " ] "
+            print "**********"
+            print ""
+
+        logging.debug("END OF printFileToScreen: filename - [" + str(filename) + "]")
+
+    #End printFileToScreen
+
 
 # class UserClass(object)
 
