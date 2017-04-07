@@ -373,6 +373,8 @@ def licensesAvailableList ():
 
 					# Get User Info
 
+					userIsActive = True
+
 					userParams = {}
 					userParams['userId']         = device['sourceUserId']
 					userParams['idType']         = "id"
@@ -394,24 +396,23 @@ def licensesAvailableList ():
 					if userInfo['backupUsage']:
 						userHasBackupUseage = True
 
-
 					print ""
 					if userIsActive and userHasBackupUseage:
 
-						print "========== " + device['sourceComputerName'] + " | " + str(userInfo['username']) + " | Backup Devices : " + str(len(userInfo['backupUsage'])) + " | Status : " + str(userInfo['status'])
+						print "========== " + str(device['sourceComputerName']) + " | " + str(userInfo['username']) + " | Backup Devices : " + str(len(userInfo['backupUsage'])) + " | Status : " + str(userInfo['status'])
 
 					
 					else:
 
-						print "========== " + device['sourceComputerName'] + " | " + str(userInfo['username']) + " | Not Active"
+						print "========== " + str(device['sourceComputerName']) + " | " + str(userInfo['username']) + " | Not Active"
 					
 					print ""
 
 					totalcount += 1
 
-					if not userInfo['backupUsage'] or userInfo['active'] == False : # User does not have any other archives!  Can be on the list!
+					if not userInfo['backupUsage'] or userIsActive == False : # User does not have any other archives!  Can be on the list!
 
-						print "++++++++++ " + str(totalcount).zfill(6) + " | Device : " + device['sourceComputerName'] + " | " + userInfo['username'] + " has NO other active devices."
+						print "++++++++++ " + str(totalcount).zfill(6) + " | Device : " + str(device['sourceComputerName']) + " | " + str(userInfo['username']) + " has NO other active devices."
 
 						#look up user to see if they're in the existing cold storage list.
 
@@ -516,7 +517,7 @@ def licensesAvailableList ():
 
 						userDeviceCount = len(userInfo['backupUsage'])
 
-						print "---------- " + str(totalcount).zfill(6) + " | Device : " + device['sourceComputerName'] + " | " + userInfo['username'] + " has "  + str(userDeviceCount).zfill(2) + " other active devices."
+						print "---------- " + str(totalcount).zfill(6) + " | Device : " + str(device['sourceComputerName']) + " | " + str(userInfo['username']) + " has "  + str(userDeviceCount).zfill(2) + " other active devices."
 
 			
 					if totalcount%10 == 0:
