@@ -15,7 +15,7 @@
 #
 # File: licenseAvailabilityReport.py
 # Author: P. Hirst, Code 42 Software
-# Last Modified: 01-11-2016
+# Last Modified: 04-11-2017
 #
 # Creates a list of users whos license useage will expire at a future date
 
@@ -404,7 +404,7 @@ def licensesAvailableList ():
 					print ""
 					if userIsActive and userHasBackupUsage and userHasBackupComputers:
 
-						print "========== " + str(device['sourceComputerName']) + " | " + str(userInfo['username']) + " | Backup Devices : " + str(len(userInfo['backupUsage'])) + " | Status : " + str(userInfo['status'])
+						print "========== " + str(device['sourceComputerName']) + " | " + str(userInfo['username']) + " | Backup Devices : " + str(userInfo['computerCount']) + " | Status : " + str(userInfo['status'])
 
 					
 					else:
@@ -520,7 +520,7 @@ def licensesAvailableList ():
 
 					else:
 
-						userDeviceCount = len(userInfo['backupUsage'])
+						userDeviceCount = userInfo['computerCount']
 
 						print "---------- " + str(totalcount).zfill(6) + " | Device : " + str(device['sourceComputerName']) + " | " + str(userInfo['username']) + " has "  + str(userDeviceCount).zfill(2) + " other active devices."
 
