@@ -376,9 +376,10 @@ def licensesAvailableList ():
 					userIsActive = True
 
 					userParams = {}
-					userParams['userId']         = device['sourceUserId']
-					userParams['idType']         = "id"
-					userParams['incBackupUsage'] = "true"
+					userParams['userId']           = device['sourceUserId']
+					userParams['idType']           = "id"
+					userParams['incBackupUsage']   = "true"
+					userParams['incComputerCount'] = "true"
 
 					userInfo = c42Lib.getUser(userParams)
 
@@ -391,13 +392,17 @@ def licensesAvailableList ():
 
 					userIsActive = userInfo['active']
 
-					userHasBackupUseage = False
+					userHasBackupUsage = False
+					userHasBackupComputers = True
 
 					if userInfo['backupUsage']:
-						userHasBackupUseage = True
+						userHasBackupUsage = True
+
+					if int(userInfo['computerCount']) == 0:
+						userHasBackupComputers = False
 
 					print ""
-					if userIsActive and userHasBackupUseage:
+					if userIsActive and userHasBackupUsage and userHasBackupComputers:
 
 						print "========== " + str(device['sourceComputerName']) + " | " + str(userInfo['username']) + " | Backup Devices : " + str(len(userInfo['backupUsage'])) + " | Status : " + str(userInfo['status'])
 
@@ -410,7 +415,7 @@ def licensesAvailableList ():
 
 					totalcount += 1
 
-					if not userInfo['backupUsage'] or userIsActive == False : # User does not have any other archives!  Can be on the list!
+					if not userHasBackupComputers or userIsActive == False : # User does not have any other archives!  Can be on the list!
 
 						print "++++++++++ " + str(totalcount).zfill(6) + " | Device : " + str(device['sourceComputerName']) + " | " + str(userInfo['username']) + " has NO other active devices."
 
