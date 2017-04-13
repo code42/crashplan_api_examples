@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 03-13-2017
+# Last Modified: 04-14-2017
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -47,6 +47,7 @@ import datetime
 import calendar
 import re
 import getpass
+import os
 
 class c42Lib(object):
 
@@ -1422,6 +1423,7 @@ class c42Lib(object):
 
         if not kwargs:
             params['incAll'] = 'true'
+            params['idType'] = 'orgId'
         else:
             params = kwargs['params']
 
@@ -1429,7 +1431,7 @@ class c42Lib(object):
 
         r = c42Lib.executeRequest("get", c42Lib.cp_api_org + "/" + str(orgId), params, payload)
 
-        logging.debug(r.text)
+        logging.debug(r)
 
         content = r.content
         binary = json.loads(content)
@@ -1594,7 +1596,7 @@ class c42Lib(object):
 
         logging.debug(r.text)
 
-        if r.text != '[{"name":"SYSTEM","description":"java.lang.NullPointerException"}]':
+        if r.text != '[{"name":"SYSTEM","description":"java.lang.NullPointerException"}]' and r.text != '[{"name":"SYSTEM","description":"ComputerId not found"}]':
 
             content = r.content
 
@@ -3269,6 +3271,10 @@ class c42Lib(object):
     def setLoggingLevel(**kwargs):
         # set up logging to file
 
+        #print kwargs
+
+        c42Lib.cp_logFileName = c42Lib.getFilePath(c42Lib.cp_logFileName)
+
         if not kwargs:
 
             # Legacy Logging Setup
@@ -3308,7 +3314,7 @@ class c42Lib(object):
             # add the handler to the root logger
             logging.getLogger('').addHandler(console)
 
-            print "Logging Level " + str(c42Lib.cp_logLevel)
+            #print "Kilroy's first spot."
 
         else:
 
@@ -3324,7 +3330,9 @@ class c42Lib(object):
                 else:
                     kwargs['loggingLevel'] = c42Lib.cp_logLevel
 
+            #print kwargs
             print "Logging Level Set : " + str(c42Lib.cp_logLevel)
+            #print "Kilroy's second spot."
 
             if c42Lib.cp_logLevel == 'INFO':
 
@@ -3392,6 +3400,18 @@ class c42Lib(object):
 
                 logging.getLogger('').addHandler(console)
 
+            if os.path.exists(c42Lib.getFilePath('deleteme.log')):
+
+                logging.debug('setLoggingLevel: delete temporary log file : ' + str(c42Lib.getFilePath('deleteme.log')))
+                
+                try:
+                    os.remove(c42Lib.getFilePath('deleteme.log'))
+                except OSError:
+
+                    print ""
+                    print "Could not delete : " + str(c42Lib.getFilePath('deleteme.log'))
+                    print ""
+
             logging.debug('end: setLoggingLevel ' + str(c42Lib.cp_logLevel))
 
 
@@ -3453,12 +3473,15 @@ class c42Lib(object):
 
         fileList = []
 
+        csvFileName = c42Lib.getFilePath(csvFileName)
+
         csvfile = open(csvFileName, 'rU')
 
         if (',' in csvfile.read(1024)):
             csvfile.seek(0) # Return to beginning of file
             fileDialect = csv.Sniffer().sniff(csvfile.read(1024),'\n')
             csvfile.seek(0) # Return to beginning of file
+
             reader = csv.reader(csvfile, delimiter=fileDialect.delimiter,dialect=fileDialect)
 
         else:  # Use for single column without a delimiter
@@ -3477,17 +3500,22 @@ class c42Lib(object):
     def readCSVFiletoDictionary(csvFileName):
         logging.info("readCSVfile:file - [" + csvFileName + "]")
 
-        fileList = []
 
-        #with open(csvfileName,mode='r') as csvfile:
-        #    reader = csv.reader(csvfile)
-        #    with open('csvfileName',mode='w')
+        csvFileName = c42Lib.getFilePath(csvFileName)
 
-        #csvfile = open(csvFileName, 'rU')
-        #fileList = [{k: int(v) for k, v in row.items()}
-        #    for row in csv.DictReader(csvfile, skipinitialspace=True)
+        fileList = {}
 
-        #return fileList
+        with open (csvFileName,'r') as csvFile:
+            row = csv.DictReader(csvFile)
+            for value in row:
+                fileList.setdefault(value['Key'],[]).append(value['Value'])
+
+        newValueList = {}
+
+        for key,value in fileList.items():
+            newValueList[key] = value[0]
+        
+        return newValueList
 
 
 
@@ -3499,6 +3527,8 @@ class c42Lib(object):
         logging.debug("writeCSVappend:file - [" + filenametowrite + "]")
 
         #Check the length of the list to write.  If more than one item, then iterate through the list
+
+        filenametowrite = c42Lib.getFilePath(filenametowrite)
 
         if (not isinstance(listtowrite, basestring)): #More than 1 item in list?
             # Correctly append to a CSV file
@@ -3574,6 +3604,8 @@ class c42Lib(object):
 
             fileName = str(counter).zfill(2) + '-' + csvFileName + '-' + fileDesc + '-' + fileDate + fileNameTest + '.csv'
 
+            fileName = c42Lib.getFilePath(fileName)
+
             c42Lib.writeCSVappend (fileHeaderNames,fileName,writeMode)
             fileNames.append(fileName)
 
@@ -3592,6 +3624,8 @@ class c42Lib(object):
     def printFileToScreen (filename):
 
         logging.info("printFileToScreen: filename - [" + str(filename) + "]")
+
+        filename = c42Lib.getFilePath(filename)
 
         try:
 
@@ -3612,6 +3646,96 @@ class c42Lib(object):
 
     #End printFileToScreen
 
+
+    @staticmethod
+    def inputArguments (**kwargs):
+
+        logging.info("inputArguments: [" + str(kwargs) + "]")
+
+        arguments = {}
+        noArguments = False
+        hasArguments = False
+
+
+        if kwargs:
+
+            # Check if an arguments file exists
+
+            if ('argumentsFile' in kwargs):
+
+                fileName = kwargs['argumentsFile']
+
+                fileName = c42Lib.getFilePath(fileName)
+
+                if os.path.exists(fileName):
+                    arguments = c42Lib.readCSVFiletoDictionary(fileName)
+                    if len(arguments) > 0:
+                        hasArguments = True
+
+                else:
+                    print ""
+                    print "Manual Parameter Entry Required"
+                    print ""
+
+                    noArguments = True
+
+
+            if 'argumentList' in kwargs and not hasArguments:
+
+                    noArguments = False
+
+                    argumentList = kwargs['argumentList']
+
+                    for index, argument in enumerate (sorted(argumentList,key=argumentList.__getitem__)):
+
+                        if argumentList[argument] is not None:
+                            arguments[argument] = raw_input(argumentList[argument])
+                        else:
+                            arguments[argument] = None
+
+            elif not hasArguments:
+
+                noArguments = True
+
+        if noArguments or len(arguments) < 1:
+            print ""
+            print "********** NO PARAMETERS PROVIDED"
+            print ""
+            print "********** EXITING"
+            print ""
+            sys.exit('System Exit: No Parameters Provided')
+
+        return arguments
+
+    @staticmethod
+    def getFilePath(relativePath):
+        logging.info("getFilePath: [ " + str(relativePath) + " ]")
+
+        try:
+            base_path = sys._MEIPASS
+     
+            # Get Platform Specific (mostly just Windows vs. the World)
+
+            if str(os.name) != 'nt':
+                # Find last directory slash
+
+                endOfPath = str(sys.executable).rfind('/')
+                base_path = str(sys.executable)[:endOfPath+1]
+
+            else:
+                base_path = os.getcwd() 
+        except Exception:
+            base_path = os.path.abspath(".")
+
+        #print base_path
+        #raw_input()
+
+        return os.path.join(base_path,relativePath)    
+
+
+    @staticmethod
+    def cls():
+        os.system('cls' if os.name=='nt' else 'clear')
 
 # class UserClass(object)
 
