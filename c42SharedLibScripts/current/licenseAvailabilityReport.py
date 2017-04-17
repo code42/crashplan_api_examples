@@ -63,6 +63,7 @@ import getpass
 import time
 import base64
 import operator
+import os
 from datetime import date
 from datetime import datetime
 from c42SharedLibrary import c42Lib
@@ -82,6 +83,24 @@ c42Lib.cp_port = "4285"
 # update username with correct service account names
 c42Lib.cp_username = "admin"	# Can be entered, but not required if manually entering password or using a credential file
 c42Lib.cp_password = "admin"	# Can be entered, but not required if manually entering password or using a credential file
+
+c42Lib.cls()
+print ""
+print ""
+print "**********"
+print ""
+print __file__ + " v" + versionNumber
+print "c42SharedLibrary v" + c42Lib.cp_c42Lib_version
+print ""
+disclaimerFilePath = "../../../Disclaimers/StandardC42Disclaimer2017.txt"
+if not os.path.exists(disclaimerFilePath):
+	print 'Copyright 2015,2016,2017 Code42'
+	print ''
+	print 'THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.'
+else:
+	c42Lib.printFileToScreen('../../../Disclaimers/StandardC42Disclaimer2017.txt')
+print ""
+print ""
 
 
 if __name__ == '__main__' and len(sys.argv) > 1:
@@ -604,23 +623,6 @@ def licensesAvailableList ():
 			currentPage += 1
 			coldStorageParams['pgNum'] = currentPage
 
-
-print ""
-print ""
-print "**********"
-print ""
-print __file__ + " v" + versionNumber
-print "c42SharedLibrary v" + c42Lib.cp_c42Lib_version
-print ""
-disclaimerFilePath = "../../../Disclaimers/StandardC42Disclaimer2017.txt"
-if not os.path.exists(disclaimerFilePath):
-	print 'Copyright 2015,2016,2017 Code42'
-	print ''
-	print 'THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.'
-else:
-	c42Lib.printFileToScreen('../../../Disclaimers/StandardC42Disclaimer2017.txt')
-print ""
-print ""
 
 print "========== User Inputs =========="
 print ""
