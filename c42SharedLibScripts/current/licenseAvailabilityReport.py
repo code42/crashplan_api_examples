@@ -84,8 +84,8 @@ c42Lib.cp_username = "admin"	# Can be entered, but not required if manually ente
 c42Lib.cp_password = "admin"	# Can be entered, but not required if manually entering password or using a credential file
 
 
-if __name__ == '__main__':
-    arguments = docopt(__doc__, version='licenseAvailabilityReport.py 2.0.01')
+if __name__ == '__main__' and len(sys.argv) > 1:
+    arguments = docopt(__doc__, version='licenseAvailabilityReport.py 2.0.1')
     #schema = Schema({
     #	'--start=startDate':
     #     })
@@ -96,6 +96,27 @@ if __name__ == '__main__':
 
     logging.debug(arguments)
     #print(arguments)
+else:
+	print ""
+	arguments = {}
+
+	arguments['<username>']		  = '01                  Enter Username : '
+	arguments['<serverURL>'] 	  = '02      Enter Server URL (no port) : '
+	arguments['<serverPort>'] 	  = '03           Enter Server URL Port : '		# Server Port
+	arguments['<deviceFile>']     = '04   Enter the file name with GUID : '        # CSV File of deviceUids (GUID) to look up
+	arguments['--filePath'] 	  = '05        File Path for CSV Output : '
+	arguments['--orgId'] 		  = '06       Excluded Orgs (by Org ID) : '		# Time stamp appended to summary file name.
+	arguments['-l'] 			  = '07 Hide Logging from Console (Y/N) : '					# Turns off all loggins to screen except errors.
+	arguments['--logLevel'] 	  = '09 Set Log Level (INFO is default) : '
+	arguments['c'] 				  = None
+	arguments['<credentialfile>'] = None
+	arguments['s'] 				  = None
+	arguments['<serverinfofile>'] = None
+	arguments['m'] 				  = None
+	arguments['u'] 				  = None
+	
+	print "\n\n"
+	arguments = c42Lib.inputArguments(argumentsFile='getUserNameFromGuidListParams.txt',argumentList=arguments)
 
 cp_enterUserName       = arguments['u']						# Flag to manually enter username & password
 cp_userName            = arguments['<username>']			# Manually entered username
@@ -584,6 +605,22 @@ def licensesAvailableList ():
 			coldStorageParams['pgNum'] = currentPage
 
 
+print ""
+print ""
+print "**********"
+print ""
+print __file__ + " v" + versionNumber
+print "c42SharedLibrary v" + c42Lib.cp_c42Lib_version
+print ""
+disclaimerFilePath = "../../../Disclaimers/StandardC42Disclaimer2017.txt"
+if not os.path.exists(disclaimerFilePath):
+	print 'Copyright 2015,2016,2017 Code42'
+	print ''
+	print 'THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.'
+else:
+	c42Lib.printFileToScreen('../../../Disclaimers/StandardC42Disclaimer2017.txt')
+print ""
+print ""
 
 print "========== User Inputs =========="
 print ""
@@ -591,22 +628,42 @@ print arguments
 print ""
 print "================================="
 
-userAuth = authenticateUser()  # Sets the variables to authenticate the user.
+if cp_userName:
+	userAuth = c42Lib.authenticateUser(cp_userName=cp_userName)  # Sets the variables to authenticate the user.
+elif cp_userCustomerCredFile:
+	userAuth = c42Lib.authenticateUser(cp_credentialFile=cp_credentialFile)
+else:
+	userAuth = c42Lib.authenticateUser() 
 print ""
 print "User Authentication Type: " + str(userAuth)
 print ""
 print "================================="
+print ""
+print "Validating Server Connection"
+print ""
+print "================================="
 
-#if not c42Lib.validateUserCredentials():
-#	print ""
-#	print "========== Invalid Credentials =========="
-#	print ""
-#	print "Please check the credentials and try again."
-#	print ""
-#	sys.exit(0)
+if cp_serverHostURL:
+	c42Lib.cpServerInfo(cp_serverHostURL=cp_serverHostURL,cp_serverHostPort=cp_serverHostPort)
+elif cp_serverInfoFile:
+	c42Lib.cpServerInfo(cp_serverInfoFileName=cp_serverInfoFileName)
+else:
+	c42Lib.cpServerInfo()
 
 
-cpServerInfo()
+if not c42Lib.validateUserCredentials():
+	print ""
+	print "=============== Invalid Credentials ================="
+	print ""
+	print "Please check the credentials and try again."
+	print ""
+	sys.exit(0)
+else:
+	print ""
+	print "[ " + str(cp_userName) + " ]'s Credentials Appear to Be Valid"
+	print ""
+	print "====================================================="
+
 createCSVFiles()
 licensesAvailableList()
 
