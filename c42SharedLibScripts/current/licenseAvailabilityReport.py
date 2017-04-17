@@ -15,14 +15,14 @@
 #
 # File: licenseAvailabilityReport.py
 # Author: P. Hirst, Code 42 Software
-# Last Modified: 04-11-2017
+# Last Modified: 04-17-2017
 #
 # Creates a list of users whos license useage will expire at a future date
 
 """licenseAvailabilityReport Script
 
 	Usage:
-		licenseAvailabilityReport.py [(u <username>) | (c <credentialfile>)] [(s <serverinfofile>) | m (<serverURL> <serverPort>)] [--filePath=<savefilepath>] [--orgId=<limitToOrgs>] 
+		licenseAvailabilityReport.py [-l] [(u <username>) | (c <credentialfile>)] [(s <serverinfofile>) | m (<serverURL> <serverPort>)] [--filePath=<savefilepath>] [--orgId=<limitToOrgs>] [--logLevel=<logLevel>]
 
 	Arguments:
 		<username>		Add your username - you will be prompted for your password
@@ -31,6 +31,7 @@
 		<serverURL>			Server URL
 		<serverPort>		Server Port
 		<savefilepath>		File Path for log and CSV files.  Must exist before running script.
+		<logLevel> 			Logging Level - defaults to INFO.  Values are INFO, DEBUG and ERROR
 		u 		flag to enter username then be prompted for password
 		c 		flag to enter the name of a credentials file.
 		s 		flag to read server info from a file
@@ -43,17 +44,21 @@
 		-o, --orgId=<limitToOrgs>	Limit list to this comma separated list of orgs (no spaces)
 		-e 		Execute mode - otherwise defaults to test mode.
 		-q		Quit processing after the days connected has been reached
+		-l 		Turn off logging to console
 		-h, --help	Show this screen.
 		--version	Show version.
 
 """
 
+versionNumber = '2.0.1'
+
+import logging
+logging.basicConfig(filename='deleteme.log',level=logging.INFO)
 from docopt import docopt
 import sys
 import requests
 import json
 import csv
-import logging
 import getpass
 import time
 import base64
@@ -80,7 +85,7 @@ c42Lib.cp_password = "admin"	# Can be entered, but not required if manually ente
 
 
 if __name__ == '__main__':
-    arguments = docopt(__doc__, version='licenseAvailabilityReport.py 2.0')
+    arguments = docopt(__doc__, version='licenseAvailabilityReport.py 2.0.01')
     #schema = Schema({
     #	'--start=startDate':
     #     })
@@ -103,6 +108,8 @@ cp_serverHostURL       = arguments['<serverURL>']			# Server URL
 cp_serverHostPort      = arguments['<serverPort>']			# Server Port
 cp_onlyTheseOrgs       = arguments['--orgId']				# Exclude these orgs (by orgId).  Can use comma separated list (no spaces)
 cp_filePath            = arguments['--filePath']			# File path for output files, including log
+cp_loggingToScreen 		= arguments['-l']					# Turns off all loggins to screen except errors.
+cp_loggingLevel			= arguments['--logLevel']			# Logging Level.  Defaults to INFO.  DEBUG and ERROR are Options
 
 
 start_time = time.time()
@@ -112,13 +119,25 @@ todayis = time.strftime("%Y-%m-%d-%H-%M_%S")
 todayisshort = time.strftime("%Y%m%d-%H-%M")
 todayonly = time.strftime("%Y%m%d")
 
+if not cp_loggingLevel:
+	c42Lib.cp_logLevel = "INFO" # Will be overwritten if --logLevel is set
+	cp_loggingLevel = "INFO"
 
-c42Lib.cp_logLevel = "INFO"
 if not cp_filePath:
 	c42Lib.cp_logFileName = "licenseAvailabilityReport-"+todayonly+".log"
 else:
 	c42Lib.cp_logFileName = cp_filePath+"licenseAvailabilityReport-"+todayonly+".log"
-c42Lib.setLoggingLevel()
+
+
+if cp_loggingToScreen:
+	showInConsole=False  #If the flag is present, turn off logging in console
+else:
+	showInConsole=True
+
+c42Lib.setLoggingLevel(showInConsole=showInConsole,loggingLevel=cp_loggingLevel)
+logging.info('deactivateDevices.py v' + versionNumber)
+
+logging.debug(arguments)
 
 # print deviceGuids
 

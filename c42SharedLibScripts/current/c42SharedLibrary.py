@@ -391,7 +391,7 @@ class c42Lib(object):
 
             print "Looking for credentials file..."
             
-            with open(str(cp_credentialFile)) as f:
+            with open(str(c42Lib.getFilePath(cp_credentialFile))) as f:
                 c42Lib.cp_username = base64.b64decode(f.readline().strip())
                 c42Lib.cp_password = base64.b64decode(f.readline().strip())
 
@@ -483,7 +483,7 @@ class c42Lib(object):
 
         if cp_serverInfoFile: # If using a credentials file
             
-            with open(str(cp_serverInfoFileName)) as f:
+            with open(str(c42Lib.getFilePath(cp_serverInfoFileName))) as f:
                 c42Lib.cp_host = f.readline().strip()
                 c42Lib.cp_port = f.readline().strip()
 
@@ -3726,9 +3726,6 @@ class c42Lib(object):
                 base_path = os.getcwd() 
         except Exception:
             base_path = os.path.abspath(".")
-
-        #print base_path
-        #raw_input()
 
         return os.path.join(base_path,relativePath)    
 
