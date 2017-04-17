@@ -122,7 +122,6 @@ else:
 	arguments['<username>']		  = '01                  Enter Username : '
 	arguments['<serverURL>'] 	  = '02      Enter Server URL (no port) : '
 	arguments['<serverPort>'] 	  = '03           Enter Server URL Port : '		# Server Port
-	arguments['<deviceFile>']     = '04   Enter the file name with GUID : '        # CSV File of deviceUids (GUID) to look up
 	arguments['--filePath'] 	  = '05        File Path for CSV Output : '
 	arguments['--orgId'] 		  = '06       Excluded Orgs (by Org ID) : '		# Time stamp appended to summary file name.
 	arguments['-l'] 			  = '07 Hide Logging from Console (Y/N) : '					# Turns off all loggins to screen except errors.
