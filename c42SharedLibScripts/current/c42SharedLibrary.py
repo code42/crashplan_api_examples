@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 04-14-2017
+# Last Modified: 04-17-2017
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -31,7 +31,6 @@
 # install pip
 # sudo pip install requests
 # sudo pip install python-dateutil [-update]
-
 
 
 import math
@@ -50,6 +49,8 @@ import getpass
 import os
 
 class c42Lib(object):
+
+    cp_c42Lib_version = '1.5.0'
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
