@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 04-17-2017
+# Last Modified: 04-25-2017
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -50,7 +50,7 @@ import os
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.5.0'
+    cp_c42Lib_version = '1.5.1'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -211,7 +211,7 @@ class c42Lib(object):
     def executeRequest(type, cp_api, params={}, payload={}, **kwargs):
 
         requests.packages.urllib3.disable_warnings()
-        logging.getLogger("urllib3").setLevel(logging.WARNING)
+        logging.getLogger("urllib3").setLevel(logging.warning)
         
         header = c42Lib.getRequestHeaders(**kwargs)
         url = c42Lib.getRequestUrl(cp_api, **kwargs)
@@ -3282,7 +3282,7 @@ class c42Lib(object):
             if c42Lib.cp_logLevel == 'INFO':
 
                 logging.basicConfig(
-                                    level = logging.INFO,
+                                    level = logging.info,
                                     format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
                                     # filename='EditUserRoles.log',
@@ -3292,7 +3292,7 @@ class c42Lib(object):
             else:
 
                 logging.basicConfig(
-                                    level = logging.DEBUG,
+                                    level = logging.debug,
                                     format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
                                     # filename='EditUserRoles.log',
@@ -3304,10 +3304,10 @@ class c42Lib(object):
 
 
             if(c42Lib.cp_logLevel=="DEBUG"):
-                console.setLevel(logging.DEBUG)
-                # console.setLevel(logging.INFO)
+                console.setLevel(logging.debug)
+                # console.setLevel(logging.info)
             else:
-                console.setLevel(logging.INFO)
+                console.setLevel(logging.info)
            # set a format which is simpler for console use
             formatter = logging.Formatter('%(asctime)s [%(name)-8s] [ %(levelname)-6s ] %(message)s')
             # tell the handler to use this format
@@ -3338,7 +3338,7 @@ class c42Lib(object):
             if c42Lib.cp_logLevel == 'INFO':
 
                 logging.basicConfig(
-                                    level=logging.INFO,
+                                    level=logging.info,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
                                     filename = str(c42Lib.cp_logFileName),
@@ -3347,7 +3347,7 @@ class c42Lib(object):
             if c42Lib.cp_logLevel == 'WARNING':
 
                 logging.basicConfig(
-                                    level=logging.WARNING,
+                                    level=logging.warning,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
                                     filename = str(c42Lib.cp_logFileName),
@@ -3356,7 +3356,7 @@ class c42Lib(object):
             if c42Lib.cp_logLevel == 'DEBUG':
 
                 logging.basicConfig(
-                                    level=logging.DEBUG,
+                                    level=logging.debug,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
                                     filename = str(c42Lib.cp_logFileName),
@@ -3365,7 +3365,7 @@ class c42Lib(object):
             if c42Lib.cp_logLevel == 'ERROR':
 
                 logging.basicConfig(
-                                    level=logging.ERROR,
+                                    level=logging.error,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
                                     filename = str(c42Lib.cp_logFileName),
@@ -3374,7 +3374,7 @@ class c42Lib(object):
             if c42Lib.cp_logLevel == 'CRITICAL':
 
                 logging.basicConfig(
-                                    level=logging.CRITICAL,
+                                    level=logging.critical,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
                                     filename = str(c42Lib.cp_logFileName),
@@ -3730,6 +3730,83 @@ class c42Lib(object):
 
         return os.path.join(base_path,relativePath)    
 
+    @staticmethod
+    def checkPathMakePath(filePath):
+
+        try:
+
+            os.makedirs(filePath)
+
+        except OSError:
+
+            if not os.path.isdir(filePath):
+
+                # zero out file path if there is an issue
+                filePath = ''
+
+        return filePath
+                
+
+    # validateVersion method
+    #
+    # Inputs:
+    #           version = version number #.#.# string - REQUIRED
+    #           minorStrict = require the 2nd number to equal, otherwise must not be less than
+    #           patchStrict = require the 3rd number to equal, otherwise must not be less than
+    #
+    # Output:
+    #           True  if meets minimum version requirements
+    #           False if does not meet minimum version requirements
+    #
+    # Note:
+    #           Major version (1st #) must always be equal or greater than
+
+
+    @staticmethod
+    def validateVersion(**kwargs):
+
+        versionOK   = True
+        minorStrict = False
+        patchStrict = False
+
+        if 'version' in kwargs:
+            scriptVersion = kwargs['version'].split('.')
+            if len(scriptVersion) != 3:
+                versionOK = False
+        else:
+            versionOK = False
+
+        if 'majorStrict' in kwargs:
+            majorStrict = kwargs['majorStrict']
+        if 'minorStrict' in kwargs:
+            minorStrict = kwargs['minorStrict']
+        if 'patchStrict' in kwargs:
+            patchStrict = kwargs['patchStrict']
+
+        if majorStrict:
+            if (scriptVersion[0] != c42Lib.cp_c42Lib_version[0]):
+                versionOK = False
+        elif (scriptVersion[0] < c42Lib.cp_c42Lib_version[0]):
+            versionOK = False
+
+        if minorStrict:
+            if (scriptVersion[1] != c42Lib.cp_c42Lib_version[1]):
+                versionOK = False
+        elif (scriptVersion[1] < c42Lib.cp_c42Lib_version[1]):
+            versionOK = False
+
+        if patchStrict:
+            if (scriptVersion[2] != c42Lib.cp_c42Lib_version[2]):
+                versionOK = False
+        elif (scriptVersion[2] < c42Lib.cp_c42Lib_version[2]):
+            versionOK = False
+
+        if not versionOK:
+            print ""
+            print "!!!!!!!!!! This script requires v" + str(requiredC42Lib) + " of the C42SharedLibary.py to run.\nPlease make sure you have the correct version of the shared library."
+            print ""
+
+        return versionOK
 
     @staticmethod
     def cls():
