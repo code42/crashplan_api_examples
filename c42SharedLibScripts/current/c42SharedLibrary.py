@@ -211,7 +211,7 @@ class c42Lib(object):
     def executeRequest(type, cp_api, params={}, payload={}, **kwargs):
 
         requests.packages.urllib3.disable_warnings()
-        logging.getLogger("urllib3").setLevel(logging.warning)
+        #logging.getLogger("urllib3").setLevel(logging.warning)
         
         header = c42Lib.getRequestHeaders(**kwargs)
         url = c42Lib.getRequestUrl(cp_api, **kwargs)
