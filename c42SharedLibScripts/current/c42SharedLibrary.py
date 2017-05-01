@@ -3553,7 +3553,7 @@ class c42Lib(object):
                 else:
                     itemsToWriteeEncoded = stufftowrite
                 writestring = writestring + str(itemsToWriteeEncoded) + ','
-                logging.info("writeCSVappend:file - [" + filenametowrite + "] - " + str(writestring))
+                logging.debug("writeCSVappend:file - [" + filenametowrite + "] - " + str(writestring))
 
             writestring = writestring[:-1] + "\n" # Remove an extra space at the end of the string and append a return
             output.write (writestring)
@@ -3574,7 +3574,7 @@ class c42Lib(object):
                 itemsToWriteeEncoded = listtowrite.encode('utf8') # encoding protects against crashes
             
             writestring = str(itemsToWriteeEncoded)
-            logging.info("writeCSVappend:file - [" + filenametowrite + "] - " + str(writestring))
+            logging.debug("writeCSVappend:file - [" + filenametowrite + "] - " + str(writestring))
             writestring = writestring + "\n" # Remove an extra space at the end of the string and append a return
             output.write (writestring)
             output.close
