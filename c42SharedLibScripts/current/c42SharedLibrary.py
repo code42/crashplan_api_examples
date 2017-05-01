@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 04-25-2017
+# Last Modified: 05-01-2017
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -50,7 +50,7 @@ import os
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.5.1'.split('.')
+    cp_c42Lib_version = '1.5.2'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
