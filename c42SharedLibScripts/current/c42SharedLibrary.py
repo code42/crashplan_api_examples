@@ -960,7 +960,7 @@ class c42Lib(object):
 
         payload = {}
 
-
+        logging.debug("cp_api_user/" + str(userId)+"/"+str(params)+" [payload] : " + str(payload))
         r = c42Lib.executeRequest("get", c42Lib.cp_api_user + "/" + str(userId), params, payload)
 
         logging.debug(r.text)
@@ -970,6 +970,7 @@ class c42Lib(object):
         logging.debug(binary)
 
         try:
+            logging.debug("[data] : " + str(binary['data']))
             user = binary['data']
         except TypeError:
 
@@ -3275,6 +3276,7 @@ class c42Lib(object):
         #print kwargs
 
         c42Lib.cp_logFileName = c42Lib.getFilePath(c42Lib.cp_logFileName)
+        showInConsole = True
 
         if not kwargs:
 
@@ -3315,13 +3317,9 @@ class c42Lib(object):
             # add the handler to the root logger
             logging.getLogger('').addHandler(console)
 
-            #print "Kilroy's first spot."
-
         else:
 
             # Fancy Split Logging - requires the use of KWARGS when calling the logging function.
-
-            showInConsole = True
 
             if kwargs:
                 if 'showInConsole' in kwargs:
@@ -3330,10 +3328,6 @@ class c42Lib(object):
                     c42Lib.cp_logLevel = kwargs['loggingLevel']
                 else:
                     kwargs['loggingLevel'] = c42Lib.cp_logLevel
-
-            #print kwargs
-            print "Logging Level Set : " + str(c42Lib.cp_logLevel)
-            #print "Kilroy's second spot."
 
             if c42Lib.cp_logLevel == 'INFO':
 
@@ -3346,6 +3340,8 @@ class c42Lib(object):
 
             if c42Lib.cp_logLevel == 'WARNING':
 
+                print "\nSetting Logging Level to WARNING\n"
+
                 logging.basicConfig(
                                     level=logging.warning,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
@@ -3354,6 +3350,8 @@ class c42Lib(object):
                                     filemode='w')
 
             if c42Lib.cp_logLevel == 'DEBUG':
+
+                print "\nSetting Logging Level to DEBUG\n"
 
                 logging.basicConfig(
                                     level=logging.debug,
@@ -3364,6 +3362,8 @@ class c42Lib(object):
 
             if c42Lib.cp_logLevel == 'ERROR':
 
+                print "\nSetting Logging Level to ERROR\n"
+
                 logging.basicConfig(
                                     level=logging.error,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
@@ -3372,6 +3372,8 @@ class c42Lib(object):
                                     filemode='w')
 
             if c42Lib.cp_logLevel == 'CRITICAL':
+
+                print "\nSetting Logging Level to CRITICAL\n"
 
                 logging.basicConfig(
                                     level=logging.critical,
@@ -3392,28 +3394,28 @@ class c42Lib(object):
             # add the handler to the root logger
             logging.getLogger('').addHandler(logfile)
             
-            if not showInConsole:
+        if not showInConsole: 
 
-                print "Suppress Logging Output to Console"
-                logging.getLogger('').removeHandler(console)
+            logging.getLogger('').addHandler(console)
 
-            else:
+        else:
+            print "Suppress Logging Output to Console"
+            logging.getLogger('').removeHandler(console)
 
-                logging.getLogger('').addHandler(console)
+        if os.path.exists(c42Lib.getFilePath('deleteme.log')):
 
-            if os.path.exists(c42Lib.getFilePath('deleteme.log')):
+            logging.debug('setLoggingLevel: delete temporary log file : ' + str(c42Lib.getFilePath('deleteme.log')))
+            
+            try:
+                os.remove(c42Lib.getFilePath('deleteme.log'))
+            except OSError:
 
-                logging.debug('setLoggingLevel: delete temporary log file : ' + str(c42Lib.getFilePath('deleteme.log')))
-                
-                try:
-                    os.remove(c42Lib.getFilePath('deleteme.log'))
-                except OSError:
+                print ""
+                print "Could not delete : " + str(c42Lib.getFilePath('deleteme.log'))
+                print ""
 
-                    print ""
-                    print "Could not delete : " + str(c42Lib.getFilePath('deleteme.log'))
-                    print ""
+        logging.debug('end: setLoggingLevel ' + str(c42Lib.cp_logLevel))
 
-            logging.debug('end: setLoggingLevel ' + str(c42Lib.cp_logLevel))
 
 
     @staticmethod
@@ -3714,19 +3716,27 @@ class c42Lib(object):
 
         try:
             base_path = sys._MEIPASS
-     
+            logging.debug("getFilePath - base_path :[ " + str(base_path) + " ]")
+
             # Get Platform Specific (mostly just Windows vs. the World)
 
             if str(os.name) != 'nt':
                 # Find last directory slash
 
+                logging.debug("getFilePath - os.name :[ " + str(os.name) + " ]")
                 endOfPath = str(sys.executable).rfind('/')
                 base_path = str(sys.executable)[:endOfPath+1]
 
+                logging.debug("getFilePath - endOfPath :[ " + str(endOfPath) + " ]")
+                logging.debug("getFilePath - base_path :[ " + str(base_path) + " ]")
             else:
-                base_path = os.getcwd() 
+                base_path = os.getcwd()
+                logging.debug("getFilePath - base_path :[ " + str(base_path) + " ]")
+        
         except Exception:
+            
             base_path = os.path.abspath(".")
+            logging.debug("getFilePath - base_path :[ " + str(base_path) + " ]")
 
         return os.path.join(base_path,relativePath)    
 
@@ -3811,6 +3821,21 @@ class c42Lib(object):
     @staticmethod
     def cls():
         os.system('cls' if os.name=='nt' else 'clear')
+
+
+
+    @staticmethod
+    def convertToBool(isItTrue):
+
+        if isItTrue:
+            isItTrue == str(isItTrue).lower()
+
+            if isItTrue not in ('y','t','yes'):
+                isItTrue == False
+            else:
+                isItTrue == True
+
+        return isItTrue    
 
 # class UserClass(object)
 
