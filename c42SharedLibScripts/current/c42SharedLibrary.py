@@ -3527,7 +3527,7 @@ class c42Lib(object):
 
     @staticmethod
     def writeCSVappend(listtowrite,filenametowrite,writeType):
-        logging.debug("writeCSVappend:file - [" + filenametowrite + "]")
+        logging.info("writeCSVappend:file - [" + filenametowrite + "]")
 
         #Check the length of the list to write.  If more than one item, then iterate through the list
 
@@ -3553,6 +3553,7 @@ class c42Lib(object):
                 else:
                     itemsToWriteeEncoded = stufftowrite
                 writestring = writestring + str(itemsToWriteeEncoded) + ','
+                logging.info("writeCSVappend:file - [" + filenametowrite + "] - " + str(writestring))
 
             writestring = writestring[:-1] + "\n" # Remove an extra space at the end of the string and append a return
             output.write (writestring)
@@ -3573,6 +3574,7 @@ class c42Lib(object):
                 itemsToWriteeEncoded = listtowrite.encode('utf8') # encoding protects against crashes
             
             writestring = str(itemsToWriteeEncoded)
+            logging.info("writeCSVappend:file - [" + filenametowrite + "] - " + str(writestring))
             writestring = writestring + "\n" # Remove an extra space at the end of the string and append a return
             output.write (writestring)
             output.close
@@ -3712,7 +3714,7 @@ class c42Lib(object):
 
     @staticmethod
     def getFilePath(relativePath):
-        logging.info("getFilePath: [ " + str(relativePath) + " ]")
+        logging.debug("getFilePath: [ " + str(relativePath) + " ]")
 
         try:
             base_path = sys._MEIPASS
