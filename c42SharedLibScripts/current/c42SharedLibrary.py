@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 05-01-2017
+# Last Modified: 05-10-2017
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -3304,12 +3304,6 @@ class c42Lib(object):
             # define a Handler which writes INFO messages or higher to the sys.stderr
             console = logging.StreamHandler()
 
-
-            if(c42Lib.cp_logLevel=="DEBUG"):
-                console.setLevel(logging.debug)
-                # console.setLevel(logging.info)
-            else:
-                console.setLevel(logging.info)
            # set a format which is simpler for console use
             formatter = logging.Formatter('%(asctime)s [%(name)-8s] [ %(levelname)-6s ] %(message)s')
             # tell the handler to use this format
