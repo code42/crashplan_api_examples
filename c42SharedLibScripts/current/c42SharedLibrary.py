@@ -2884,19 +2884,29 @@ class c42Lib(object):
         # logging.info("*******" + r.text + "*******")
         #null response on private passwords
 
+
+        print "---------- Getting Archive Metadata for GUID : " + str(guid)
         # http://stackoverflow.com/questions/16694907/how-to-download-large-file-in-python-with-requests-py
         if saveToDisk:
             # print r.text
+
             local_filename = "json/archiveMetadata_"+str(guid)+".json"
             with open(local_filename, 'wb') as f:
-                counter = 0
+                chunkCounter = 0
                 for chunk in r.iter_content(chunk_size=1024):
                     if chunk: # filter out keep-alive new chunks
-                        counter += 1
+                        chunkCounter += 1
                         f.write(chunk)
                         f.flush()
-                        if counter % 100 == 0:
+                        if chunkCounter % 1000 == 0:
                             sys.stdout.write('.')
+                            sys.stdout.flush()
+                        if chunkCounter % 100000 == 0:
+                            sys.stdout.write('|')
+                            sys.stdout.flush()
+                        if chunkCounter % 1000000 == 0:
+                            sys.stdout.write('\nGuid : ' + str(guid) + " | " + str(c42Lib.prettyNumberFormat(chunkCounter*1000000)) + " Processed")
+                            sys.stdout.write('\nTime Stamp : ' + str(time.strftime('%H:%M:%S', time.gmtime(time.time())))+"\n")
                             sys.stdout.flush()
                 print ""
                 return local_filename
@@ -3645,7 +3655,7 @@ class c42Lib(object):
 
     #End printFileToScreen
 
-
+    '''
     @staticmethod
     def inputArguments (**kwargs):
 
@@ -3687,10 +3697,13 @@ class c42Lib(object):
 
                     for index, argument in enumerate (sorted(argumentList,key=argumentList.__getitem__)):
 
-                        if argumentList[argument] is not None:
-                            arguments[argument] = raw_input(argumentList[argument])
+                        if len(argumentList) == 1:
+                            if argumentList[argument] is not None:
+                                    arguments[argument] = raw_input(argumentList[argument])
+                            else:
+                                arguments[argument] = None
                         else:
-                            arguments[argument] = None
+                            for indexArgs, argumentFields in enumerate(argument):
 
             elif not hasArguments:
 
@@ -3705,6 +3718,8 @@ class c42Lib(object):
             sys.exit('System Exit: No Parameters Provided')
 
         return arguments
+    '''
+
 
     @staticmethod
     def getFilePath(relativePath):
@@ -3831,7 +3846,17 @@ class c42Lib(object):
             else:
                 isItTrue == True
 
-        return isItTrue    
+        return isItTrue 
+
+
+    #Converts numbers to "pretty" format
+    @staticmethod
+    def prettyNumberFormat(num, suffix='B'):
+        for unit in ['',' K',' M',' G',' T',' P',' E',' Z']:
+            if abs(num) < 1000.0:
+                return "%3.2f%s%s" % (num, unit, suffix)
+            num /= 1000.0
+        return "%.1f%s%s" % (num, 'Yi ', suffix)   
 
 # class UserClass(object)
 
