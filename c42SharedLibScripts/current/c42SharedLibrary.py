@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 05-10-2017
+# Last Modified: 05-16-2017
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -50,7 +50,7 @@ import os
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.5.2'.split('.')
+    cp_c42Lib_version = '1.5.3'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -3794,8 +3794,6 @@ class c42Lib(object):
             scriptVersion = kwargs['version'].split('.')
             if len(scriptVersion) != 3:
                 versionOK = False
-        else:
-            versionOK = False
 
         if 'majorStrict' in kwargs:
             majorStrict = kwargs['majorStrict']
@@ -3807,19 +3805,19 @@ class c42Lib(object):
         if majorStrict:
             if (scriptVersion[0] != c42Lib.cp_c42Lib_version[0]):
                 versionOK = False
-        elif (scriptVersion[0] < c42Lib.cp_c42Lib_version[0]):
+        elif (scriptVersion[0] > c42Lib.cp_c42Lib_version[0]):
             versionOK = False
 
         if minorStrict:
             if (scriptVersion[1] != c42Lib.cp_c42Lib_version[1]):
                 versionOK = False
-        elif (scriptVersion[1] < c42Lib.cp_c42Lib_version[1]):
+        elif (scriptVersion[1] > c42Lib.cp_c42Lib_version[1]):
             versionOK = False
 
         if patchStrict:
             if (scriptVersion[2] != c42Lib.cp_c42Lib_version[2]):
                 versionOK = False
-        elif (scriptVersion[2] < c42Lib.cp_c42Lib_version[2]):
+        elif (scriptVersion[2] > c42Lib.cp_c42Lib_version[2]):
             versionOK = False
 
         if not versionOK:
