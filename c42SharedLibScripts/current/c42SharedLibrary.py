@@ -3655,7 +3655,6 @@ class c42Lib(object):
 
     #End printFileToScreen
 
-    '''
     @staticmethod
     def inputArguments (**kwargs):
 
@@ -3697,13 +3696,10 @@ class c42Lib(object):
 
                     for index, argument in enumerate (sorted(argumentList,key=argumentList.__getitem__)):
 
-                        if len(argumentList) == 1:
-                            if argumentList[argument] is not None:
-                                    arguments[argument] = raw_input(argumentList[argument])
-                            else:
-                                arguments[argument] = None
+                        if argumentList[argument] is not None:
+                            arguments[argument] = raw_input(argumentList[argument])
                         else:
-                            for indexArgs, argumentFields in enumerate(argument):
+                            arguments[argument] = None
 
             elif not hasArguments:
 
@@ -3718,7 +3714,7 @@ class c42Lib(object):
             sys.exit('System Exit: No Parameters Provided')
 
         return arguments
-    '''
+
 
 
     @staticmethod
