@@ -3655,6 +3655,8 @@ class c42Lib(object):
 
     #End printFileToScreen
 
+    #Allow for arguments to be input/prompted rather than commandline.
+
     @staticmethod
     def inputArguments (**kwargs):
 
