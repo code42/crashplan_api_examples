@@ -3833,15 +3833,12 @@ class c42Lib(object):
 
     @staticmethod
     def convertToBool(isItTrue):
-
         if isItTrue:
-            isItTrue == str(isItTrue).lower()
-
-            if isItTrue not in ('y','t','yes'):
-                isItTrue == False
+            isItTrue = str(isItTrue).lower()
+            if isItTrue in ('y','t','yes','true'):
+                isItTrue = True
             else:
-                isItTrue == True
-
+                isItTrue = False
         return isItTrue 
 
 
