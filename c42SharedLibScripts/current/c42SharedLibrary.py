@@ -2485,30 +2485,26 @@ class c42Lib(object):
 
     @staticmethod
     def getArchive(**kwargs):
+
         logging.info("getArchive-params: " + str(kwargs))
 
         params = {}
-
-        try:
-            #If only a GUID is supplied, it's enough.
-
-            guid = kwargs['guid']
-            logging.info("getArchive-Guid:" + str(guid))
-
-        except:
-
-            try:
-                params = kwargs['params']
-                logging.info("getArchive-Params:" + str(params))
-
-            except:
-
-                logging.info("getArchive-No archiveGUID or Params provided.  Returning None.")
-                return None
-
         payload = {}
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_archive, params, payload)
+        if kwargs:
+
+            if ('guid' in kwargs and 'params' not in kwargs):
+
+                r = c42Lib.executeRequest("get", c42Lib.cp_api_archive+"/"+kwargs['guid'], payload)
+
+            elif ('params' in kwargs):
+                params = kwargs['params']
+
+                r = c42Lib.executeRequest("get", c42Lib.cp_api_archive, params, payload)
+
+            else:
+                logging.info("getArchive-No archiveGUID or Params provided.  Returning None.")
+                return None
 
         logging.debug(r.text)
 
@@ -2971,12 +2967,49 @@ class c42Lib(object):
 
     @staticmethod
     def getServer(serverId):
+
         logging.info("getServer-params:serverId["+str(serverId)+"]")
 
         params = {}
         payload = {}
 
         r = c42Lib.executeRequest("get", c42Lib.cp_api_server + "/" + str(serverId), params, payload)
+
+        # logging.info("====server response : " + r.text + "====")
+
+        content = r.content
+        binary = json.loads(content)
+        logging.debug(binary)
+
+        if binary['data']:
+            server = binary['data']
+        else:
+            server = None
+
+        return server
+
+    #
+    # getServer(serverId):
+    # returns server information based on serverId
+    # params: serverId
+    #
+
+    @staticmethod
+    def getServerByParams(**kwargs):
+
+        logging.info("getServer-params:serverId["+str(kwargs)+"]")
+
+        params = {}
+        payload = {}
+
+        if kwargs:
+
+            if ('params' in kwargs):
+                params = kwargs['params']
+                r = c42Lib.executeRequest("get", c42Lib.cp_api_server, params, payload)
+            if ('serverId' in kwargs):
+                serverId = kwargs['serverId']
+                r = c42Lib.executeRequest("get", c42Lib.cp_api_server + "/" + str(serverId), params, payload)
 
         # logging.info("====server response : " + r.text + "====")
 
