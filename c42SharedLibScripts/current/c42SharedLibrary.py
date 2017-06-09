@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 05-16-2017
+# Last Modified: 06-09-2017
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -50,7 +50,7 @@ import os
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.5.3'.split('.')
+    cp_c42Lib_version = '1.5.4'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -111,6 +111,7 @@ class c42Lib(object):
     cp_api_webRestoreSearch = "/api/WebRestoreSearch"
     cp_api_webRestoreSession = "/api/WebRestoreSession"
     cp_api_webRestoreTreeNode = "/api/WebRestoreTreeNode"
+    cp_api_webRestoreInfo = "/api/WebRestoreInfo"
     cp_api_ekr = "/api/EKR"
     cp_api_legalHoldMembershipSummary = "/api/LegalHoldMembershipSummary"
     cp_api_legalHoldMembership = "/api/LegalHoldMembership"
@@ -596,7 +597,7 @@ class c42Lib(object):
             contents = r.content.decode("UTF-8")
             binary = json.loads(contents)
             logging.info("requestLoginToken Response: " + str(contents))
-            return binary['data']['loginToken'] if 'data' in binary else None
+            return binary['data'] if 'data' in binary else None
         except KeyError:
             return None
 
@@ -611,6 +612,15 @@ class c42Lib(object):
     @staticmethod
     def requestAuthToken(**kwargs):
         logging.info("^^^^^^^^^^^ requestAuthToken: start" + str(kwargs))
+
+        if kwargs:
+            if 'serverUrl' in kwargs:
+                serverURL = kwargs['serverUrl'] + "/api/AuthToken"
+            else:
+                serverURL = c42Lib.cp_api_authToken 
+            if 'header' in kwargs:
+                header = kwargs['header']
+
         payload = {
             "sendCookieHeader":True
         }
@@ -688,8 +698,29 @@ class c42Lib(object):
         params['regex'] = regex
         payload = {}
         r = c42Lib.executeRequest("get", c42Lib.cp_api_webRestoreSearch, params, payload, **kwargs)
+
+        print r
+
         binary = json.loads(r.content.decode('UTF-8'))
         return binary['data'] if 'data' in binary else None
+
+
+    #
+    # Params:
+    # srcGuid: guid of the device
+    # destGuid: guid of the destination
+    # Returns: Web Restore Job Info
+    #
+    @staticmethod
+    def requestWebRestoreInfo(srcGuid,destGuid):
+        params = {}
+        params['srcGuid'] = srcGuid
+        params['destGuid'] = destGuid
+        payload = {}
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_webRestoreInfo, params, payload)
+        binary = json.loads(r.content.decode('UTF-8'))
+        return binary['data'] if 'data' in binary else None
+
 
     #
     # Params:
@@ -1665,7 +1696,7 @@ class c42Lib(object):
 
             logging.debug(r.text)
 
-            content = r.content
+            content = r.content.decode("UTF-8")
             binary = json.loads(content)
             logging.debug(binary)
 
