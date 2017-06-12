@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 06-09-2017
+# Last Modified: 06-12-2017
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -88,7 +88,7 @@ class c42Lib(object):
     cp_api_legaHold = "/api/LegalHold"
     cp_api_legalHoldMembership = "/api/LegalHoldMembership"
     cp_api_legalHoldMembershipDeactivation = "/api/LegalHoldMembershipDeactivation"
-    cp_api_loginToken = "/api/LoginToken"
+    cp_api_loginToken = "/api/v1/LoginToken"
     cp_api_networkTest = "/api/NetworkTest"
     cp_api_org = "/api/Org"
     cp_api_orgDeactivation = "/api/OrgDeactivation"
@@ -947,27 +947,39 @@ class c42Lib(object):
         if params:
             payload = {}
 
-            r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
+            keepTrying = True
+            keepTryingCount = 0
 
-            logging.debug(r.text)
-            content = r.content
-            r.content
-            binary = json.loads(content)
+            while keepTrying:
 
-            logging.debug(binary)
+                keepTryingCount += 1
 
-            try:
-                return binary['data']['users']
+                if keepTryingCount < 4:
 
-            except TypeError:
-                
-                return None
+                    r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
 
-            # binary['data']['users'][0]['userUid']
-        
-        else:
-        
-            return None
+                    logging.debug(r.text)
+                    content = r.content
+                    r.content
+                    binary = json.loads(content)
+
+                    logging.debug(binary)
+
+                    if r.status_code == 200:
+
+                        try:
+                            return binary['data']['users']
+                            keepTrying = False
+
+                        except TypeError:
+                            
+                            logging.info("getUser-failed : " + r.status_code)
+                    
+                    else:
+                    
+                        if keepTryingCount == 4:
+
+                            return None
         
 
 
