@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 06-12-2017
+# Last Modified: 06-21-2017
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -47,10 +47,11 @@ import calendar
 import re
 import getpass
 import os
+import collections
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.5.4'.split('.')
+    cp_c42Lib_version = '1.5.5'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -331,6 +332,8 @@ class c42Lib(object):
     @staticmethod
     def validateUserCredentials():
 
+        logging.debug ("=========== Validate User")
+
         # Check if username/password combination is valid
 
         isValidUser = False
@@ -395,23 +398,25 @@ class c42Lib(object):
             
             with open(str(c42Lib.getFilePath(cp_credentialFile))) as f:
                 c42Lib.cp_username = base64.b64decode(f.readline().strip())
+                cp_username        = c42Lib.cp_username
+
                 c42Lib.cp_password = base64.b64decode(f.readline().strip())
+
 
             userAuthType = 'Credentials File'
             userInfoSet = True
 
-        if cp_enterUserName:
+        if cp_enterUserName and userAuthType != 'Hardcoded':
 
             print ""
             c42Lib.cp_password = getpass.getpass('=========== Please enter the password for user ' + str(c42Lib.cp_username) + ' : ')
-            c42Lib.cp_username = cp_userName
 
             userAuthType = 'Entered Password'
             userInfoSet= True
 
         if userAuthType == 'Hardcoded':
 
-            if c42Lib.cp_username == 'admin':
+            if cp_username == 'admin':
                 print ""
                 print "Username is set to 'admin'!  If this is really your username you should change it."
                 print ""
@@ -453,6 +458,10 @@ class c42Lib(object):
     def cpServerInfo(**kwargs):
 
         logging.debug ("=========== Set CP Server Info")
+
+        print ""
+        print "========= Checking Connection to Server..."
+        print ""
 
         serverInfoType     = 'Hardcoded'
         warningText        = ''
@@ -513,6 +522,10 @@ class c42Lib(object):
             print "**********"
             print ""
             sys.exit(1)
+
+        print ""
+        print "========= Server Connection Check Complete"
+        print ""
 
         return serverInfoType
 
@@ -972,14 +985,23 @@ class c42Lib(object):
                             keepTrying = False
 
                         except TypeError:
+
+                            print str(keepTryingCount) + " | Error Code : " + str(r.status_code) + " | TypeError"
                             
                             logging.info("getUser-failed : " + r.status_code)
+                            sys.exit()
                     
                     else:
                     
+                        print str(keepTryingCount) + " | Error Code : " + str(r.status_code)
+
                         if keepTryingCount == 4:
 
                             return None
+                else:
+                    print str(keepTryingCount) + " | Error Code : " + str(r.status_code)
+                    keepTrying = False
+                    return None
         
 
 
@@ -3580,10 +3602,12 @@ class c42Lib(object):
     # Read a CSV file
 
     @staticmethod
-    def readCSVFiletoDictionary(csvFileName):
-        logging.info("readCSVfile:file - [" + csvFileName + "]")
+    def readCSVFiletoDictionary(**kwargs):
+        logging.info("readCSVfile:file - [" + str(kwargs) + "]")
 
+        newValueList = []
 
+        csvFileName = kwargs['csvFileName']
         csvFileName = c42Lib.getFilePath(csvFileName)
 
         fileList = {}
@@ -3597,6 +3621,11 @@ class c42Lib(object):
 
         for key,value in fileList.items():
             newValueList[key] = value[0]
+
+        if 'ordered' in kwargs:
+            if kwargs['ordered']:
+
+                newValueList = collections.OrderedDict(sorted(newValueList.items(),key=lambda X:X[0]))
         
         return newValueList
 
@@ -3627,8 +3656,12 @@ class c42Lib(object):
                 if (isinstance (stufftowrite,(int)) or isinstance(stufftowrite,(float)) or isinstance(stufftowrite,(long)) or isinstance(stufftowrite,(datetime.date))):
                     itemsToWriteeEncoded = stufftowrite
             
-                elif stufftowrite is not None: 
-                    itemsToWriteeEncoded = stufftowrite.encode('utf8') # encoding protects against crashes
+                elif stufftowrite is not None:
+
+                    try: 
+                        itemsToWriteeEncoded = stufftowrite.encode('utf8') # encoding protects against crashes
+                    except AttributeError:
+                        itemsToWriteeEncoded = stufftowrite
             
                 else:
                     itemsToWriteeEncoded = stufftowrite
@@ -3760,7 +3793,7 @@ class c42Lib(object):
 
                 else:
                     print ""
-                    print "Manual Parameter Entry Required"
+                    print "********** Manual Parameter Entry Required"
                     print ""
 
                     noArguments = True
@@ -3916,6 +3949,31 @@ class c42Lib(object):
             else:
                 isItTrue = False
         return isItTrue 
+
+
+    @staticmethod
+    def validateFileInput(userPrompt,fileToCheck):
+
+        fileName = None
+
+        userInputOK = False
+        tryCount = 0
+        while not userInputOK and tryCount < 4:
+            tryCount += 1
+            if tryCount > 4:
+                print ""
+                print "********** Too many bad attempts.  Quitting."
+                sys.exit()
+            if os.path.exists(fileToCheck):
+                fileName = fileToCheck
+                userInputOK = True
+            else:
+                print ""
+                print "********** " + str(fileToCheck) + " Cannot be found.  Please try again."
+                print ""
+                fileToCheck = raw_input(userPrompt)
+
+        return fileName         
 
 
     #Converts numbers to "pretty" format
