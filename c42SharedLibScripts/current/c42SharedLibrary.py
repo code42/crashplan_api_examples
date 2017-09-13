@@ -558,7 +558,7 @@ class c42Lib(object):
             r = requests.get(private_address, params={}, data={}, headers={}, verify=c42Lib.cp_verify_ssl,timeout=kwargs['timeout'])
             contents = r.content.decode("UTF-8")
             binary = json.loads(contents)
-            return binary['data'] if 'data' in binary else None
+            return True if 'data' in binary else None
         except requests.exceptions.ConnectionError as e:
             return False
 
