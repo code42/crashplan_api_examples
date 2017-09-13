@@ -549,12 +549,12 @@ class c42Lib(object):
         else:
             timeout = 5 # 5 Seconds
 
-        print "Timeout : " + str(timeout)
+        # print "Timeout : " + str(timeout)
 
         private_address = private_address + "/api/Ping"
 
         try:
-            print "Trying : " + str(private_address)
+            # print "Trying : " + str(private_address)
             r = requests.get(private_address, params={}, data={}, headers={}, verify=c42Lib.cp_verify_ssl,timeout=kwargs['timeout'])
             contents = r.content.decode("UTF-8")
             binary = json.loads(contents)
