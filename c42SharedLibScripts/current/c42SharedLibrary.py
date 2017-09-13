@@ -538,6 +538,7 @@ class c42Lib(object):
     # Params:
     # private address: address to check if reachbale
     # Returns: Check if address is reachable. None on failure
+    # Takes at least 1 parameter:  URL to ping with port (example:  https://server.com:4285 )
     #
     @staticmethod
     def URLPing(private_address,**kwargs):
@@ -549,6 +550,8 @@ class c42Lib(object):
             timeout = 5 # 5 Seconds
 
         print "Timeout : " + str(timeout)
+
+        private_address = private_address + "/api/Ping"
 
         try:
             print "Trying : " + str(private_address)
