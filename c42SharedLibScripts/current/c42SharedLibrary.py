@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 06-21-2017
+# Last Modified: 09-13-2017
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -48,10 +48,11 @@ import re
 import getpass
 import os
 import collections
+from requests.exceptions import ConnectionError
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.5.5'.split('.')
+    cp_c42Lib_version = '1.5.7'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -226,7 +227,10 @@ class c42Lib(object):
         try:
             if type == "get":
                 logging.debug("Payload : " + str(payload))
-                r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
+                if 'timeout' in kwargs:
+                    r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl,timeout=kwargs['timeout'])
+                else:
+                    r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
                 logging.debug(r.text)
                 return r
             elif type == "delete":
@@ -536,13 +540,24 @@ class c42Lib(object):
     # Returns: Check if address is reachable. None on failure
     #
     @staticmethod
-    def URLPing(private_address):
+    def URLPing(private_address,**kwargs):
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_ping, {}, {})
+        if kwargs:
+            if 'timeout' in kwargs:
+                timeout = kwargs['timeout']
+        else:
+            timeout = 5 # 5 Seconds
 
-        contents = r.content.decode("UTF-8")
-        binary = json.loads(contents)
-        return binary['data'] if 'data' in binary else None
+        print "Timeout : " + str(timeout)
+
+        try:
+            print "Trying : " + str(private_address)
+            r = requests.get(private_address, params={}, data={}, headers={}, verify=c42Lib.cp_verify_ssl,timeout=kwargs['timeout'])
+            contents = r.content.decode("UTF-8")
+            binary = json.loads(contents)
+            return binary['data'] if 'data' in binary else None
+        except requests.exceptions.ConnectionError as e:
+            return False
 
     #
     # Params:
@@ -2086,6 +2101,38 @@ class c42Lib(object):
         return r.text
 
     #
+    # Get User Roles
+    # 
+    @staticmethod
+    def getUserRole(userId):
+        logging.info("getUserRole-params: userId [ " + str(userId) + " ]")
+
+        roles = False
+        params = {}
+        payload = {}
+
+        try:
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_userRole + "/" + str(userId),params,payload)
+
+            logging.debug("Returned Result : Status Code - " + str(r.status_code))
+            logging.debug("                :     Content - " + str(r.content))
+
+            if r.status_code != 404:
+
+                content = r.content
+                binary = json.loads(content)
+                logging.debug(binary)
+
+                roles = binary['data']
+
+        except:
+
+            roles = False
+
+        return roles
+
+
+    #
     # Adds the role to an individual user.
     # Note: attempts to add the role to a user even if it already exists.
     #
@@ -2995,6 +3042,24 @@ class c42Lib(object):
                     return ""
             else:
                 return ""
+
+
+    #
+    # getArchiveMainfest(url, headers, params):
+    #
+    # Get the archive manifest using the archiveMetadata API call
+    # With the correct permissions, it works in the C42 Cloud
+    #
+    # Requires the proper auth tokens. Consult the API reference.
+    #
+    #
+    @staticmethod
+    def getArchiveManifest(url,headers,params):
+        logging.info("getArchiveManifest - params: url [ " + str(url) + " ] headers [ " + str(headers) + " ] params [ " + str(params) + " ]")
+
+        return None
+
+
 
     @staticmethod
     def getArchiveMetadata(guid, dataKeyToken, decrypt, **kwargs):
