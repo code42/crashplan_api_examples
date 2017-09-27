@@ -15,7 +15,7 @@
 #
 # File: licenseAvailabilityReport.py
 # Author: P. Hirst, Code 42 Software
-# Last Modified: 04-17-2017
+# Last Modified: 09-27-2017
 #
 # Creates a list of users whos license useage will expire at a future date
 
@@ -49,13 +49,48 @@
 		--version	Show version.
 
 """
+"""licenseAvailabilityReport Script
 
-versionNumber = '2.0.1'
+	Usage:
+		licenseAvailabilityReport.py [-l] [(u <username>) | (c <credentialfile>)] [(s <serverinfofile>) | m (<serverURL> <serverPort>)] [--filePath=<savefilepath>] [--logLevel=<logLevel>] [--orgId=<limitToOrgs>] 
 
-import logging
-logging.basicConfig(filename='deleteme.log',level=logging.INFO)
+	Arguments:
+		<username>		Add your username - you will be prompted for your password
+		<credentialfile>		Enter a base64 encoded creditials file location
+		<serverinfofile>		File to grab the host name & port
+		<serverURL>			Server URL
+		<serverPort>		Server Port
+		<savefilepath>		File Path for log and CSV files.  Must exist before running script.
+		u 		flag to enter username then be prompted for password
+		c 		flag to enter the name of a credentials file.
+		s 		flag to read server info from a file
+		m 		flag to manually enter server URL and Port
+
+
+	Options:
+
+		-f, --filePath=<savefilepath>		File Path for log and CSV files - optional. [default: '']
+		-o, --orgId=<limitToOrgs>	Limit list to this comma separated list of orgs (no spaces)
+		-d <logLevel>, --logLevel=<logLevel>  Logging Level, Defaults to Info
+		-l, 	Turn off console logging.
+		-h, --help	Show this screen.
+		--version	Show version.
+
+"""
+
+versionNumber = '2.1.0 - 20170926'
+requiredC42Lib = '1.5.5'
+
+
 from docopt import docopt
 import sys
+import os
+
+if os.path.exists('/Users/aj.laventure/github/crashplan_api_examples/c42SharedLibScripts/current/'):
+	sys.path.insert(0, '/Users/aj.laventure/github/crashplan_api_examples/c42SharedLibScripts/current/')
+if os.path.exists('/Users/paul.hirst/Git/crashplan_api_examples/c42SharedLibScripts/current/'):
+	sys.path.insert(0, '/Users/paul.hirst/Git/crashplan_api_examples/c42SharedLibScripts/current/')
+
 import requests
 import json
 import csv
@@ -63,35 +98,43 @@ import getpass
 import time
 import base64
 import operator
-import os
 from datetime import date
 from datetime import datetime
 from c42SharedLibrary import c42Lib
+
+todayis = time.strftime("%Y-%m-%d-%H-%M_%S")
+todayisshort = time.strftime("%Y%m%d-%H-%M")
+todayonly = time.strftime("%Y%m%d")
+
+import logging
+logging.basicConfig(filename=__file__ + '-v' + versionNumber +'-'+todayis+'.log',level=logging.INFO)
+
+# from openpyxl.chart import BarChart, Series, Reference
+
+# from c42SharedLibrary import c42Lib
 
 # Force UTF-8
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-# Turn off warnings and other annoyances
 requests.packages.urllib3.disable_warnings()
-logging.getLogger("urllib3").setLevel(logging.WARNING)
-
-#  EDIT THE SECTION BELOW WITH YOUR INFORMATION
-
-c42Lib.cp_host = "https://server.com"
-c42Lib.cp_port = "4285"
-# update username with correct service account names
-c42Lib.cp_username = "admin"	# Can be entered, but not required if manually entering password or using a credential file
-c42Lib.cp_password = "admin"	# Can be entered, but not required if manually entering password or using a credential file
+#logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 c42Lib.cls()
-print ""
+
 print ""
 print "**********"
+print "********** Starting " + __file__ + " v" + versionNumber
+print "**********"
+print "********** Using: c42SharedLibrary v" + str(c42Lib.cp_c42Lib_version[0])+"."+str(c42Lib.cp_c42Lib_version[1])+"."+str(c42Lib.cp_c42Lib_version[2])
+if not c42Lib.validateVersion(version=requiredC42Lib,patchStrict=False,minorStrict=True,majorStrict=True):
+	print "This script requires v" + str(requiredC42Lib) + " of the C42SharedLibary.py to run.\nPlease make sure you have the correct version of the shared library."
+	print ""
+	print "Exiting..."
+	print ""
+	sys.exit()
 print ""
-print __file__ + " v" + versionNumber
-print "c42SharedLibrary v" + c42Lib.cp_c42Lib_version
-print ""
+print "" 
 disclaimerFilePath = "../../../Disclaimers/StandardC42Disclaimer2017.txt"
 if not os.path.exists(disclaimerFilePath):
 	print 'Copyright 2015,2016,2017 Code42'
@@ -102,39 +145,60 @@ else:
 print ""
 print ""
 
+#  EDIT THE SECTION BELOW WITH YOUR INFORMATION
+
+c42Lib.cp_host = "https://server.com"
+c42Lib.cp_port = "4285"
+# update username with correct service account names
+c42Lib.cp_username = "admin"	# Can be entered, but not required if manually entering password or using a credential file
+c42Lib.cp_password = "admin"	# Can be entered, but not required if manually entering password or using a credential file
+
 
 if __name__ == '__main__' and len(sys.argv) > 1:
-    arguments = docopt(__doc__, version='licenseAvailabilityReport.py 2.0.1')
-    #schema = Schema({
-    #	'--start=startDate':
-    #     })
-    # try:
-    #     arguments = schmea.validate(arguments)
-    # except SchmeaError as e:
-    #     exit(e)
+	arguments = docopt(__doc__, version=__file__ + ' ' + str(versionNumber))
+	#schema = Schema({
+	#   '--start=startDate':
+	#     })
+	#try:
+	#	arguments = schmea.validate(arguments)
+	#except SchmeaError as e:
+	#	exit(e)
 
-    logging.debug(arguments)
-    #print(arguments)
+	logging.info(arguments)
+	#print(arguments)
+
 else:
-	print ""
 	arguments = {}
 
-	arguments['<username>']		  = '01                  Enter Username : '
-	arguments['<serverURL>'] 	  = '02      Enter Server URL (no port) : '
-	arguments['<serverPort>'] 	  = '03           Enter Server URL Port : '		# Server Port
-	arguments['--filePath'] 	  = '05        File Path for CSV Output : '
-	arguments['--orgId'] 		  = '06       Excluded Orgs (by Org ID) : '		# Time stamp appended to summary file name.
-	arguments['-l'] 			  = '07 Hide Logging from Console (Y/N) : '					# Turns off all loggins to screen except errors.
-	arguments['--logLevel'] 	  = '09 Set Log Level (INFO is default) : '
-	arguments['c'] 				  = None
-	arguments['<credentialfile>'] = None
-	arguments['s'] 				  = None
-	arguments['<serverinfofile>'] = None
-	arguments['m'] 				  = None
-	arguments['u'] 				  = None
-	
 	print "\n\n"
-	arguments = c42Lib.inputArguments(argumentsFile='getUserNameFromGuidListParams.txt',argumentList=arguments)
+	print "(*) Indicates REQUIRED fields, otherwise * indicates default.  Non-required can be left blank."
+	print "\n\n"
+
+	arguments['<username>']       = '01                                           Enter Username (*) : '
+	arguments['<serverURL>']      = '02    Enter Server URL (no port) eg - https://c42server.com (*) : '
+	arguments['<serverPort>']     = '03                          Enter Server URL Port (eg 4285) (*) : '     # Server Port
+	arguments['-l']               = '04                             Hide Logging from Console (Y*/N) : '     # Turns off all loggins to screen except errors.
+	arguments['--filePath']       = '05                                               Save File Path : '
+	arguments['--logLevel']       = '06                              Set Log Level (INFO is default) : '
+	arguments['--orgId']          = '07                 Check Only These Orgs (comma separated list) : '
+	arguments['u']                = None
+	arguments['c']                = None
+	arguments['<credentialfile>'] = None
+	arguments['s']                = None
+	arguments['<serverinfofile>'] = None
+	arguments['m']                = None
+
+	arguments = c42Lib.inputArguments(argumentsFile=__file__+'params.txt',argumentList=arguments)
+
+	# Cleanup arguments to True/False
+
+	if arguments['-l']:
+		arguments['-l'] = c42Lib.convertToBool(arguments['-l'])
+	else:
+		arguments['-l'] = True
+
+
+
 
 cp_enterUserName       = arguments['u']						# Flag to manually enter username & password
 cp_userName            = arguments['<username>']			# Manually entered username
@@ -147,34 +211,24 @@ cp_serverHostURL       = arguments['<serverURL>']			# Server URL
 cp_serverHostPort      = arguments['<serverPort>']			# Server Port
 cp_onlyTheseOrgs       = arguments['--orgId']				# Exclude these orgs (by orgId).  Can use comma separated list (no spaces)
 cp_filePath            = arguments['--filePath']			# File path for output files, including log
-cp_loggingToScreen 		= arguments['-l']					# Turns off all loggins to screen except errors.
-cp_loggingLevel			= arguments['--logLevel']			# Logging Level.  Defaults to INFO.  DEBUG and ERROR are Options
+cp_loggingToScreen     = arguments['-l']                    # Turns off all loggins to screen except errors.
+cp_loggingLevel         = arguments['--logLevel']           # Logging Level.  Defaults to INFO.  DEBUG and ERROR are Options
 
 
 start_time = time.time()
 elapsed_time = 0
 
-todayis = time.strftime("%Y-%m-%d-%H-%M_%S")
-todayisshort = time.strftime("%Y%m%d-%H-%M")
-todayonly = time.strftime("%Y%m%d")
+c42Lib.cp_logLevel = "INFO" # Will be overwritten if --logLevel is set
 
-if not cp_loggingLevel:
-	c42Lib.cp_logLevel = "INFO" # Will be overwritten if --logLevel is set
-	cp_loggingLevel = "INFO"
-
-if not cp_filePath:
-	c42Lib.cp_logFileName = "licenseAvailabilityReport-"+todayonly+".log"
-else:
-	c42Lib.cp_logFileName = cp_filePath+"licenseAvailabilityReport-"+todayonly+".log"
-
+c42Lib.cp_logFileName = __file__+"-"+todayonly+".log"
 
 if cp_loggingToScreen:
-	showInConsole=False  #If the flag is present, turn off logging in console
+	showInConsole=True  #If the flag is present, turn off logging in console
 else:
-	showInConsole=True
+	showInConsole=False
 
 c42Lib.setLoggingLevel(showInConsole=showInConsole,loggingLevel=cp_loggingLevel)
-logging.info('deactivateDevices.py v' + versionNumber)
+logging.info(__file__ + ' v' + versionNumber)
 
 logging.debug(arguments)
 
@@ -185,6 +239,7 @@ totalAvailableCount = 0
 devicesProcessed = 0
 
 availableList = []
+
 
 # All Orgs?
 
@@ -469,8 +524,6 @@ def licensesAvailableList ():
 
 						print "========== " + str(device['sourceComputerName']) + " | " + str(userInfo['username']) + " | Not Active"
 					
-					print ""
-
 					totalcount += 1
 
 					if not userHasBackupComputers or userIsActive == False : # User does not have any other archives!  Can be on the list!
@@ -583,7 +636,7 @@ def licensesAvailableList ():
 						print "---------- " + str(totalcount).zfill(6) + " | Device : " + str(device['sourceComputerName']) + " | " + str(userInfo['username']) + " has "  + str(userDeviceCount).zfill(2) + " other active devices."
 
 			
-					if totalcount%10 == 0:
+					if totalcount%50 == 0:
 					
 						elapsed_time = time.time() - start_time
 					
