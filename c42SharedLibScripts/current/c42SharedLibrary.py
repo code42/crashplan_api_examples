@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 09-13-2017
+# Last Modified: 10-12-2017
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -49,10 +49,14 @@ import getpass
 import os
 import collections
 from requests.exceptions import ConnectionError
+import time
+#import ijson.backends.yajl2 as ijson
+import ijson
+import pandas as pd
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.5.7'.split('.')
+    cp_c42Lib_version = '1.6.0'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -913,7 +917,6 @@ class c42Lib(object):
             params = kwargs['params']
             kwargs = {}
 
-
         r = c42Lib.executeRequest("get", c42Lib.cp_api_destination + "/" + str(id), params, {}, **kwargs)
         logging.debug(r.text)
         content = r.content.decode("UTF-8")
@@ -932,8 +935,14 @@ class c42Lib(object):
     @staticmethod
     def getServersByDestinationId(destinationId, **kwargs):
         logging.info("getServers({0})".format(destinationId))
+
         params = {}
+
+        if kwargs and 'params' in kwargs:
+                params = kwargs['params']
+
         params['destinationId'] = destinationId
+
         r = c42Lib.executeRequest("get", c42Lib.cp_api_server, params, {}, **kwargs)
         logging.debug(r.text)
         content = r.content.decode("UTF-8")
@@ -2681,6 +2690,7 @@ class c42Lib(object):
         keepLooping = True
         fullList = []
         # params = {}
+
         params['storePointId'] =  str(storePointId)
         while keepLooping:
             pagedList = c42Lib.getArchivesPaged(params,currentPage)
@@ -2786,7 +2796,7 @@ class c42Lib(object):
         logging.info("getArchivesPaged-params:params[" + str(params) + "]:pgNum[" + str(pgNum) + "]")
 
         params['pgSize'] = c42Lib.MAX_PAGE_NUM
-        params['pgNum'] = pgNum
+        params['pgNum']  = pgNum
         payload = {}
 
         r = c42Lib.executeRequest("get", c42Lib.cp_api_archive, params, payload)
@@ -2799,22 +2809,12 @@ class c42Lib(object):
 
         archives = binary['data']['archives']
 
+        #archives = collections.OrderedDict(sorted(unorderedArchives.items(),key=lambda X:X[14]))
+
         return archives
 
 
-
-
-
-
-
-
 ##===================================================================================================
-
-
-
-
-
-
 
     @staticmethod
     def getRestoreRecordPaged(params, pgNum):
@@ -2972,6 +2972,111 @@ class c42Lib(object):
         return archives
 
 
+    @staticmethod
+    def archiveFileData(archiveData):
+
+        logging.info("[start] archiveFileData - process archiveMetadata")
+
+        dropColumns = [
+            "planUid",
+            "pathLength",
+            "timestamp",
+            "versionTimestamp",
+            "sourceLastModified",
+            "sourceLastModifiedTime",
+            "fhPosition",
+            "fhLen",
+            "creatorGuid",
+            "userUid",
+            "fileId",
+            "parentFileId",
+            "sourceChecksum",
+            "fileType"
+            ]
+
+        fullFileData = []
+        fileData     = []
+
+        print "Reading Archive Metadata from Memory..."
+
+        print "Archive Metadata Objects : " + str(len(archiveData['data']))
+        # print archiveData['data']
+
+        # convert to Pandas dataframe for more usefulness...
+
+        logging.info("Begin Loading Data in to DataFrame")
+        fileData = pd.DataFrame(archiveData['data'])
+        logging.info("Done Loading data in to DataFrame")
+        logging.info(" Archive Data Memory Size : \n" + str(fileData.memory_usage(index=True)) + "\n")
+        logging.info("Begin Processing of DataFrame - remove useless data")
+        logging.info("  Pre-Clean Up Total Rows : " + str(fileData.shape[0]))
+
+        # Remove Deleted, Empty files
+        logging.info("Removing Deleted Files...")
+        fileData = fileData.drop(fileData[(fileData.sourceChecksum == 'ffffffffffffffffffffffffffffffff') & (fileData.fileType == 0)].index)
+        logging.info("Post-Remove Deleted Files : " + str(fileData.shape[0]))
+        logging.info("Removing Directories...")
+        fileData = fileData.drop(fileData[(fileData.fileType == 1)].index)  # Delete paths only
+        logging.info("  Post-Remove Directories : " + str(fileData.shape[0]))
+        logging.info("Removing Zero Byte Files...")
+        fileData = fileData.drop(fileData[(fileData.sourceLength < 100)].index)
+        logging.info(" Post-Remove 0 Byte Files : " + str(fileData.shape[0]))
+        logging.info("Removing the first row because it's useless...")
+        fileData = fileData.drop(fileData.index[0])
+        
+        logging.info(" Post-Clean Up Total Rows : " + str(fileData.shape[0]))
+
+        logging.info("Dropping unused columns...")
+        for col in dropColumns:
+            logging.info("Dropping : " + str(col))
+            fileData = fileData.drop(col,axis=1)
+
+        logging.info("Archive Data Memory Size : \n" + str(fileData.memory_usage(index=True)) + "\n")
+
+        print "Done with basic procesing of archive metadata..."
+
+        logging.info("[end] archiveFileData - process archiveMetadata")
+
+        return fileData
+
+
+    # Get 
+    @staticmethod
+    def getArchiveMetadata3(guid, dataKeyToken, decrypt, saveToDisk, **kwargs):
+        logging.info("getArchiveMetadata-params:guid["+str(guid)+"]:decrypt["+str(decrypt)+"]")
+
+        fileData = None
+
+        params = {}
+        if (decrypt):
+            params['decryptPaths'] = "true"
+        # always stream the response - remove memory limitation on requests library
+        params['stream'] = "True"
+        params['dataKeyToken'] = dataKeyToken
+        params['timeout'] = 7200 # 2 Hours Should Do It
+        payload = {}
+
+        logging.info("Getting Archive Info : " + str(params))
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_archiveMetadata + "/" + str(guid), params, payload, **kwargs)
+
+
+        # If the metadata is too big it we may have memory issues.
+        # Check if metadata is less than 2 GB and then load into Pandas DataFrame from memory
+        # otherwise, write to disk to read from disk into DataFrame
+
+        if len(r.content) < 2000000000:
+
+            print "Parsing data into a useful format..."
+
+            fileData = c42Lib.archiveFileData(json.loads(r.content))
+
+        else:
+
+            print "Too Big..."
+
+        return fileData
+
+
     # only 3.6.2.1 and greater - json errors in pervious versions
     # will return array of info for every file within given archive
     # performance is not expected to be great when looking at large archives - impacted by number of files in archive
@@ -2988,26 +3093,37 @@ class c42Lib(object):
         # always stream the response - remove memory limitation on requests library
         params['stream'] = "True"
         params['dataKeyToken'] = dataKeyToken
+        params['timeout'] = 7200 # 2 Hours Should Do It
         payload = {}
 
+        logging.info("Getting Archive Info : " + str(params))
         r = c42Lib.executeRequest("get", c42Lib.cp_api_archiveMetadata + "/" + str(guid), params, payload, **kwargs)
-
-        # logging.info("*******" + r.text + "*******")
-        #null response on private passwords
-
 
         print "---------- Getting Archive Metadata for GUID : " + str(guid)
         # http://stackoverflow.com/questions/16694907/how-to-download-large-file-in-python-with-requests-py
         if saveToDisk:
             # print r.text
-
             local_filename = "json/archiveMetadata_"+str(guid)+".json"
+            logging.info("Begin Writing MetaData to File : " + str(loca))
             with open(local_filename, 'wb') as f:
+                logging.debug("Opened : " + str(local_filename))
                 chunkCounter = 0
-                for chunk in r.iter_content(chunk_size=1024):
+                #print str(r)
+
+                try: 
+                    if not r.iter_content:
+                        return ""
+                except ChunkedEncodingError:
+                    print "\n********** Chunked Encoding Error : " + str(r)
+                    return ""
+                for chunk in r.iter_content(chunk_size=4096):
                     if chunk: # filter out keep-alive new chunks
                         chunkCounter += 1
+                        # print "--------- Chunk : " + str(chunkCounter)
+                        #print str(chunk)
+                        #raw_input()
                         f.write(chunk)
+                        #print str(chunkCounter).zfill(5) + " | " + str(chunk) + "\n"
                         f.flush()
                         if chunkCounter % 1000 == 0:
                             sys.stdout.write('.')
@@ -3020,11 +3136,17 @@ class c42Lib(object):
                             sys.stdout.write('\nTime Stamp : ' + str(time.strftime('%H:%M:%S', time.gmtime(time.time())))+"\n")
                             sys.stdout.flush()
                 print ""
-                return local_filename
+
+            logging.info("Done Writing Metadata to File : " + str(local_filename))
+
+
+
             print ""
         else:
             if r.text:
                 content = ""
+                if not r.iter_content:
+                    return ""
                 for chunk in r.iter_content(1024):
                     if chunk:
                         content = content + chunk
