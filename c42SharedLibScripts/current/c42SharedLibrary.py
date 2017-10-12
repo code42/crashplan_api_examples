@@ -3043,7 +3043,7 @@ class c42Lib(object):
     # Get 
     @staticmethod
     def getArchiveMetadata3(guid, dataKeyToken, decrypt, saveToDisk, **kwargs):
-        logging.info("getArchiveMetadata-params:guid["+str(guid)+"]:decrypt["+str(decrypt)+"]")
+        logging.info("getArchiveMetadata3-params:guid["+str(guid)+"]:decrypt["+str(decrypt)+"]")
 
         fileData = None
 
@@ -3053,18 +3053,46 @@ class c42Lib(object):
         # always stream the response - remove memory limitation on requests library
         params['stream'] = "True"
         params['dataKeyToken'] = dataKeyToken
-        params['timeout'] = 7200 # 2 Hours Should Do It
+        params['timeout'] = 1800 # 30 minutes should Do It
         payload = {}
 
-        logging.info("Getting Archive Info : " + str(params))
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_archiveMetadata + "/" + str(guid), params, payload, **kwargs)
+        logging.info("getArchiveMetadata3-Getting Archive Info : " + str(params))
+
+        try:
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_archiveMetadata + "/" + str(guid), params, payload, **kwargs)
+
+            if len(r.content) < 3221225472:
+
+                print "Parsing data into a useful format..."
+
+                fileData = c42Lib.archiveFileData(json.loads(r.content))
+
+            else:
+
+                logging.info("getArchiveMetadata3 - Metadata file too big for memory : " + str(len(r.content)))
+                print "Too Big..." + str(len(r.content)) + " bytes"
+
+
+        except requests.exceptions.Timeout:
+
+            logging.info("getArchiveMetadata3 - Timeout Error. GUID : " + str(guid) + " | Waited for : " + str(params['timeout']) + " seconds.")
+            print "Timing out getting archive: " + str(guid) + " | Waited for : " + str(params['timeout']) + " seconds."
+            print "Will return 'None'."
+
+        except:
+
+            logging.info("getArchiveMetadata3 - Error. GUID : " + str(guid) + " | Waited for : " + str(params['timeout']) + " seconds.")
+            print "Error getting archive: " + str(guid)
+            print "Will return 'None'."
+
+        return fileData
 
 
         # If the metadata is too big it we may have memory issues.
         # Check if metadata is less than 2 GB and then load into Pandas DataFrame from memory
         # otherwise, write to disk to read from disk into DataFrame
 
-        if len(r.content) < 2000000000:
+        if len(r.content) < 3221225472:
 
             print "Parsing data into a useful format..."
 
@@ -3072,7 +3100,7 @@ class c42Lib(object):
 
         else:
 
-            print "Too Big..."
+            print "Too Big..." + str(len(r.content)) + " bytes"
 
         return fileData
 
