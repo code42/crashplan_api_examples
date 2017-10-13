@@ -677,18 +677,37 @@ class c42Lib(object):
     #
     @staticmethod
     def getDataKeyToken(computerGuid, **kwargs):
+        logging.info("[begin] getDataKeyToken : " + str(computerGuid))
+        if kwargs:
+            logging.info("                 kwargs : " + str(kwargs))
+
         params = {}
         payload = {'computerGuid': computerGuid}
-        r = c42Lib.executeRequest("post", c42Lib.cp_api_dataKeyToken, params, payload, **kwargs)
-        # print "========== r below "
-        # print r
-        # print "========== binary below"
+
+        dataKeyToken = None
+
+        try:
+            r = c42Lib.executeRequest("post", c42Lib.cp_api_dataKeyToken, params, payload, **kwargs)
+
+        except Exception, e:
+
+            logging.debug("Error Getting DataKeyToken : " + str(e))
+            return False
+
         if r.status_code != 200:
+            logging.debug("Returned Bad Status Code : " + str(r.status_code))
             return False
         else: 
             binary = json.loads(r.content.decode('UTF-8'))
-            # print "========== end of get datakeytoken"
-            return binary['data']['dataKeyToken'] if 'data' in binary else None
+            if 'data' in binary:
+                logging.info("Successfully Retreived DataKeyToken : " + str(binary['data']['dataKeyToken']))
+                dataKeyToken = binary['data']['dataKeyToken']
+            else:
+                logging.debug("No Data in returned result : " + str(binary))
+                return 
+
+        logging.info("[end] getDataKeyToken")
+        return dataKeyToken
 
     #
     # Params:
@@ -2997,9 +3016,9 @@ class c42Lib(object):
         fullFileData = []
         fileData     = []
 
-        print "Reading Archive Metadata from Memory..."
+        print "========= Reading Archive Metadata from Memory..."
 
-        print "Archive Metadata Objects : " + str(len(archiveData['data']))
+        print "========== Archive Metadata Objects : " + str(len(archiveData['data']))
         # print archiveData['data']
 
         # convert to Pandas dataframe for more usefulness...
@@ -3007,7 +3026,8 @@ class c42Lib(object):
         logging.info("Begin Loading Data in to DataFrame")
         fileData = pd.DataFrame(archiveData['data'])
         logging.info("Done Loading data in to DataFrame")
-        logging.info(" Archive Data Memory Size : \n" + str(fileData.memory_usage(index=True)) + "\n")
+        fileDataMemorySize = fileData.memory_usage(index=True).sum()
+        logging.info(" Archive Data Memory Size : \n" + str(fileDataMemorySize) + "\n")
         logging.info("Begin Processing of DataFrame - remove useless data")
         logging.info("  Pre-Clean Up Total Rows : " + str(fileData.shape[0]))
 
@@ -3031,9 +3051,10 @@ class c42Lib(object):
             logging.info("Dropping : " + str(col))
             fileData = fileData.drop(col,axis=1)
 
-        logging.info("Archive Data Memory Size : \n" + str(fileData.memory_usage(index=True)) + "\n")
+        fileDataMemorySize = fileData.memory_usage(index=True).sum()
+        logging.info(" Archive Data Memory Size : \n" + str(fileDataMemorySize) + "\n")
 
-        print "Done with basic procesing of archive metadata..."
+        print "========= Done with basic processing of archive metadata..."
 
         logging.info("[end] archiveFileData - process archiveMetadata")
 
@@ -3046,6 +3067,15 @@ class c42Lib(object):
         logging.info("getArchiveMetadata3-params:guid["+str(guid)+"]:decrypt["+str(decrypt)+"]")
 
         fileData = None
+        r        = None
+
+        memoryLimit = 1073741826
+
+        if kwargs:
+            if 'memoryLimit' in kwargs:
+
+                memoryLimit = kwargs['memoryLimit']
+
 
         params = {}
         if (decrypt):
@@ -3060,47 +3090,65 @@ class c42Lib(object):
 
         try:
             r = c42Lib.executeRequest("get", c42Lib.cp_api_archiveMetadata + "/" + str(guid), params, payload, **kwargs)
-
-            if len(r.content) < 3221225472:
-
-                print "Parsing data into a useful format..."
-
-                fileData = c42Lib.archiveFileData(json.loads(r.content))
-
-            else:
-
-                logging.info("getArchiveMetadata3 - Metadata file too big for memory : " + str(len(r.content)))
-                print "Too Big..." + str(len(r.content)) + " bytes"
-
+            print "Metadata [ " + str(guid) + " ] Retrieved.  Begin processing..."
 
         except requests.exceptions.Timeout:
 
             logging.info("getArchiveMetadata3 - Timeout Error. GUID : " + str(guid) + " | Waited for : " + str(params['timeout']) + " seconds.")
             print "Timing out getting archive: " + str(guid) + " | Waited for : " + str(params['timeout']) + " seconds."
             print "Will return 'None'."
+            return fileData
 
-        except:
+        except Exception, e:
 
-            logging.info("getArchiveMetadata3 - Error. GUID : " + str(guid) + " | Waited for : " + str(params['timeout']) + " seconds.")
+            logging.info("getArchiveMetadata3 - Error. GUID : " + str(guid) + " | Error : " + str(e))
             print "Error getting archive: " + str(guid)
             print "Will return 'None'."
+            return fileData
 
-        return fileData
+
+            # If the metadata is too big it we may have memory issues.
+            # Check if metadata is less than 2 GB and then load into Pandas DataFrame from memory
+            # otherwise, write to disk to read from disk into DataFrame
 
 
-        # If the metadata is too big it we may have memory issues.
-        # Check if metadata is less than 2 GB and then load into Pandas DataFrame from memory
-        # otherwise, write to disk to read from disk into DataFrame
+        if r:
 
-        if len(r.content) < 3221225472:
+            if len(r.content) < memoryLimit:
 
-            print "Parsing data into a useful format..."
+                print "========= Loading Data into JSON format..."
 
-            fileData = c42Lib.archiveFileData(json.loads(r.content))
+                try:
+                    logging.info("Loading returned results into JSON")
+                    content  = json.loads(r.content)
 
-        else:
+                except Exception, e:
+                    
+                    logging.info("getArchiveMetadata3 - Error Parsing JSON : " + str(e))
+                    print "********** Error Parsing JSON : " + str(guid)
+                    print "           Will return 'None'."
 
-            print "Too Big..." + str(len(r.content)) + " bytes"
+                    return fileData
+
+                try:
+
+                    logging.info("Processing returned results into dataframe object")
+                    fileData = c42Lib.archiveFileData(content)
+
+                except Exception, e:
+
+                    logging.info("Error processing data into dataframe object")
+                    logging.info("Error : " + str(e))
+
+                    return None
+
+            else:
+
+                logging.info("getArchiveMetadata3 - Metadata file too big for memory : " + str(len(r.content)))
+                print "Too Big..." + str(len(r.content)) + " bytes"
+                print "Will return 'None'."
+
+                return fileData
 
         return fileData
 
@@ -3166,8 +3214,6 @@ class c42Lib(object):
                 print ""
 
             logging.info("Done Writing Metadata to File : " + str(local_filename))
-
-
 
             print ""
         else:
