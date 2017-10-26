@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 10-12-2017
+# Last Modified: 10-24-2017
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -56,7 +56,7 @@ import pandas as pd
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.6.0'.split('.')
+    cp_c42Lib_version = '1.6.2'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -82,12 +82,14 @@ class c42Lib(object):
     cp_api_coldStorage = "/api/ColdStorage"
     cp_api_computer = "/api/Computer"
     cp_api_computerBlock = "/api/ComputerBlock"
+    cp_api_customerLicense = "/c42api/v3/customerLicense"  #Unsupported API - use at your own peril!
     cp_api_dataKeyToken = "/api/DataKeyToken"
     cp_api_deacivateDevice = "/api/ComputerDeactivation"
     cp_api_deactivateUser = "/api/UserDeactivation"
     cp_api_destination = "/api/Destination"
     cp_api_deviceBackupReport = "/api/DeviceBackupReport"
     cp_api_deviceUpgrade = "/api/DeviceUpgrade"
+    cp_api_directorySync = "/api/DirectorySync"
     cp_api_ekr = "/api/EKR"
     cp_api_fileContent = "/api/FileContent"
     cp_api_fileMetadata = "/api/FileMetadata"
@@ -95,6 +97,7 @@ class c42Lib(object):
     cp_api_legalHoldMembership = "/api/LegalHoldMembership"
     cp_api_legalHoldMembershipDeactivation = "/api/LegalHoldMembershipDeactivation"
     cp_api_loginToken = "/api/v1/LoginToken"
+    cp_api_masterLicense = "/api/v1/masterLicense"
     cp_api_networkTest = "/api/NetworkTest"
     cp_api_org = "/api/Org"
     cp_api_orgDeactivation = "/api/OrgDeactivation"
@@ -381,7 +384,7 @@ class c42Lib(object):
             if ('cp_userName' in kwargs):
                 print "Entered Username..."
                 c42Lib.cp_username = kwargs['cp_userName']
-                cp_userName = kwargs['cp_userName']
+                cp_username = kwargs['cp_userName']
                 cp_enterUserName = True
                 userAuthType = 'Manually Entered'
                 warningText = ''
@@ -796,6 +799,7 @@ class c42Lib(object):
 
         return json.loads(r.content.decode("UTF-8"))['data']
 
+
     #
     # Params:
     # planUid: planUid to download from
@@ -910,6 +914,70 @@ class c42Lib(object):
             return binary['data']
         else:
             return None
+
+    #
+    #  Returns: license information.  
+    #  No parameters required but it is up the user to make sure
+    #  its known which version of the API is being used
+    #  The argument 'countsOnly=True' will work for both API calls
+    #  to return just the current backup seats used.
+    #
+    @staticmethod
+    def getLicenseInfo(**kwargs):
+        logging.info("[start] getLicenseInfo")
+
+        if kwargs:
+            logging.info("        getLicneseInfo - kwargs : " + str(kwargs))
+
+        # Get the sever version so the right call can be made
+        # This is a courtesy to all those running < 6.0
+
+        logging.info("Getting server info to obtain Code42 version...")
+        serverInfo = c42Lib.getServer(0,this=True) # Gets the master server's sever info.
+
+        logging.info("Server Info : " + str(serverInfo))
+
+        licenseInfo = None
+        newAPI      = True
+
+        if serverInfo:
+            serverVersion = serverInfo['version']
+
+        else:
+            logging.info("getLicenseInfo - no server version info returned.")
+            return licenseInfo
+
+        try:
+
+            if int(serverVersion[:1]) > 5: # Use the new, unsupported API
+                logging.info("getLicenseInfo - Use new, unsupported license API")           
+                r = c42Lib.executeRequest("get", c42Lib.cp_api_customerLicense,{},{})
+            else: # Use the old masterLicense API
+                logging.info("getLicenseInfo - Using masterLicense API")           
+                r = c42Lib.executeRequest("get", c42Lib.cp_api_masterLicense,{},{})
+                newAPI = False
+            
+            content = r.content()
+
+            content = r.content.decode("UTF-8")
+            binary = json.loads(content)
+
+            licenseInfo = binary['data']
+
+        except Exception, e:
+
+            logging.info("getLicenseInfo - Error : " + str(e))
+            #print "Will return 'None'."
+            return licenseInfo
+
+        if kwargs:
+            if 'countsOnly' in kwargs:
+                if newAPI:
+                    licenseInfo = licenseInfo['backupSeatsInUse']
+                else:
+                    licenseInfo = licenseInfo['seatsInUse']
+
+        return licenseInfo
 
     #
     #  Returns: destinations know by server or None on failure
@@ -3027,7 +3095,7 @@ class c42Lib(object):
         fileData = pd.DataFrame(archiveData['data'])
         logging.info("Done Loading data in to DataFrame")
         fileDataMemorySize = fileData.memory_usage(index=True).sum()
-        logging.info(" Archive Data Memory Size : \n" + str(fileDataMemorySize) + "\n")
+        logging.info(" Archive Data Memory Size : \n" + str(fileDataMemorySize))
         logging.info("Begin Processing of DataFrame - remove useless data")
         logging.info("  Pre-Clean Up Total Rows : " + str(fileData.shape[0]))
 
@@ -3052,7 +3120,7 @@ class c42Lib(object):
             fileData = fileData.drop(col,axis=1)
 
         fileDataMemorySize = fileData.memory_usage(index=True).sum()
-        logging.info(" Archive Data Memory Size : \n" + str(fileDataMemorySize) + "\n")
+        logging.info(" Archive Data Memory Size : \n" + str(fileDataMemorySize))
 
         print "========= Done with basic processing of archive metadata..."
 
@@ -3068,6 +3136,10 @@ class c42Lib(object):
 
         fileData = None
         r        = None
+
+        getMetadata_start_time = 0
+        getMetadata_end_time   = 0
+        getMetadata_total_time = 0
 
         memoryLimit = 1073741826
 
@@ -3089,7 +3161,12 @@ class c42Lib(object):
         logging.info("getArchiveMetadata3-Getting Archive Info : " + str(params))
 
         try:
+            getMetadata_start_time = datetime.datetime.now().replace(microsecond=0)
             r = c42Lib.executeRequest("get", c42Lib.cp_api_archiveMetadata + "/" + str(guid), params, payload, **kwargs)
+            getMetadata_end_time   = datetime.datetime.now().replace(microsecond=0)
+            getMetadata_total_time = getMetadata_end_time - getMetadata_start_time
+            logging.info('Time to get archive metadata : ' + str(getMetadata_total_time))
+            print "Time to get archive metadata : " + str(getMetadata_total_time)
             print "Metadata [ " + str(guid) + " ] Retrieved.  Begin processing..."
 
         except requests.exceptions.Timeout:
@@ -3110,7 +3187,6 @@ class c42Lib(object):
             # If the metadata is too big it we may have memory issues.
             # Check if metadata is less than 2 GB and then load into Pandas DataFrame from memory
             # otherwise, write to disk to read from disk into DataFrame
-
 
         if r:
 
@@ -3295,9 +3371,15 @@ class c42Lib(object):
     #
 
     @staticmethod
-    def getServer(serverId):
+    def getServer(serverId,**kwargs):
 
         logging.info("getServer-params:serverId["+str(serverId)+"]")
+        if kwargs:
+            logging.info("getServer-kwargs : " + str(kwargs))
+
+            if "this" in kwargs:
+                logging.info("Getting THIS server's info...")
+                serverId = "this"
 
         params = {}
         payload = {}
@@ -4093,6 +4175,177 @@ class c42Lib(object):
 
 
     @staticmethod
+    def processDirectorySyncData(dirSyncData,**kwargs):
+
+        logging.info("[start] processDirectorySyncData")
+        if kwargs:
+            logging.info("kwargs : " + str(kwargs))
+
+        print "========= Reading Directory Sync Data from Memory..."
+
+        print "========= Directory Sync Objects : " + str(len(dirSyncData['data']))
+
+        processArgs = None
+        dropColumns = None
+
+        if kwargs:
+            if 'processArgs' in kwargs:
+                processArgs = kwargs['processArgs']
+                if 'dropColumns' in processArgs:
+                    dropColumns = processArgs['dropColumns']
+
+        fullFileData = []
+        fileData     = []
+
+        # print archiveData['data']
+
+        # convert to Pandas dataframe for more usefulness...
+
+        logging.info("Begin Loading Data in to DataFrame")
+        fileData = pd.DataFrame(dirSyncData['data']['directorySyncHistories'],dtype=object)
+        logging.info("Done Loading data in to DataFrame")
+        fileDataMemorySize = fileData.memory_usage(index=True).sum()
+        logging.info("Directory Sync Data Memory Size : " + str(fileDataMemorySize))
+        logging.info("Begin Processing of DataFrame - remove useless data")
+        logging.info("  Pre-Clean Up Total Rows : " + str(fileData.shape[0]))
+
+        #logging.info("Removing the first row because it's useless...")
+        #fileData = fileData.drop(fileData.index[0])
+        
+        logging.info(" Post-Clean Up Total Rows : " + str(fileData.shape[0]))
+
+        if dropColumns is not None:
+            logging.info("Dropping unused columns...")
+            for col in dropColumns:
+                logging.info("Dropping : " + str(col))
+                fileData = fileData.drop(col,axis=1)
+
+        logging.info("Set Index to existing ID")
+        fileData = fileData.set_index('directorySyncHistoryId')
+
+        fileDataMemorySize = fileData.memory_usage(index=True).sum()
+        logging.info("Directory Sync Data Memory Size : " + str(fileDataMemorySize))
+
+        print "========= Done with basic processing of directory sync data"
+
+        logging.info("[end] processDirectorySyncData")
+
+        return fileData
+
+
+    # Get directory sync data
+    @staticmethod
+    def getDirectorySyncData(searchType,searchTerm,**kwargs):
+        logging.info("[start] getDirectorySyncData")
+        if kwargs:
+            logging.info("getDirectorySyncData - kwargs : " + str(kwargs))
+
+        directorySyncData = None
+        r                 = None
+
+        params      = {}
+        timeout     = 1800 # 10 Minute Timeout Default
+        processArgs = None
+        pgSize      = 1000 # return up to 1000 directory sync results
+
+        memoryLimit = 1073741826 # 1 GB Default
+
+        if kwargs:
+            if 'memoryLimit' in kwargs:
+                memoryLimit = kwargs['memoryLimit']
+            if 'params' in kwargs:
+                params = kwargs['params']
+
+                if not 'timeout' in params:
+                    params['timeout'] = timeout
+
+                if not 'pgSize' in params and searchType is not None:
+                    params['pgSize'] = pgSize
+
+                if not 'pgNum' in params:
+                    params['pgNum'] = 1
+
+            if 'processArgs' in kwargs:
+                processArgs = kwargs['processArgs']
+            else:
+                processArgs = {}
+        else:
+            processArgs = {}
+
+        payload = {}
+        params['srtDir'] = "desc"  # Always sort from newest to oldest
+
+        if searchType == None:
+            searchType = "?pgSize="+str(pgSize)
+        else:
+            searchType = "/" + str(searchType) + "?" + str(searchTerm)
+
+        try:
+            print "---------- Getting directory sync data... please wait."
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_directorySync + searchType, params, payload,timeout=timeout)
+            logging.info("Directory Sync Data Retreived... begin processing.")
+
+        except requests.exceptions.Timeout:
+
+            logging.info("getDirectorySyncData - Timeout Error.")
+            return directorySyncData
+
+        except Exception, e:
+
+            logging.info("getDirectorySyncData - Error : " + str(e))
+            return directorySyncData
+
+
+                # If the metadata is too big it we may have memory issues.
+                # Check if metadata is less than 2 GB and then load into Pandas DataFrame from memory
+                # otherwise, write to disk to read from disk into DataFrame
+
+        if r:
+
+            if len(r.content) < memoryLimit:
+
+                print "========= Loading Data into JSON format..."
+
+                try:
+                    logging.info("Loading returned results into JSON")
+                    content  = json.loads(r.content)
+
+                except Exception, e:
+                    
+                    logging.info("[end] getDirectorySyncData - Error Parsing JSON : " + str(e))
+                    print "********** Error Parsing JSON"
+                    print "           Will return 'None'."
+
+                    return directorySyncData
+
+                try:
+
+                    logging.info("Processing returned results into dataframe object")
+                    logging.info("Object has : " + str(len(content['data']['directorySyncHistories'])) + " directory sync entries.")
+                    directorySyncData = c42Lib.processDirectorySyncData(content, processArgs = processArgs)
+
+                except Exception, e:
+
+                    logging.info("Error processing data into dataframe object")
+                    logging.info("Error : " + str(e))
+                    logging.info("[end] getDirectorySyncData")
+
+                    return directorySyncData
+
+            else:
+
+                logging.info("getDirectorySyncData - Too big for memory : " + str(len(r.content)))
+                print "Too Big..." + str(len(r.content)) + " bytes"
+                print "Will return 'None'."
+                logging.info("[end] getDirectorySyncData")
+
+                return directorySyncData
+
+        return directorySyncData
+
+
+
+    @staticmethod
     def getFilePath(relativePath):
         logging.debug("getFilePath: [ " + str(relativePath) + " ]")
 
@@ -4157,44 +4410,64 @@ class c42Lib(object):
     @staticmethod
     def validateVersion(**kwargs):
 
+        logging.info('[start] - validateVersion : ' + str(kwargs))
+
         versionOK   = True
         minorStrict = False
         patchStrict = False
+
+        majorOK     = True
+        minorOK     = True
+
+        c42Major = int(c42Lib.cp_c42Lib_version[0])
+        c42Minor = int(c42Lib.cp_c42Lib_version[1])
+        c42Patch = int(c42Lib.cp_c42Lib_version[2])
 
         if 'version' in kwargs:
             scriptVersion = kwargs['version'].split('.')
             if len(scriptVersion) != 3:
                 versionOK = False
+            else:
+                major = int(scriptVersion[0])
+                minor = int(scriptVersion[1])
+                patch = int(scriptVersion[2])
 
-        if 'majorStrict' in kwargs:
-            majorStrict = kwargs['majorStrict']
-        if 'minorStrict' in kwargs:
-            minorStrict = kwargs['minorStrict']
-        if 'patchStrict' in kwargs:
-            patchStrict = kwargs['patchStrict']
+        if 'majorStrict' in kwargs: majorStrict = kwargs['majorStrict']
+        if 'minorStrict' in kwargs: minorStrict = kwargs['minorStrict']
+        if 'patchStrict' in kwargs: patchStrict = kwargs['patchStrict']
 
         if majorStrict:
-            if (scriptVersion[0] != c42Lib.cp_c42Lib_version[0]):
+
+            if (major != c42Major):
                 versionOK = False
-        elif (scriptVersion[0] > c42Lib.cp_c42Lib_version[0]):
+                majorOK   = False
+        elif (major > c42Major):
+            versionOK = False
+            majorOK   = False
+
+        if majorOK:
+            if minorStrict:
+
+                if (minor != c42Minor):
+                    versionOK = False
+                    minorOK   = False
+            elif (minor > c42Minor) and (major <= c42Major):
+                versionOK = False
+                minorOK   = False
+        else:
             versionOK = False
 
-        if minorStrict:
-            if (scriptVersion[1] != c42Lib.cp_c42Lib_version[1]):
+
+        if majorOK and minorOK:
+            if patchStrict:
+                if (patch != c42Patch):
+                    versionOK = False
+            elif ((major == c42Major) and (minor == c42Minor) and (patch > c42Patch)):
                 versionOK = False
-        elif (scriptVersion[1] > c42Lib.cp_c42Lib_version[1]):
+        else:
             versionOK = False
 
-        if patchStrict:
-            if (scriptVersion[2] != c42Lib.cp_c42Lib_version[2]):
-                versionOK = False
-        elif (scriptVersion[2] > c42Lib.cp_c42Lib_version[2]):
-            versionOK = False
-
-        if not versionOK:
-            print ""
-            print "!!!!!!!!!! This script requires v" + str(requiredC42Lib) + " of the C42SharedLibary.py to run.\nPlease make sure you have the correct version of the shared library."
-            print ""
+        logging.info('[end] - validateVersion | Returned Value : ' + str(versionOK))
 
         return versionOK
 
