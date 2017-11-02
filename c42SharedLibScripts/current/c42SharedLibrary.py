@@ -1292,8 +1292,9 @@ class c42Lib(object):
         currentPage = 1
         keepLooping = True
         fullList = []
+        params = {}
         while keepLooping:
-            pagedList = c42Lib.getUsersPaged(currentPage)
+            pagedList = c42Lib.getUsersPaged(currentPage,params)
             if pagedList:
                 fullList.extend(pagedList)
             else:
