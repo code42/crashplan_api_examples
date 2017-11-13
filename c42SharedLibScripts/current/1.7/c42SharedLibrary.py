@@ -32,9 +32,45 @@
 # sudo pip install requests
 # sudo pip install python-dateutil [-update]
 
+# *****************************************************************************
+
+
+# Check if the shared library is being run and not imported.  If being run exit.
+
+isBeta = False
+import sys
+
+if __name__ == '__main__':
+    print ""
+    print "********** " + str(__file__) + " is a shared library and not meant to be run independently."
+    print "           Exiting."
+    print ""
+    sys.exit(0)
+
+if isBeta:
+    print ("\n\n")
+    print ("*****************************************************************************")
+    print ("*****************************************************************************")
+    print ("**********                                                         **********")
+    print ("**********                                                         **********")
+    print ("**********                                                         **********")
+    print ("**********   THIS IS A DEVELOPMENT BRANCH OF THE SHARED LIBRARY.   **********")
+    print ("**********                                                         **********")
+    print ("**********               DO NOT USE FOR PRODUCTION!!!              **********")
+    print ("**********                                                         **********")
+    print ("**********                                                         **********")
+    print ("*****************************************************************************")
+    print ("*****************************************************************************")
+    print ("\n\n")
+    okToBeta = False
+    okToBeta = raw_input("Yes, I know it's beta.  Use it anyway (y/n)? ")
+
+    if okToBeta.lower() != 'y' and \
+       okToBeta.lower() != 'yes' and \
+       okToBeta.lower() != "ok":
+       sys.exit(0)
 
 import math
-import sys
 import json
 import csv
 import base64
@@ -53,6 +89,9 @@ import time
 #import ijson.backends.yajl2 as ijson
 import ijson
 import pandas as pd
+from contextlib import closing
+import codecs
+
 
 class c42Lib(object):
 
@@ -181,9 +220,15 @@ class c42Lib(object):
     # Presents disclaimer language at the top of a script when running it.
 
     @staticmethod
-    def startupDisclaimer():
+    def startupDisclaimer(**kwargs):
 
         logging.debug('[begin] - startupDisclaimer')
+
+        disclaimerFilePath = None
+
+        if kwargs:
+            if 'filePath' in kwargs:
+                disclaimerFilePath = kwargs['filePath']
 
         print "" 
         disclaimerFilePath = "../../../Disclaimers/StandardC42Disclaimer2017.txt"
@@ -1406,15 +1451,21 @@ class c42Lib(object):
         users = binary['data']['users']
         return users
 
-
     @staticmethod
-    def getAllUsers():
+    def getAllUsers(**kwargs):
         logging.info("getAllUsers")
         currentPage = 1
         keepLooping = True
         fullList = []
+
+        params = {}
+
+        if kwargs:
+            if 'params' in kwargs:
+                params = kwargs['params']
+
         while keepLooping:
-            pagedList = c42Lib.getUsersPaged(currentPage)
+            pagedList = c42Lib.getUsersPaged(currentPage,params)
             if pagedList:
                 fullList.extend(pagedList)
             else:
@@ -2039,26 +2090,90 @@ class c42Lib(object):
     def getDeviceBackupReport(params):
         logging.info("getDeviceBackupReport-params:[" + str(params) + "]")
 
+        # Note:  export ignores most other parameters, including pgNum & pgSize
+
+        if 'export' in params:
+            logging.debug("getDeviceBackupReport-export")
+
+            csvFileName = "deviceBackupReport_RAW-"+str(c42Lib.cp_todayDate)+".csv"
+
+            header = c42Lib.getRequestHeaders()
+            csvFileURL = c42Lib.cp_host+":"+c42Lib.cp_port+c42Lib.cp_api_deviceBackupReport+"?active=true&export=csv"
+            
+            try:
+                
+                print "--------- Getting CSV file.  Please be patient..."
+                response = requests.get(csvFileURL,headers=header, verify=c42Lib.cp_verify_ssl)
+
+                if response.status_code == 200:
+                    with open(csvFileName, 'wb') as f:
+                        logging.debug("Opened : " + str(csvFileName))
+                        chunkCounter = 0
+
+                        try: 
+                            if not response.iter_content:
+                                return ""
+                        except ChunkedEncodingError:
+                            print "\n********** Chunked Encoding Error : " + str(response)
+                            return ""
+                        for chunk in response.iter_content(chunk_size=4096):
+                            if chunk: # filter out keep-alive new chunks
+                                chunkCounter += 1
+                                # print "--------- Chunk : " + str(chunkCounter)
+                                #print str(chunk)
+                                #raw_input()
+                                f.write(chunk)
+                                #print str(chunkCounter).zfill(5) + " | " + str(chunk) + "\n"
+                                f.flush()
+                                if chunkCounter % 100 == 0:
+                                    sys.stdout.write('.')
+                                    sys.stdout.flush()
+                                if chunkCounter % 10000 == 0:
+                                    sys.stdout.write('|')
+                                    sys.stdout.flush()
+                                if chunkCounter % 100000 == 0:
+                                    sys.stdout.write('\n' + str(c42Lib.prettyNumberFormat(chunkCounter*100000)) + " Processed")
+                                    sys.stdout.write('\nTime Stamp : ' + str(time.strftime('%H:%M:%S', time.gmtime(time.time())))+"\n")
+                                    sys.stdout.flush()
+                        print ""
+
+                    logging.info("Done Writing CSV to File : " + str(csvFileName))
+
+
+
+                return csvFileName
+
+            except requests.exceptions, e:
+                logging.info('Error Reading DeviceBackupReport : ' + str(e))
+
+                print "**********"
+                print "********** Error Reading DeviceBackupReport : " + str(url) + " | " + e
+                print "**********"
+
+                return csvFileName
+
+        else:
+
         # set default params for paging and sorting if none passed in
 
-        if not params['pgNum']:
-            params['pgNum'] = 1              # Begin w/ Page 1
-            params['pgSize'] = MAX_PAGE_NUM  # Limit page size to 250 per page
+            if not 'pgNum' in params:
+                params['pgNum'] = 1              # Begin w/ Page 1
+                params['pgSize'] = MAX_PAGE_NUM  # Limit page size to 250 per page
 
-        if not params['srtKey']:
-            params['srtKey'] = 'archiveBytes' # Sort on archiveBytes
+            if not 'srtKey' in params:
+                params['srtKey'] = 'archiveBytes' # Sort on archiveBytes
 
-        currentPage = params['pgNum']
-        keepLooping = True
-        fullList = []
-        while keepLooping:
-            logging.debug("getDeviceBackupReport-page:[" + str(currentPage) + "]")
-            deviceList = c42Lib.getDeviceBackupReport(params)
-            if deviceList:
-                fullDeviceList.extend(deviceList)
-            else:
-                keepLooping = False
-            currentPage += 1
+            currentPage = params['pgNum']
+            keepLooping = True
+            fullList = []
+            while keepLooping:
+                logging.debug("getDeviceBackupReport-page:[" + str(currentPage) + "]")
+                deviceList = c42Lib.getDeviceBackupReport(params)
+                if deviceList:
+                    fullDeviceList.extend(deviceList)
+                else:
+                    keepLooping = False
+                currentPage += 1
 
         return fullDeviceList
 
@@ -4095,7 +4210,6 @@ class c42Lib(object):
                 newValueList = collections.OrderedDict(sorted(newValueList.items(),key=lambda X:X[0]))
         
         return newValueList
-
 
 
     # CSV Write & Append Method
