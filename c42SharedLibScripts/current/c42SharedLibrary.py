@@ -1287,12 +1287,18 @@ class c42Lib(object):
 
 
     @staticmethod
-    def getAllUsers():
+    def getAllUsers(**kwargs):
         logging.info("getAllUsers")
         currentPage = 1
         keepLooping = True
         fullList = []
+
         params = {}
+
+        if kwargs:
+            if 'params' in kwargs:
+                params = kwargs['params']
+
         while keepLooping:
             pagedList = c42Lib.getUsersPaged(currentPage,params)
             if pagedList:
