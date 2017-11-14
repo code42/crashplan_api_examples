@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 10-24-2017
+# Last Modified: 2017-11-14
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -37,7 +37,7 @@
 
 # Check if the shared library is being run and not imported.  If being run exit.
 
-isBeta = False
+isBeta = True
 import sys
 
 if __name__ == '__main__':
@@ -62,13 +62,16 @@ if isBeta:
     print ("*****************************************************************************")
     print ("*****************************************************************************")
     print ("\n\n")
+    '''
     okToBeta = False
     okToBeta = raw_input("Yes, I know it's beta.  Use it anyway (y/n)? ")
+
 
     if okToBeta.lower() != 'y' and \
        okToBeta.lower() != 'yes' and \
        okToBeta.lower() != "ok":
        sys.exit(0)
+    '''
 
 import math
 import json
@@ -95,7 +98,7 @@ import codecs
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.7.0'.split('.')
+    cp_c42Lib_version = '1.7.1'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -190,11 +193,23 @@ class c42Lib(object):
     # Common function to validate the correct shared library is being used.
 
     @staticmethod
-    def startupSharedLibraryValidate(scriptName,scriptVersion,requiredC42Lib):
+    def startupSharedLibraryValidate(scriptName,scriptVersion,requiredC42Lib,**kwargs):
 
         logging.debug('[begin] - startupSharedLibraryValidate')
 
         c42Lib.cls()
+
+        patchStrict = False
+        minorStrict = False
+        majorStrict = False
+
+        if kwargs:
+            if 'majorStrict' in kwargs:
+                majorStrict = kwargs['majorStrict']
+            if 'minorStrict' in kwargs:
+                minorStrict = kwargs['minorStrict']
+            if 'patchStrict' in kwargs:
+                patchStrict = kwargs['patchStrict']
 
         print ""
         print "**********"
@@ -202,7 +217,7 @@ class c42Lib(object):
         print "**********"
         print "********** Using: c42SharedLibrary v" + str(c42Lib.cp_c42Lib_version[0])+"."+str(c42Lib.cp_c42Lib_version[1])+"."+str(c42Lib.cp_c42Lib_version[2])
         print "**********"
-        if not c42Lib.validateVersion(version=requiredC42Lib,patchStrict=False,minorStrict=True,majorStrict=False):
+        if not c42Lib.validateVersion(version=requiredC42Lib,patchStrict=patchStrict,minorStrict=minorStrict,majorStrict=majorStrict):
             print "This script requires v" + str(requiredC42Lib) + " of the C42SharedLibary.py to run.\nPlease make sure you have the correct version of the shared library."
             print ""
             print "Exiting..."
@@ -2630,7 +2645,16 @@ class c42Lib(object):
             binary = json.loads(content)
             logging.debug(binary)
 
-            plan = binary['data']
+            if len(binary['data']) > 0:
+
+                plan = binary['data']
+
+            else:
+
+                plan = None
+
+        else:
+            return None
 
         return plan
 
@@ -3007,12 +3031,17 @@ class c42Lib(object):
 
 
     @staticmethod
-    def getArchiveByStorePointId(storePointId,params):
+    def getArchiveByStorePointId(storePointId,**kwargs):
         logging.info("getArchiveByStorePointId-params:storePointId[" + str(storePointId) + "]")
         currentPage = 1
         keepLooping = True
         fullList = []
-        # params = {}
+        params = {}
+
+        if kwargs:
+
+            if 'params' in kwargs:
+                params = kwargs['params']
 
         params['storePointId'] =  str(storePointId)
         while keepLooping:
