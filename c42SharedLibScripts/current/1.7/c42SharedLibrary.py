@@ -3653,14 +3653,19 @@ class c42Lib(object):
 
         # logging.info("====server response : " + r.text + "====")
 
-        content = r.content
-        binary = json.loads(content)
-        logging.debug(binary)
+        if r.status_code == 200:
 
-        if binary['data']:
-            server = binary['data']
-        else:
-            server = None
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+
+            if binary['data']:
+                server = binary['data']
+            else:
+                server = None
+
+        if r.status_code == 500:
+            return None
 
         return server
 
