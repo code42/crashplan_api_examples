@@ -2857,7 +2857,7 @@ class c42Lib(object):
 
 
     @staticmethod
-    def getArchivesByUserId(userId):
+    def getArchivesByUserId_old(userId):
         logging.info("getArchivesByUserId-params:userId[" + str(userId) + "]")
 
 
