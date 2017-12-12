@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 2017-11-14
+# Last Modified: 2017-12-01
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -98,7 +98,7 @@ import codecs
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.7.1'.split('.')
+    cp_c42Lib_version = '1.7.2'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -135,11 +135,12 @@ class c42Lib(object):
     cp_api_ekr = "/api/EKR"
     cp_api_fileContent = "/api/FileContent"
     cp_api_fileMetadata = "/api/FileMetadata"
+    cp_api_jwtAuthToken = '/c42api/v3/auth/jwt'
     cp_api_legaHold = "/api/LegalHold"
     cp_api_legalHoldMembership = "/api/LegalHoldMembership"
     cp_api_legalHoldMembershipDeactivation = "/api/LegalHoldMembershipDeactivation"
     cp_api_loginToken = "/api/v1/LoginToken"
-    cp_api_masterLicense = "/api/v1/masterLicense"
+    cp_api_masterLicense = "/api/MasterLicense"
     cp_api_networkTest = "/api/NetworkTest"
     cp_api_org = "/api/Org"
     cp_api_orgDeactivation = "/api/OrgDeactivation"
@@ -412,13 +413,19 @@ class c42Lib(object):
         if cp_api == c42Lib.cp_api_fileContent:
             assert 'restoreRecordKey' in params and params['restoreRecordKey'] is cp_magic_restoreRecordKey
 
+        cookies = None
+        timeout = None
+
+        if kwargs:
+            if 'cookie' in kwargs:
+                cookies = kwargs['cookie']
+            if 'timeout' in kwargs:
+                timeout = kwargs['timeout']
+
         try:
             if type == "get":
                 logging.debug("Payload : " + str(payload))
-                if 'timeout' in kwargs:
-                    r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl,timeout=kwargs['timeout'])
-                else:
-                    r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
+                r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl,cookies=cookies,timeout=timeout)
                 logging.debug(r.text)
                 return r
             elif type == "delete":
@@ -1121,24 +1128,38 @@ class c42Lib(object):
         licenseInfo = None
         newAPI      = True
 
+        params = {}
+        payload = {}
+
+        r = None
+
         if serverInfo:
             serverVersion = serverInfo['version']
+            print "Server Version : " + str(serverVersion)
 
         else:
             logging.info("getLicenseInfo - no server version info returned.")
             return licenseInfo
 
+
         try:
 
+            #print "Figuring out which method..."
+
             if int(serverVersion[:1]) > 5: # Use the new, unsupported API
-                logging.info("getLicenseInfo - Use new, unsupported license API")           
-                r = c42Lib.executeRequest("get", c42Lib.cp_api_customerLicense,{},{})
-            else: # Use the old masterLicense API
+                logging.info("getLicenseInfo - Use new, unsupported license API")
+                JWTAuthCookie = c42Lib.getJWTAuth()
+
+                r = c42Lib.executeRequest("get", c42Lib.cp_api_customerLicense,{},{},cookie=JWTAuthCookie)
+
+            if r is None or int(serverVersion[:1]) < 6:
+                # Use the old masterLicense API
                 logging.info("getLicenseInfo - Using masterLicense API")           
-                r = c42Lib.executeRequest("get", c42Lib.cp_api_masterLicense,{},{})
+                r = c42Lib.executeRequest("get", c42Lib.cp_api_masterLicense,params,payload)
+
                 newAPI = False
-            
-            content = r.content()
+  
+            content = r.content
 
             content = r.content.decode("UTF-8")
             binary = json.loads(content)
@@ -1146,6 +1167,8 @@ class c42Lib(object):
             licenseInfo = binary['data']
 
         except Exception, e:
+
+            print "Error Will Robinson!  Error : " + str(e)
 
             logging.info("getLicenseInfo - Error : " + str(e))
             #print "Will return 'None'."
@@ -1441,14 +1464,15 @@ class c42Lib(object):
     # pgNum - page request for user list (starting with 1)
     #
     @staticmethod
-    def getUsersPaged(pgNum,params):
+    def getUsersPaged(pgNum,**kwargs):
         logging.info("getUsersPaged-params:pgNum[" + str(pgNum) + "]")
 
-        try:
-            if not params['pgSize']:
-                params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
-        except:
-            params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
+        if kwargs:
+            if 'params' in kwargs:
+                params = kwargs['params'] 
+                if 'pgSize' not in params: params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
+            else:
+                params = {}
 
         params['pgNum'] = str(pgNum)
 
@@ -1478,6 +1502,8 @@ class c42Lib(object):
         if kwargs:
             if 'params' in kwargs:
                 params = kwargs['params']
+                if 'pgSize' in params:
+                    pgSize = params['pgSize']
 
         while keepLooping:
             pagedList = c42Lib.getUsersPaged(currentPage,params)
@@ -1485,8 +1511,18 @@ class c42Lib(object):
                 fullList.extend(pagedList)
             else:
                 keepLooping = False
+
             currentPage += 1
         return fullList
+
+
+# getUsersReturnList
+# this is an "all-purpose" method to get users.
+# Pass in a file name with usernames and it will read the file and get the usersnames
+# Get users by Org - pass in an org Uid or Id and it'll get the users in that org
+# Or, just get all the users.
+
+
 
 # getAllUsersActiveBackup():
 # returns AllUser info + backup usage for active users
@@ -3990,6 +4026,41 @@ class c42Lib(object):
 
         return "Basic %s" % token
 
+
+    #
+    # Gets the V3 JWT Auth Token for such things as the new, undocumented customerLicense API
+    #
+    @staticmethod
+    def getJWTAuth(**kwargs):
+        params  = {}
+        payload = {}
+
+        JWTCookies = None
+
+        try:
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_jwtAuthToken, params, payload)
+
+            logging.debug(r.status_code)
+            logging.debug(r.cookies)
+            content = r.cookies
+           
+            for cookie in content:
+
+                logging.debug("Cookie : " + str(cookie))
+
+                JWTCookie = {}
+                JWTCookie[cookie.name]  = cookie.value
+
+
+        except Exception, e:
+
+            logging.info("Error getting JWT Cooke : " + str(e))
+
+        return JWTCookie
+
+
+
+
     #
     # Sets logger to file and console
     #
@@ -4748,17 +4819,21 @@ class c42Lib(object):
 
     @staticmethod
     def convertToBool(isItTrue):
+        logging.debug('[start] - convertToBool : ' + str(isItTrue))
         if isItTrue:
             isItTrue = str(isItTrue).lower()
             if isItTrue in ('y','t','yes','true'):
                 isItTrue = True
             else:
                 isItTrue = False
+
+        logging.debug('[  End] - convertToBool : ' + str(isItTrue))
         return isItTrue 
 
 
     @staticmethod
     def validateFileInput(userPrompt,fileToCheck):
+        logging.info('[start] - validateFileInput : params - ' + str(userPrompt) + " , " + str(fileToCheck))
 
         fileName = None
 
@@ -4770,28 +4845,192 @@ class c42Lib(object):
                 print ""
                 print "********** Too many bad attempts.  Quitting."
                 sys.exit()
-            if os.path.exists(fileToCheck):
-                fileName = fileToCheck
-                userInputOK = True
-            else:
-                print ""
-                print "********** " + str(fileToCheck) + " Cannot be found.  Please try again."
-                print ""
-                fileToCheck = raw_input(userPrompt)
+            try:
+                if os.path.exists(fileToCheck):
+                    fileName = fileToCheck
+                    userInputOK = True
+                else:
+                    logging.info('Failed to Find : ' + str(fileToCheck))
+                    print ""
+                    print "********** " + str(fileToCheck) + " Cannot be found.  Please try again."
+                    print ""
+                    fileToCheck = raw_input(userPrompt)
+            except:
+                logging.debug('********** Error trying to find file : ' + str(fileToCheck))
+                print "********** ERROR ATTEMPTING TO FIND : " + str(fileToCheck)
 
+        
+        logging.info('[start] - validateFileInput : ' + str(fileName))
         return fileName         
 
 
     #Converts numbers to "pretty" format
     @staticmethod
     def prettyNumberFormat(num, suffix='B'):
+        logging.debug('[start] - prettyNumberFormat : ' + str(num))
         for unit in ['',' K',' M',' G',' T',' P',' E',' Z']:
             if abs(num) < 1000.0:
                 return "%3.2f%s%s" % (num, unit, suffix)
             num /= 1000.0
+        logging.debug('[  end] - prettyNumberFormat : ' + "%.1f%s%s" % (num, 'Yi ', suffix))
         return "%.1f%s%s" % (num, 'Yi ', suffix)
 
+    @staticmethod
+    def yesNoMaybe(question,answer):
+        logging.debug('[start] - yesNoMaybe : ' + str(question) + " | " + str(answer))
+        
+        whatDoYouSay = False
+        inputCount = 0
 
+        while inputCount < 4:  # User gets 4 chances to get it right.
+
+            try:
+                answer = answer.lower()  # Force it all lowercase
+                if answer == 'y' or \
+                   answer == 'yes' or \
+                   answer == '1' or \
+                   answer == 'true':
+                    whatDoYouSay = True
+                
+                break
+
+            except:
+
+                print "********** Only Y or N, please...\n"
+                inputCount += 1
+
+                answer = raw_input(question)
+
+        if inputCount > 3:
+
+            print "********** Too many invalid inputs.  Quitting.  Please restart and retry."
+            sys.exit(0)
+
+        return whatDoYouSay
+
+    # Generic Validate User Input method
+    # Validates user input against a list of valid answers and allows a user to retry
+    # answerType is "string", "number" or "bool" 
+
+    @staticmethod
+    def validateUserInput(userQuestion,validAnswers,answerType,**kwargs):
+
+        logging.info("[begin] - validateUserInput")
+        logging.info("          Question : " + str(userQuestion))
+        logging.info("           Answers : " + str(validAnswers))
+        logging.info("       Answer Type : " + str(answerType))
+        logging.info("            Others : " + str(kwargs))
+
+        tryCount = 0
+        maxTries = 4
+        userResponse  = None
+        validResponse = False
+        userValue     = None
+
+        if kwargs:
+            if 'maxTries'  in kwargs: tryCount  = kwargs['maxTries']
+            if 'userValue' in kwargs: userValue = kwargs['userValue']
+
+        if (answerType != 'integer' and answerType != 'float') or userValue == 'ALL':  # covert answers to lowercase for comparisons
+
+            for index, answer in enumerate(validAnswers):
+                validAnswers[index] = answer.lower()
+
+        # Check if a user input has been passed in... if not, ask the question.
+        if userValue is None:
+            userResponse = raw_input(userQuestion).lower()
+        else:
+            userResponse = userValue.lower() # Make lower case!
+
+        if userResponse == 'all' and answerType == 'integer':  # This lets a user input "ALL"
+            answerType = ''
+
+        while (tryCount < maxTries) and not validResponse:
+
+            tryCount += 1
+
+            if answerType == 'float':
+                if userResponse.find('.'):  # Checks to see if the number is a float...      
+                    userResponse = c42Lib.isFloat(userResponse)
+                    if userResponse is None:
+                        print "********** Not a valid decimal number.  Please try again."
+
+                    else:
+                        validResponse = True
+                        break
+            elif answerType == 'integer': # Number not a float, checks to see if it's an intenger...
+                userResponse = c42Lib.isInteger(userResponse)
+                if userResponse is None:
+                    print "********** Not a valid integer.  Please try again."
+                else:
+                    validResponse = True
+                    break
+
+            elif answerType == 'bool':
+
+                if userResponse == 'y' or \
+                   userResponse == 'yes' or \
+                   userResponse == '1' or \
+                   userResponse == 'true':
+                    userResponse = True
+
+            else:
+                # print "Check List..."
+                for index, answer in enumerate(validAnswers):
+
+                    if userResponse == answer:
+                        validResponse = True
+
+                        if answer == 'all':
+                            userResponse = -1
+                        break
+
+                    else:
+                        print "********** Not a valid response.  Please try again ( " + str(tryCount) + " of " + str(maxTries) + " tries remaining)."
+                        print "           Valid answers include : " + str(validAnswers)
+
+            if validResponse:
+                #print "I got here..."
+                break
+
+            # If it gets here, it means that a valid response hasn't been provided
+            # Re-ask the question...
+            userResponse = raw_input(userQuestion).lower()
+
+        #print "Try Count : " + str(tryCount)
+        #print "Max Tries : " + str(maxTries)
+        #print "    Valid : " + str(validResponse)
+
+        if tryCount >= maxTries and not validResponse:
+            print ""
+            print "********** Too many bad input responses :\n"
+            print "           " + str(userQuestion) + "\n"
+            #print "           Quitting."
+            #sys.exit()
+
+        else:
+
+            return userResponse 
+
+    #Quick function to check if a string is an integer
+    @staticmethod
+    def isInteger(string):
+        try: 
+            int(string)
+            return int(string)
+        except ValueError:
+            return None
+
+    #Quick function to check if a string is a float
+    @staticmethod
+    def isFloat(string):
+        try: 
+            float(string)
+            return float(string)
+        except ValueError:
+            return None
+
+    # Some time functions for doing things like setting start, end, etc.
     @staticmethod
     def timeInfo(**kwargs):
         logging.debug ("[begin] timeInfo")
