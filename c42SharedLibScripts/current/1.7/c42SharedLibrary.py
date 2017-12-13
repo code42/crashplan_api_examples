@@ -809,24 +809,39 @@ class c42Lib(object):
     # 
     @staticmethod
     def requestLoginToken(**kwargs):
-        logging.info("requestLoginToken: " + str(kwargs))
+        logging.info("[begin] requestLoginToken: " + str(kwargs))
         payload = {}
+
+        loginToken = None
+
         if kwargs and ('userId' in kwargs) and ('sourceGuid' in kwargs) and ('destinationGuid' in kwargs):
             payload['userId'] = str(kwargs['userId'])
             payload['sourceGuid'] = str(kwargs['sourceGuid'])
             payload['destinationGuid'] = str(kwargs['destinationGuid'])
         else:
+            logging.info("Insufficient Parameters Passed in : " + str(kwargs))
             return None
         
         try:
+
             r = c42Lib.executeRequest("post", c42Lib.cp_api_loginToken, {}, payload, **kwargs)
+
+            logging.info("Status Code : " + str(r.status_code))
             contents = r.content.decode("UTF-8")
             binary = json.loads(contents)
             logging.info("requestLoginToken Response: " + str(contents))
-            return binary['data'] if 'data' in binary else None
-        except KeyError:
-            return None
 
+            if 'data' in binary:
+                loginToken = binary['data']
+
+        except Exception, e:
+
+            logging.info("Error Login Token : " + str(e))
+            logging.info("      Status Code : " + str(r.status_code))
+
+        logging.info("[  end] requestLoginToken: " + str(loginToken))
+
+        return loginToken
 
     #
     # Params:
@@ -879,14 +894,16 @@ class c42Lib(object):
 
         try:
             r = c42Lib.executeRequest("post", c42Lib.cp_api_dataKeyToken, params, payload, **kwargs)
+            logging.info("Data Key Token Response : " + str(r.status_code))
+            logging.info("Data Key Token          : " + str(r.content))
 
         except Exception, e:
 
-            logging.debug("Error Getting DataKeyToken : " + str(e))
+            logging.info("Error Getting DataKeyToken : " + str(e))
             return False
 
         if r.status_code != 200:
-            logging.debug("Returned Bad Status Code : " + str(r.status_code))
+            logging.info("Returned Bad Status Code : " + str(r.status_code))
             return False
         else: 
             binary = json.loads(r.content.decode('UTF-8'))
