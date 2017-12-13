@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 2017-12-01
+# Last Modified: 2017-12-13
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -4085,8 +4085,6 @@ class c42Lib(object):
     def setLoggingLevel(**kwargs):
         # set up logging to file
 
-        #print kwargs
-
         c42Lib.cp_logFileName = c42Lib.getFilePath(c42Lib.cp_logFileName)
         showInConsole = True
 
@@ -4099,8 +4097,7 @@ class c42Lib(object):
                                     level = logging.info,
                                     format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
-                                    # filename='EditUserRoles.log',
-                                    filename = str(c42Lib.cp_logFileName),
+                                    #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
 
             else:
@@ -4109,8 +4106,7 @@ class c42Lib(object):
                                     level = logging.debug,
                                     format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
-                                    # filename='EditUserRoles.log',
-                                    filename = str(c42Lib.cp_logFileName),
+                                    #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
 
             # define a Handler which writes INFO messages or higher to the sys.stderr
@@ -4141,7 +4137,7 @@ class c42Lib(object):
                                     level=logging.info,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
-                                    filename = str(c42Lib.cp_logFileName),
+                                    #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
 
             if c42Lib.cp_logLevel == 'WARNING':
@@ -4152,7 +4148,7 @@ class c42Lib(object):
                                     level=logging.warning,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
-                                    filename = str(c42Lib.cp_logFileName),
+                                    #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
 
             if c42Lib.cp_logLevel == 'DEBUG':
@@ -4163,7 +4159,7 @@ class c42Lib(object):
                                     level=logging.debug,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
-                                    filename = str(c42Lib.cp_logFileName),
+                                    #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
 
             if c42Lib.cp_logLevel == 'ERROR':
@@ -4174,7 +4170,7 @@ class c42Lib(object):
                                     level=logging.error,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
-                                    filename = str(c42Lib.cp_logFileName),
+                                    #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
 
             if c42Lib.cp_logLevel == 'CRITICAL':
@@ -4185,20 +4181,20 @@ class c42Lib(object):
                                     level=logging.critical,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
-                                    filename = str(c42Lib.cp_logFileName),
+                                    #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
 
             # Set log file format
             loggingFormatter = logging.Formatter('%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s')
-            logfile = logging.FileHandler(str(c42Lib.cp_logFileName))
-            logfile.setFormatter(loggingFormatter)
+            #logfile = logging.FileHandler(str(c42Lib.cp_logFileName))
+            #logfile.setFormatter(loggingFormatter)
 
             # set a format which is simpler for console use
             console = logging.StreamHandler()
             console.setFormatter(loggingFormatter)
 
             # add the handler to the root logger
-            logging.getLogger('').addHandler(logfile)
+            #logging.getLogger('').addHandler(logfile)
             
         if not showInConsole: 
 
@@ -4208,6 +4204,7 @@ class c42Lib(object):
             print "Suppress Logging Output to Console"
             logging.getLogger('').removeHandler(console)
 
+        '''
         if os.path.exists(c42Lib.getFilePath('deleteme.log')):
 
             logging.debug('setLoggingLevel: delete temporary log file : ' + str(c42Lib.getFilePath('deleteme.log')))
@@ -4219,6 +4216,7 @@ class c42Lib(object):
                 print ""
                 print "Could not delete : " + str(c42Lib.getFilePath('deleteme.log'))
                 print ""
+        '''
 
         logging.debug('end: setLoggingLevel ' + str(c42Lib.cp_logLevel))
 
@@ -4405,7 +4403,7 @@ class c42Lib(object):
     #           testMode - if anything except "execute" is passed to it the file
 
     @staticmethod
-    def setupCSVFiles (csvFileName,fileList,fileDate,testMode,writeMode):
+    def setupCSVFiles (csvFileName,fileList,fileDate,testMode,writeMode,**kwargs):
         logging.info("setupCSVFiles:base file name - [" + csvFileName + "]")
 
         # Add 'Test' to file name if a test
@@ -4415,6 +4413,10 @@ class c42Lib(object):
 
         counter = 0
         fileNames = []
+
+        if kwargs:
+            if 'counter' in kwargs:
+                counter = kwargs['counter']
 
         for index, fileHeader in enumerate(fileList):
 
