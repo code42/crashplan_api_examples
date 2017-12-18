@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 2017-12-13
+# Last Modified: 2017-12-18
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -2147,69 +2147,63 @@ class c42Lib(object):
         return device
 
     #
-    # getDeviceBackupReport(params):
+    # getDeviceBackupReport(params,**kwargs):
     # returns the DeviceBackupReport
     # params:
     # params - These can be passed in to maximize the utility of the function.
     #          Report will page automatically.
     #
+    # kwargs:
+    # kwargs - params in kwargs take precedence
+    #          export=true will create write a file
+    #          exportType = csv, xls or both
+    #          All = only used with export=true and will export the entire device backup report
 
     @staticmethod
-    def getDeviceBackupReport(params):
-        logging.info("getDeviceBackupReport-params:[" + str(params) + "]")
+    def getDeviceBackupReport(**kwargs):
+        logging.info("[begin] getDeviceBackupReport")
+        if kwargs:
+            logging.info("getDeviceBackupReport-kwargs:[" + str(kwargs) + "]")
 
-        # Note:  export ignores most other parameters, including pgNum & pgSize
+        df           = False
+        howManyPages = 99999
 
-        if 'export' in params:
-            logging.debug("getDeviceBackupReport-export")
+        # Set some required defaults
+        params = {}       
+        params['pgNum'] = 1                     # Begin w/ Page 1
+        params['pgSize'] = c42Lib.MAX_PAGE_NUM  # Limit page size to 250 per page
+        #params['srtKey'] = 'archiveBytes' # Sort on archiveBytes
+        #params['srtDir'] = 'desc'
 
-            csvFileName = "deviceBackupReport_RAW-"+str(c42Lib.cp_todayDate)+".csv"
+        # Use kwargs to override any defaults...
+        if kwargs:
+            if 'df' in kwargs:
+                df = True
+            if 'howManyPages' in kwargs:
+                howManyPages = kwargs['howManyPages']
+            if 'params' in kwargs:
+                params = kwargs['params']
 
-            header = c42Lib.getRequestHeaders()
-            csvFileURL = c42Lib.cp_host+":"+c42Lib.cp_port+c42Lib.cp_api_deviceBackupReport+"?active=true&export=csv"
-            
+        currentPage = params['pgNum']
+        keepLooping = True
+        fullList = []
+        loopCount = 1
+        dataSize = 0
+
+        payload = {}
+
+        print ""
+
+        while keepLooping:
+            logging.debug("getDeviceBackupReport-page:[" + str(currentPage) + "]")
+
+            print "---------- Getting Device Backup Report Data : " + str(currentPage).zfill(3)
+
             try:
-                
-                print "--------- Getting CSV file.  Please be patient..."
-                response = requests.get(csvFileURL,headers=header, verify=c42Lib.cp_verify_ssl)
+                r = c42Lib.executeRequest("get", c42Lib.cp_api_deviceBackupReport, params, payload)
 
-                if response.status_code == 200:
-                    with open(csvFileName, 'wb') as f:
-                        logging.debug("Opened : " + str(csvFileName))
-                        chunkCounter = 0
-
-                        try: 
-                            if not response.iter_content:
-                                return ""
-                        except ChunkedEncodingError:
-                            print "\n********** Chunked Encoding Error : " + str(response)
-                            return ""
-                        for chunk in response.iter_content(chunk_size=4096):
-                            if chunk: # filter out keep-alive new chunks
-                                chunkCounter += 1
-                                # print "--------- Chunk : " + str(chunkCounter)
-                                #print str(chunk)
-                                #raw_input()
-                                f.write(chunk)
-                                #print str(chunkCounter).zfill(5) + " | " + str(chunk) + "\n"
-                                f.flush()
-                                if chunkCounter % 100 == 0:
-                                    sys.stdout.write('.')
-                                    sys.stdout.flush()
-                                if chunkCounter % 10000 == 0:
-                                    sys.stdout.write('|')
-                                    sys.stdout.flush()
-                                if chunkCounter % 100000 == 0:
-                                    sys.stdout.write('\n' + str(c42Lib.prettyNumberFormat(chunkCounter*100000)) + " Processed")
-                                    sys.stdout.write('\nTime Stamp : ' + str(time.strftime('%H:%M:%S', time.gmtime(time.time())))+"\n")
-                                    sys.stdout.flush()
-                        print ""
-
-                    logging.info("Done Writing CSV to File : " + str(csvFileName))
-
-
-
-                return csvFileName
+                logging.info("Returned Status Code : " + str(r.status_code))
+                logging.debug("       Returned Text : " + str(r.text))
 
             except requests.exceptions, e:
                 logging.info('Error Reading DeviceBackupReport : ' + str(e))
@@ -2218,32 +2212,70 @@ class c42Lib(object):
                 print "********** Error Reading DeviceBackupReport : " + str(url) + " | " + e
                 print "**********"
 
-                return csvFileName
+                keepLooping = False
+                fileList    = None
+                break
 
-        else:
+            if r.status_code != 200:
 
-        # set default params for paging and sorting if none passed in
+                logging.info("Returned Status Code " + str(r.status_code) + "... bailing.")
 
-            if not 'pgNum' in params:
-                params['pgNum'] = 1              # Begin w/ Page 1
-                params['pgSize'] = MAX_PAGE_NUM  # Limit page size to 250 per page
+                fullDeviceList = None
+                keepLooping    = False
+                break                  #If it returns anything but a 200, bail
 
-            if not 'srtKey' in params:
-                params['srtKey'] = 'archiveBytes' # Sort on archiveBytes
+            content = r.content.decode('UTF-8')
+            binary  = json.loads(content)
+            logging.debug(content)
 
-            currentPage = params['pgNum']
-            keepLooping = True
-            fullList = []
-            while keepLooping:
-                logging.debug("getDeviceBackupReport-page:[" + str(currentPage) + "]")
-                deviceList = c42Lib.getDeviceBackupReport(params)
-                if deviceList:
-                    fullDeviceList.extend(deviceList)
+            if 'data' not in binary:
+                logging.info("No data returned...")
+                # Empty value returned, skip it.
+                keepLooping = False
+                break
+
+            if len(binary['data']) < params['pgSize']:  # This should keep us from an extra try to get data only to have it return none.
+
+                keepLooping = False
+
+            if df:
+                logging.debug("Using DataFrame...")
+                if loopCount == 1:
+                    logging.info("First Time Filling the DataFrame Object...")
+                    fileData = pd.DataFrame(binary['data'])
                 else:
-                    keepLooping = False
-                currentPage += 1
+                    logging.info("Appending to DataFrame Object...")
+                    tempFileData = pd.DataFrame(binary['data'])
+                    fileData = pd.concat([fileData,tempFileData])
 
-        return fullDeviceList
+                dataSize = fileData.shape[0] # Get the number of rows...
+           
+            else:
+                logging.debug("Using Dict...")
+                fullDeviceList.extend(binary['data'])
+                dataSize = len(fullDeviceList)
+
+            currentPage += 1
+            loopCount   += 1
+
+            params['pgNum'] = currentPage
+
+            if loopCount > howManyPages:
+                keepLooping = False
+
+            logging.info("Total Rows Collected : " + str(dataSize))
+            print "----------   Total Backup Device Report Rows : " + str(dataSize) + "\n"
+
+
+        logging.info("[ end] getDeviceBackupReport - Size : " + str(dataSize))    
+
+        if df:
+                             # Return a dataframe object
+            tempFileData = None           
+            return fileData
+        else:                      # Return a JSON object
+            return fullDeviceList
+    
 
 
     #
@@ -5085,7 +5117,34 @@ class c42Lib(object):
 
         logging.debug ("[end] timeInfo")
 
+    @staticmethod
+    def returnShortVersion(version):
+        logging.debug('[begin] - returnShortVersion : ' + str(version))
 
+        version = version[-3:]
+        version = list(version)
+        version = version[0]+"."+version[1]+"."+version[2]
+
+        logging.debug('[  end] - returnShortVersion : ' + str(version))
+        return version
+
+    @staticmethod
+    def dateCleanUp(rawDate):
+
+        justTheDate = None
+
+        if rawDate:
+
+            justTheDate = rawDate[0:10] #Trim out date
+
+
+        else:
+
+            justTheDate = ""
+        
+        #sinceToday = int((datetime.today() - datetime.strptime(justTheDate , '%Y-%m-%d')).days)
+
+        return justTheDate
 
 
 # class UserClass(object)
