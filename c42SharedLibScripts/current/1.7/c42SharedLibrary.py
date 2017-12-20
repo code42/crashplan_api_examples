@@ -1407,7 +1407,18 @@ class c42Lib(object):
         params['incAll'] = 'true'
         payload = {}
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
+        user = None
+
+        try:
+
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
+
+        except Exception, e:
+
+            logging.info("getUserByUserName - Error. " + str(username) + " | Error : " + str(e))
+            print "Error getting archive: " + str(username)
+            print "Error : " + str(e)
+            print "Will return 'None'."
 
         logging.debug(r.text)
 
