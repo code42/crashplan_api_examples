@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 2017-12-18
+# Last Modified: 2017-12-20
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -2167,14 +2167,8 @@ class c42Lib(object):
 
         df           = False
         howManyPages = 99999
-
-        # Set some required defaults
-        params = {}       
-        params['pgNum'] = 1                     # Begin w/ Page 1
-        params['pgSize'] = c42Lib.MAX_PAGE_NUM  # Limit page size to 250 per page
-        #params['srtKey'] = 'archiveBytes' # Sort on archiveBytes
-        #params['srtDir'] = 'desc'
-
+        params = {}  
+        
         # Use kwargs to override any defaults...
         if kwargs:
             if 'df' in kwargs:
@@ -2183,6 +2177,18 @@ class c42Lib(object):
                 howManyPages = kwargs['howManyPages']
             if 'params' in kwargs:
                 params = kwargs['params']
+
+
+        if 'pgNum' not in params:
+            # Set some required defaults
+            params['pgNum'] = 1                     # Begin w/ Page 1
+            params['pgSize'] = c42Lib.MAX_PAGE_NUM  # Limit page size to 250 per page
+            #params['srtKey'] = 'archiveBytes' # Sort on archiveBytes
+            #params['srtDir'] = 'desc'
+
+        if 'active' not in params:
+            params['active'] = True
+
 
         currentPage = params['pgNum']
         keepLooping = True
@@ -2249,6 +2255,7 @@ class c42Lib(object):
                     fileData = pd.concat([fileData,tempFileData])
 
                 dataSize = fileData.shape[0] # Get the number of rows...
+
            
             else:
                 logging.debug("Using Dict...")
@@ -2271,7 +2278,7 @@ class c42Lib(object):
 
         if df:
                              # Return a dataframe object
-            tempFileData = None           
+            tempFileData = None      
             return fileData
         else:                      # Return a JSON object
             return fullDeviceList
@@ -3427,7 +3434,7 @@ class c42Lib(object):
             "userUid",
             "fileId",
             "parentFileId",
-            "sourceChecksum",
+            #"sourceChecksum",
             "fileType"
             ]
 
