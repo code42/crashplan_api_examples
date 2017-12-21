@@ -1495,6 +1495,8 @@ class c42Lib(object):
     def getUsersPaged(pgNum,**kwargs):
         logging.info("getUsersPaged-params:pgNum[" + str(pgNum) + "]")
 
+        params = {}
+
         if kwargs:
             if 'params' in kwargs:
                 params = kwargs['params'] 
@@ -1502,7 +1504,8 @@ class c42Lib(object):
             else:
                 params = {}
 
-        params['pgNum'] = str(pgNum)
+        if 'pgNum' not in params:
+            params['pgNum'] = str(pgNum)
 
         payload = {}
 
@@ -2873,17 +2876,27 @@ class c42Lib(object):
         if kwargs['user']:
             params['userId'] = str(Uid)
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_storedBytesHistory, params, payload)
-        content = r.content
-        binary = json.loads(content)
-        logging.debug(binary)
+        try:
 
-        if binary['data']:
-            actionResults = binary['data']
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_storedBytesHistory, params, payload)
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
 
-        else:
+            if binary['data']:
+                actionResults = binary['data']
+
+            else:
+
+                actionResults = None
+
+        except Exception,e:
+
+            logging.info("Failed to get stored bytes for userUid : " + str(Uid))
+            logging.info("Error : " + str(e))
 
             actionResults = False
+
 
         return actionResults
 
