@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 2017-12-20
+# Last Modified: 2018-01-03
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -98,7 +98,7 @@ import codecs
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.7.2'.split('.')
+    cp_c42Lib_version = '1.7.4'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -2161,7 +2161,7 @@ class c42Lib(object):
         return device
 
     #
-    # getDeviceBackupReport(params,**kwargs):
+    # getDeviceBackupReport(**kwargs):
     # returns the DeviceBackupReport
     # params:
     # params - These can be passed in to maximize the utility of the function.
@@ -2169,9 +2169,7 @@ class c42Lib(object):
     #
     # kwargs:
     # kwargs - params in kwargs take precedence
-    #          export=true will create write a file
-    #          exportType = csv, xls or both
-    #          All = only used with export=true and will export the entire device backup report
+
 
     @staticmethod
     def getDeviceBackupReport(**kwargs):
@@ -2350,30 +2348,90 @@ class c42Lib(object):
     #
 
     @staticmethod
-    def getDevicesCustomParams(pgNum, params):
-        logging.debug("getDevicesCustomParams-params:pgNum[" + str(pgNum) + "]:params[" + str(params) + "]")
+    def getDevicesCustomParams(**kwargs):
+        logging.debug("getDevicesCustomParams")
+
+        getFile = False
+
+        if not kwargs:
+            return False
+        else:
+            logging.debug("Kwargs : " + str(kwargs))
+        if 'df' in kwargs:
+            getFile = True
+        if 'pgNum' in kwargs:
+            pgNum = kwargs['pgNum']
+        if 'params' in kwargs:
+            params = kwargs['params'] 
 
         # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
         # url = cp_host + ":" + cp_port + cp_api_user
         if not params and not isinstance(params, dict):
             params = {}
 
-        params['pgNum'] = str(pgNum)
         payload = {}
 
-        # r = requests.get(url, params=payload, headers=headers)
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, params, payload)
+        if getFile:
 
-        logging.debug(r.text)
+            tempFileName = "TEMP-ComputerDownload.csv"
 
-        content = r.content
-        binary = json.loads(content)
-        logging.debug(binary)
+            parameters = "?export=1"
 
-        try:
-            devices = binary['data']['computers']
-        except TypeError:
-            devices = False
+            if 'active' in params:
+                parameters = parameters + "&active="+str(params['active'])
+            
+
+            url    = c42Lib.getRequestUrl(c42Lib.cp_api_computer) + parameters
+            header = c42Lib.getRequestHeaders()
+
+
+            try:
+                r = requests.get(url,headers=header,allow_redirects=True,verify=c42Lib.cp_verify_ssl).content
+               
+                with open(tempFileName,"wb") as f:
+                    f.write(r)
+            except Exception, e:
+                print "********** Error Getting CSV"
+                print "           " + str(e)
+                devices = None
+                frameObject = None
+
+            try:
+                frameObject = pd.read_csv(tempFileName,index_col='guid')
+
+            except Exception, e:
+
+                logging.info("Error. : " + str(tempFileName) + " | Error : " + str(e))
+                print "Error getting CSV : " + str(tempFileName)
+                print "Will return 'None'."  #frameObject is set to None
+
+
+            try:
+                os.remove(tempFileName)
+                print "---------- Removed existing TEMP CSV file..."
+            except OSError:
+                print "           Failed to remove TEMP file : [ "+str(tempFileName)+" ]" 
+
+
+            devices     = frameObject
+            frameObject = None
+
+
+        else:
+
+            # r = requests.get(url, params=payload, headers=headers)
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, params, payload)
+
+            logging.debug(r.text)
+
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+
+            try:
+                devices = binary['data']['computers']
+            except TypeError:
+                devices = False
 
         return devices
     #
@@ -2439,7 +2497,7 @@ class c42Lib(object):
         keepLooping = True
         fullList = []
         while keepLooping:
-            pagedList = c42Lib.getDevicesCustomParams(currentPage, params)
+            pagedList = c42Lib.getDevicesCustomParams(pgNum=currentPage, params=params)
             if pagedList:
                 fullList.extend(pagedList)
             else:
