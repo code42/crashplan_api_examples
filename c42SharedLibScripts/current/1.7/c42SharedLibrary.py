@@ -1,4 +1,4 @@
-# Copyright (c) 2016, 2017 Code42, Inc.
+# Copyright (c) 2016, 2017, 2018 Code42, Inc.
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy 
 # of this software and associated documentation files (the "Software"), to deal 
@@ -98,7 +98,7 @@ import codecs
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.7.5'.split('.')
+    cp_c42Lib_version = '1.7.6'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -1151,7 +1151,7 @@ class c42Lib(object):
 
         if serverInfo:
             serverVersion = serverInfo['version']
-            print "Server Version : " + str(serverVersion)
+            print "           Server Version : " + str(serverVersion)
 
         else:
             logging.info("getLicenseInfo - no server version info returned.")
@@ -1184,7 +1184,7 @@ class c42Lib(object):
 
         except Exception, e:
 
-            print "Error Will Robinson!  Error : " + str(e)
+            print "********** Error Will Robinson!  Error : " + str(e)
 
             logging.info("getLicenseInfo - Error : " + str(e))
             #print "Will return 'None'."
@@ -3596,7 +3596,11 @@ class c42Lib(object):
         logging.info("                                 AuthToken : " + str(storageAuthToken))
         logging.info("                             DataKey Token : " + str(dataKeyToken))
         logging.info("                               Device GUID : " + str(guid))
+        
         archiveSize = 0
+        memoryLimit = 1073741826
+        incDeleted  = False
+
         if kwargs:
             logging.info("                           Other Arguments : " + str(kwargs))
 
@@ -3617,10 +3621,17 @@ class c42Lib(object):
                     "creatorGuid"
                     ]
 
+            if 'memoryLimit' in kwargs:
+                memoryLimit = kwargs['memoryLimit']
+
+            if 'incDeleted' in kwargs:
+                incDeleted = kwargs['incDeleted']
+
+
         params={}
 
-        url = "{0}/api/ArchiveMetadata/{1}?decryptPaths=true&dataKeyToken={2}"
-        url = url.format(storageURL,guid,dataKeyToken)
+        url = "{0}/api/ArchiveMetadata/{1}?decryptPaths=true&dataKeyToken={2}&incDeleted={3}"
+        url = url.format(storageURL,guid,dataKeyToken,incDeleted)
         headers = {'Authorization': 'token ' + storageAuthToken[0] + '-' + storageAuthToken[1]}
 
         timeout = 7200
@@ -3633,14 +3644,15 @@ class c42Lib(object):
         getMetadata_end_time   = 0
         getMetadata_total_time = 0
 
-        memoryLimit = 1073741826
-
         params = {}
 
-        if kwargs:
-            if 'memoryLimit' in kwargs:
-                memoryLimit = kwargs['memoryLimit']
 
+        if archiveSize > memoryLimit:
+            logging.info("Archive Bytes > Memory Limit : " + str(archiveSize) + " > " + str(memoryLimit))
+            logging.info("Exiting...")
+            print "\n********** Archive Bytes [ " + str(archiveSize) + " ] Exceeds Memory Limit Setting [ " + str(memoryLimit) + " ]\n"
+
+            return fileData
 
         logging.info("getAllArchivemetadata-Getting Archive Info : " + str(params))
 
@@ -3959,15 +3971,24 @@ class c42Lib(object):
         params = {}
         payload = {}
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_server, params, payload)
+        return None
 
-        logging.debug(r.text)
+        try:
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_server, params, payload)
 
-        content = r.content.decode("UTF-8")
-        binary = json.loads(content)
-        logging.debug(binary)
+            logging.debug(r.text)
 
-        servers = binary['data']['servers']
+            content = r.content.decode("UTF-8")
+            binary = json.loads(content)
+            logging.debug(binary)
+
+            servers = binary['data']['servers']
+
+        except Exception, e:
+
+            logging.info("Error getting servers : " + str(e))
+            print "********** Error Getting Servers : " + str(e)
+
         return servers
 
 
@@ -3993,23 +4014,30 @@ class c42Lib(object):
         params = {}
         payload = {}
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_server + "/" + str(serverId), params, payload)
+        try:
 
-        # logging.info("====server response : " + r.text + "====")
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_server + "/" + str(serverId), params, payload)
 
-        if r.status_code == 200:
+            # logging.info("====server response : " + r.text + "====")
 
-            content = r.content
-            binary = json.loads(content)
-            logging.debug(binary)
+            if r.status_code == 200:
 
-            if binary['data']:
-                server = binary['data']
-            else:
-                server = None
+                content = r.content
+                binary = json.loads(content)
+                logging.debug(binary)
 
-        if r.status_code == 500:
-            return None
+                if binary['data']:
+                    server = binary['data']
+                else:
+                    server = None
+
+            if r.status_code == 500:
+                return None
+
+        except Exception, e:
+
+            logging.info("Error getting servers : " + str(e))
+            print "********** Error Getting Servers : " + str(e)
 
         return server
 
