@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 10-24-2017
+# Last Modified: 02-13-2018
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -584,18 +584,25 @@ class c42Lib(object):
         connectionGood = False
 
         # strip off http or https if testing connectivity to URL that's more than a ping.
-        if private_address[:5] == "https":
-            private_address = private_address[8:]
-        if private_address[:4] == "http":
-            private_address = private_address[7:]
+        #if private_address[:5] == "https":
+        #    private_address = private_address[8:]
+        #if private_address[:4] == "http":
+        #    private_address = private_address[7:]
+
+        #print private_address
 
         payload = {
-            "testType":"reachable",
-            "address":private_address,
-            "privateAddress":True
+            "testType":"httpUrlReachable",
+            "url":private_address,
         }
 
-        r = c42Lib.executeRequest("post", c42Lib.cp_api_networkTest, {}, payload, **kwargs)
+        try:
+            r = c42Lib.executeRequest("post", c42Lib.cp_api_networkTest, {}, payload, **kwargs)
+
+        except Exception, e:
+
+            print "Error : " + str(e)
+
 
         try:
             contents = r.content.decode("UTF-8")
@@ -608,8 +615,9 @@ class c42Lib(object):
 
             return binary
 
-        except AttributeError:
+        except Exception, e:
 
+            print "Error : " + str(e)
             print ""
             print "Connection to " + str(private_address) + " does not appear to be valid."
             print ""
@@ -2927,7 +2935,10 @@ class c42Lib(object):
         binary = json.loads(content)
         logging.debug(binary)
 
-        archives = binary['data']['restoreRecords']
+        try:
+            archives = binary['data']['restoreRecords']
+        except:
+            archives = None
 
         return archives
 
