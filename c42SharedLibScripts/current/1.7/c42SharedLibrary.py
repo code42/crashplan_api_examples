@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 2018-01-03
+# Last Modified: 2018-02-13
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -98,7 +98,7 @@ import codecs
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.7.4'.split('.')
+    cp_c42Lib_version = '1.7.5'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -168,7 +168,6 @@ class c42Lib(object):
     cp_api_legalHoldMembershipSummary = "/api/LegalHoldMembershipSummary"
     cp_api_legalHoldMembership = "/api/LegalHoldMembership"
     cp_api_legalHoldMembershipDeactivation = "/api/LegalHoldMembershipDeactivation"
-    cp_api_plan = "/api/Plan"
 
 
     # Overwrite `cp_authorization` to use something other than HTTP-Basic auth.
@@ -3498,32 +3497,51 @@ class c42Lib(object):
         return archives
 
 
+    # this method gets the archive's metadata
+
     @staticmethod
-    def archiveFileData(archiveData):
+    def archiveFileData(archiveData, **kwargs):
 
-        logging.info("[start] archiveFileData - process archiveMetadata")
+        logging.info("[start] archiveFileData - process archiveMetadata (clean it up)")
 
-        dropColumns = [
-            "planUid",
-            "pathLength",
-            "timestamp",
-            "versionTimestamp",
-            "sourceLastModified",
-            "sourceLastModifiedTime",
-            "fhPosition",
-            "fhLen",
-            "creatorGuid",
-            "userUid",
-            "fileId",
-            "parentFileId",
-            #"sourceChecksum",
-            "fileType"
-            ]
+        dropColumns    = None
+        includeDeleted = False
+        isMetaData     = True
+
+        if kwargs:
+            if 'dropColumns' in kwargs:
+                dropColumns = kwargs['dropColumns']
+
+            if 'incDeleted' in kwargs:
+                includeDeleted = True
+
+            if 'isMetadata' in kwargs:
+                isMetadata = True
+
+
+        if dropColumns is None:
+
+            dropColumns = [
+                "planUid",
+                "pathLength",
+                "timestamp",
+                "versionTimestamp",
+                "sourceLastModified",
+                "sourceLastModifiedTime",
+                "fhPosition",
+                "fhLen",
+                "creatorGuid",
+                "userUid",
+                "fileId",
+                "parentFileId",
+                #"sourceChecksum",
+                "fileType"
+                ]
 
         fullFileData = []
         fileData     = []
 
-        print "========= Reading Archive Metadata from Memory..."
+        print "========== Reading Archive Metadata from Memory..."
 
         print "========== Archive Metadata Objects : " + str(len(archiveData['data']))
         # print archiveData['data']
@@ -3539,17 +3557,19 @@ class c42Lib(object):
         logging.info("  Pre-Clean Up Total Rows : " + str(fileData.shape[0]))
 
         # Remove Deleted, Empty files
-        logging.info("Removing Deleted Files...")
-        fileData = fileData.drop(fileData[(fileData.sourceChecksum == 'ffffffffffffffffffffffffffffffff') & (fileData.fileType == 0)].index)
-        logging.info("Post-Remove Deleted Files : " + str(fileData.shape[0]))
-        logging.info("Removing Directories...")
-        fileData = fileData.drop(fileData[(fileData.fileType == 1)].index)  # Delete paths only
-        logging.info("  Post-Remove Directories : " + str(fileData.shape[0]))
-        logging.info("Removing Zero Byte Files...")
-        fileData = fileData.drop(fileData[(fileData.sourceLength < 100)].index)
-        logging.info(" Post-Remove 0 Byte Files : " + str(fileData.shape[0]))
+        if includeDeleted is False:
+            logging.info("Removing Deleted Files...")
+            fileData = fileData.drop(fileData[(fileData.sourceChecksum == 'ffffffffffffffffffffffffffffffff') & (fileData.fileType == 0)].index)
+            logging.info("Post-Remove Deleted Files : " + str(fileData.shape[0]))
+        if not isMetadata:
+            logging.info("Removing Directories...")
+            fileData = fileData.drop(fileData[(fileData.fileType == 1)].index)  # Delete paths only
+            logging.info("  Post-Remove Directories : " + str(fileData.shape[0]))
+            logging.info("Removing Zero Byte Files...")
+            fileData = fileData.drop(fileData[(fileData.sourceLength < 100)].index)
+            logging.info(" Post-Remove 0 Byte Files : " + str(fileData.shape[0]))
         logging.info("Removing the first row because it's useless...")
-        fileData = fileData.drop(fileData.index[0])
+        #fileData = fileData.drop(fileData.index[0])
         
         logging.info(" Post-Clean Up Total Rows : " + str(fileData.shape[0]))
 
@@ -3561,11 +3581,143 @@ class c42Lib(object):
         fileDataMemorySize = fileData.memory_usage(index=True).sum()
         logging.info(" Archive Data Memory Size : \n" + str(fileDataMemorySize))
 
-        print "========= Done with basic processing of archive metadata..."
+        print "========== Done with basic processing of archive metadata..."
 
         logging.info("[end] archiveFileData - process archiveMetadata")
 
         return fileData
+
+
+    #Get all archive metadata using the storage auth token
+    @staticmethod
+    def getAllArchiveMetadata(storageURL,storageAuthToken,dataKeyToken,guid,**kwargs):
+        logging.info("getAllArchiveMetadata - params:")
+        logging.info("                        Storage Server URL : " + str(storageURL))
+        logging.info("                                 AuthToken : " + str(storageAuthToken))
+        logging.info("                             DataKey Token : " + str(dataKeyToken))
+        logging.info("                               Device GUID : " + str(guid))
+        archiveSize = 0
+        if kwargs:
+            logging.info("                           Other Arguments : " + str(kwargs))
+
+            if 'archiveSize' in kwargs:
+                archiveSize = kwargs['archiveSize']
+
+            if 'dropColumns' in kwargs:
+                dropColumns = kwargs['dropColumns']
+            else:
+                dropColumns = [
+                    "planUid",
+                    "timestamp",
+                    "sourceLastModified",
+                    "sourceLastModifiedTime",
+                    "userUid",
+                    "fhPosition",
+                    "fhLen",
+                    "creatorGuid"
+                    ]
+
+        params={}
+
+        url = "{0}/api/ArchiveMetadata/{1}?decryptPaths=true&dataKeyToken={2}"
+        url = url.format(storageURL,guid,dataKeyToken)
+        headers = {'Authorization': 'token ' + storageAuthToken[0] + '-' + storageAuthToken[1]}
+
+        timeout = 7200
+
+
+        fileData = None
+        r        = None
+
+        getMetadata_start_time = 0
+        getMetadata_end_time   = 0
+        getMetadata_total_time = 0
+
+        memoryLimit = 1073741826
+
+        params = {}
+
+        if kwargs:
+            if 'memoryLimit' in kwargs:
+                memoryLimit = kwargs['memoryLimit']
+
+
+        logging.info("getAllArchivemetadata-Getting Archive Info : " + str(params))
+
+        try:
+            getMetadata_start_time = datetime.datetime.now().replace(microsecond=0)
+            print "---------- [ " + str(guid) + " ] Archive Size : " + str(c42Lib.prettyNumberFormat(archiveSize))
+            print "---------- [ " + str(guid) + " ] Start Time : " + str(getMetadata_start_time)
+            r = requests.get(url, headers=headers, verify=False, timeout=timeout)
+            getMetadata_end_time   = datetime.datetime.now().replace(microsecond=0)
+            print "---------- [ " + str(guid) + " ]   End Time : " + str(getMetadata_end_time)
+            getMetadata_total_time = getMetadata_end_time - getMetadata_start_time
+            logging.info('Time to get archive metadata : ' + str(getMetadata_total_time))
+            print "           Time to get archive metadata : " + str(getMetadata_total_time)
+            print "           Metadata [ " + str(guid) + " ] Retrieved.  Begin processing..."
+
+            #print r.content
+
+        except requests.exceptions.Timeout:
+
+            logging.info("getAllArchivemetadata - Timeout Error. GUID : " + str(guid) + " | Waited for : " + str(params['timeout']) + " seconds.")
+            print "           Timing out getting archive: " + str(guid) + " | Waited for : " + str(params['timeout']) + " seconds."
+            print "           Will return 'None'."
+            return fileData
+
+        except Exception, e:
+
+            logging.info("getAllArchivemetadata - Error. GUID : " + str(guid) + " | Error : " + str(e))
+            print "********* Error getting archive: " + str(guid)
+            print "          " + str(e)
+            print "          Will return 'None'."
+            return fileData
+
+
+            # If the metadata is too big it we may have memory issues.
+            # Check if metadata is less than 2 GB and then load into Pandas DataFrame from memory
+            # otherwise, write to disk to read from disk into DataFrame
+
+        if r:
+
+            if len(r.content) < memoryLimit:
+
+                print "========== Loading Data into JSON format..."
+
+                try:
+                    logging.info("Loading returned results into JSON")
+                    content  = json.loads(r.content)
+
+                except Exception, e:
+                    
+                    logging.info("getAllArchivemetadata - Error Parsing JSON : " + str(e))
+                    print "********** Error Parsing JSON : " + str(guid)
+                    print "           Will return 'None'."
+
+                    return fileData
+
+                try:
+
+                    logging.info("Processing returned results into dataframe object")
+                    fileData = c42Lib.archiveFileData(content,dropColumns=dropColumns,isMetadata=True)
+
+                except Exception, e:
+
+                    logging.info("Error processing data into dataframe object")
+                    logging.info("Error : " + str(e))
+
+                    return None
+
+            else:
+
+                logging.info("getAllArchivemetadata - Metadata file too big for memory : " + str(len(r.content)))
+                print "Too Big..." + str(len(r.content)) + " bytes"
+                print "Will return 'None'."
+
+                return fileData
+
+        return fileData            
+
 
 
     # Get 
@@ -3582,12 +3734,6 @@ class c42Lib(object):
 
         memoryLimit = 1073741826
 
-        if kwargs:
-            if 'memoryLimit' in kwargs:
-
-                memoryLimit = kwargs['memoryLimit']
-
-
         params = {}
         if (decrypt):
             params['decryptPaths'] = "true"
@@ -3595,6 +3741,28 @@ class c42Lib(object):
         params['stream'] = "True"
         params['dataKeyToken'] = dataKeyToken
         params['timeout'] = 1800 # 30 minutes should Do It
+
+        if kwargs:
+            if 'memoryLimit' in kwargs:
+
+                memoryLimit = kwargs['memoryLimit']
+
+            if 'planUid' in kwargs:
+                params['idType'] = 'planUid'
+
+                # the following flags only apply if planUid is used
+
+                if 'incDeleted' in kwargs:
+                    params['excludeDeleted'] = kwargs['incDeleted']
+
+                if 'startTime' in kwargs:
+                    params['startTime'] = kwargs['startTime']
+
+                if 'endTime' in kwargs:
+                    params['endTime'] = kwargs['endTime']
+
+ 
+
         payload = {}
 
         logging.info("getArchiveMetadata3-Getting Archive Info : " + str(params))
@@ -3819,6 +3987,8 @@ class c42Lib(object):
             if "this" in kwargs:
                 logging.info("Getting THIS server's info...")
                 serverId = "this"
+
+        server = None
 
         params = {}
         payload = {}
@@ -4515,6 +4685,117 @@ class c42Lib(object):
             output.close
     
         return
+
+    #Write out dataframes to CSV or Excel files
+    @staticmethod
+    def writeDataframeFiles(processedData,fileName,**kwargs):
+        logging.info('[begin] - writeDataframeFiles')
+        logging.info('                      Params:')
+        logging.info("                  File Name : " + str(fileName))
+        
+        cp_createXLSX = False
+        sheetName     = "Sheet"
+        writeIndex    = True
+
+        if kwargs:
+            logging.info("                     Kwargs : " + str(kwargs))
+
+            if 'sheetName' in kwargs:
+                sheetName = kwargs['sheetName']
+
+            if 'createXLSX' in kwargs:
+                cp_createXLSX = kwargs['createXLSX']
+
+            if 'index' in kwargs:
+                writeIndex=kwargs['index']
+
+
+        csvSuccess  = False
+        xlsxSuccess = False
+
+        fileName = fileName+str(c42Lib.cp_todayDate)
+
+        csvFileName = fileName + '.csv'
+
+        logging.info('If existing CSV file exists, delete it...')
+
+        try:
+            os.remove(csvFileName)
+            print "---------- Removed existing CSV file..."
+        except OSError:
+            print "           OK to create new " + str(csvFileName) + " file."
+
+
+        if cp_createXLSX:
+
+            xlsFileName = fileName + '.xlsx'
+
+            logging.info('If existing XLSX file exists, delete it...')
+
+            try:
+                os.remove(xlsFileName)
+                print "---------- Removed existing XLSX file..."
+            except OSError:
+                print "           OK to create new " + str(xlsFileName) + " file."
+
+        try:
+            fileDataMemorySize = processedData.memory_usage(index=True).sum()
+            logging.info(" Device Report Data Memory Size : " + str(fileDataMemorySize))
+            logging.info("                     Total Rows : " + str(processedData.shape[0]))
+        except Exception, e:
+            logging.info("Cannot report on memory size: " + str(e))
+
+        logging.info("[Begin] Writing processed device backup report [ " + str( fileName ) + " ] as files...")
+
+        
+        if cp_createXLSX:
+
+            print "---------- [ " + str(time.strftime('%H:%M:%S', time.gmtime(time.time()))) + " ] Writing out as XLSX..."
+
+            try:
+                xlsOutput = pd.ExcelWriter(xlsFileName, engine='xlsxwriter')
+                processedData.to_excel(xlsOutput,sheet_name=sheetName)
+                xlsOutput.save()
+
+                logging.info("[  End] Done writing processed device backup report [ " + str( xlsFileName ) + " ] as XLSX...")
+                print "---------- [ " + str(time.strftime('%H:%M:%S', time.gmtime(time.time()))) + " ] Done writing [ " + str( xlsFileName ) + " ] as XLSX..."
+
+                xlsxSuccess = True
+
+            except Exception, e:
+
+                logging.info("writeXLSFile - Error writing : " + str(xlsFileName) + " | Error : " + str(e))
+                print "********* Error writing out XLSX file : " + str(xlsFileName)
+                print "          " + str(e)
+                print "          Will return 'False'."
+
+        print "---------- [ " + str(time.strftime('%H:%M:%S', time.gmtime(time.time()))) + " ] Writing out as CSV..."
+
+        try:
+            processedData.to_csv(csvFileName,index=writeIndex)
+
+            logging.info("[  End] Done writing processed device backup report [ " + str( csvFileName ) + " ] as CSV...")
+            print "---------- [ " + str(time.strftime('%H:%M:%S', time.gmtime(time.time()))) + " ] Done writing [ " + str( csvFileName ) + " ] as CSV..."
+
+            csvSuccess = True
+
+        except Exception, e:
+
+            logging.info("writeCSVFile - Error writing : " + str(csvFileName) + " | Error : " + str(e))
+            print "********** Error writing out CSV file : " + str(csvFileName)
+            print "           Will return 'False'."
+            
+        if cp_createXLSX and xlsxSuccess and csvSuccess:
+            return True
+        elif not cp_createXLSX and csvSuccess:
+            return True
+        else:
+            return False
+
+        logging.info('[  end] - writeDataframeFiles - Success : ' + str(success))
+
+
+
 
     # CSV Creates files.  Single funciton that's used a lot to create output files in scripts.
     # params:   csvFileName - the base file name
@@ -5234,6 +5515,20 @@ class c42Lib(object):
         #sinceToday = int((datetime.today() - datetime.strptime(justTheDate , '%Y-%m-%d')).days)
 
         return justTheDate
+
+    @staticmethod
+    def killItPrompt(**kwargs):
+
+        prompt = "K to end it now... "
+
+        if kwargs and 'prompt' in kwargs:
+            prompt = kwargs['prompt']
+
+        shouldIDie = raw_input(prompt)
+
+        if shouldIDie.lower() == 'k':
+            sys.exit(0)
+
 
 
 # class UserClass(object)
