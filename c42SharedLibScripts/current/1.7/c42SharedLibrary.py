@@ -3646,14 +3646,6 @@ class c42Lib(object):
 
         params = {}
 
-
-        if archiveSize > memoryLimit:
-            logging.info("Archive Bytes > Memory Limit : " + str(archiveSize) + " > " + str(memoryLimit))
-            logging.info("Exiting...")
-            print "\n********** Archive Bytes [ " + str(archiveSize) + " ] Exceeds Memory Limit Setting [ " + str(memoryLimit) + " ]\n"
-
-            return fileData
-
         logging.info("getAllArchivemetadata-Getting Archive Info : " + str(params))
 
         try:
