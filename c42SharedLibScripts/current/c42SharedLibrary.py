@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 02-13-2018
+# Last Modified: 02-14-2018
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -56,7 +56,7 @@ import pandas as pd
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.6.2'.split('.')
+    cp_c42Lib_version = '1.6.3'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -2422,6 +2422,8 @@ class c42Lib(object):
 
         params = {}
 
+        legalHoldMembershipInfo = None
+
         if 'params' in kwargs:
 
             params = kwargs['params']
@@ -2433,22 +2435,30 @@ class c42Lib(object):
             params ['userUid'] = kwargs['userUid']
         payload = {}
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHoldMembership, params, payload)
 
-        logging.debug(r.text)
+        try:
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHoldMembership, params, payload)
+            logging.info("Server Response : " + str(r.status_code))
+            logging.debug(r.text)
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
 
-        content = r.content
-        binary = json.loads(content)
-        logging.debug(binary)
+            logging.info("Returned membership response : " + str(binary))
 
-        if binary['data']['legalHoldMemberships']:
+            if 'data' in binary:
 
-            legalHoldMembershipInfo = binary['data']['legalHoldMemberships']
-            return legalHoldMembershipInfo
+                if 'legalHoldMemberships' in data:
 
-        else:
+                    legalHoldMembershipInfo = binary['data']['legalHoldMemberships']
 
-            return False
+
+        except Exception, e:
+            logging.info("Error getting legal hold memberships : " + str(e))
+            print "********** Could not get legal hold memberships : " + str(e)
+            print "           Returning 'None'"
+            
+        return legalHoldMembershipInfo
 
 
     
