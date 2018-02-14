@@ -2448,7 +2448,7 @@ class c42Lib(object):
 
             if 'data' in binary:
 
-                if 'legalHoldMemberships' in data:
+                if 'legalHoldMemberships' in binary['data']:
 
                     legalHoldMembershipInfo = binary['data']['legalHoldMemberships']
 
