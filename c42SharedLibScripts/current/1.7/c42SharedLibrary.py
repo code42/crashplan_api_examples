@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 2018-02-13
+# Last Modified: 2018-02-22
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -276,7 +276,7 @@ class c42Lib(object):
 
         if cp_userName:
             userAuth = c42Lib.authenticateUser(cp_userName=cp_userName)  # Sets the variables to authenticate the user.
-        elif cp_userCustomerCredFile:
+        elif cp_credentialFile:
             userAuth = c42Lib.authenticateUser(cp_credentialFile=cp_credentialFile)
         else:
             userAuth = c42Lib.authenticateUser() 
@@ -291,7 +291,7 @@ class c42Lib(object):
 
         if cp_serverHostURL:
             c42Lib.cpServerInfo(cp_serverHostURL=cp_serverHostURL,cp_serverHostPort=cp_serverHostPort)
-        elif cp_serverInfoFile:
+        elif cp_serverInfoFileName:
             c42Lib.cpServerInfo(cp_serverInfoFileName=cp_serverInfoFileName)
         else:
             c42Lib.cpServerInfo()
@@ -1291,6 +1291,8 @@ class c42Lib(object):
     def getUser(params):
         logging.info("getUser-params:params[" + str(params) + "]")
 
+        user = None
+
         if params:
             payload = {}
 
@@ -1303,14 +1305,22 @@ class c42Lib(object):
 
                 if keepTryingCount < 4:
 
-                    r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
+                    
+                    try:
+                        r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
 
-                    logging.debug(r.text)
-                    content = r.content
-                    r.content
-                    binary = json.loads(content)
+                        logging.debug(r.text)
+                        content = r.content
+                        r.content
+                        binary = json.loads(content)
 
-                    logging.debug(binary)
+                        logging.debug(binary)
+
+                    except Exception, e:
+
+                        logging.info("Error getting user : " + str(e))
+                        print "********** " + str(keepTryingCount) + " | Error getting user : " + str(e)
+                        break
 
                     if r.status_code == 200:
 
@@ -1324,6 +1334,12 @@ class c42Lib(object):
                             
                             logging.info("getUser-failed : " + r.status_code)
                             sys.exit()
+
+                        except Exception, e:
+                            print str(keepTryingCount) + " | Error : " + str(e)
+                            
+                            logging.info("getUser-failed : " + e)
+                            return None
                     
                     else:
                     
@@ -2830,6 +2846,8 @@ class c42Lib(object):
 
         params = {}
 
+        legalHoldMembershipInfo = None
+
         if 'params' in kwargs:
 
             params = kwargs['params']
@@ -2841,22 +2859,30 @@ class c42Lib(object):
             params ['userUid'] = kwargs['userUid']
         payload = {}
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHoldMembership, params, payload)
 
-        logging.debug(r.text)
+        try:
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHoldMembership, params, payload)
+            logging.info("Server Response : " + str(r.status_code))
+            logging.debug(r.text)
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
 
-        content = r.content
-        binary = json.loads(content)
-        logging.debug(binary)
+            logging.info("Returned membership response : " + str(binary))
 
-        if binary['data']['legalHoldMemberships']:
+            if 'data' in binary:
 
-            legalHoldMembershipInfo = binary['data']['legalHoldMemberships']
-            return legalHoldMembershipInfo
+                if 'legalHoldMemberships' in binary['data']:
 
-        else:
+                    legalHoldMembershipInfo = binary['data']['legalHoldMemberships']
 
-            return False
+
+        except Exception, e:
+            logging.info("Error getting legal hold memberships : " + str(e))
+            print "********** Could not get legal hold memberships : " + str(e)
+            print "           Returning 'None'"
+            
+        return legalHoldMembershipInfo
 
 
     
@@ -5156,6 +5182,8 @@ class c42Lib(object):
 
         return os.path.join(base_path,relativePath)    
 
+
+    # Try to make a directory
     @staticmethod
     def checkPathMakePath(filePath):
 
