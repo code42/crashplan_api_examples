@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 2018-02-22
+# Last Modified: 2018-02-23
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -98,7 +98,7 @@ import codecs
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.7.6'.split('.')
+    cp_c42Lib_version = '1.7.7'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -306,7 +306,7 @@ class c42Lib(object):
             sys.exit(0)
         else:
             print ""
-            print "[ " + str(cp_userName) + " ]'s Credentials Appear to Be Valid"
+            print "[ " + str(c42Lib.cp_username) + " ]'s Credentials Appear to Be Valid"
             print ""
             print "====================================================="
 
@@ -597,7 +597,6 @@ class c42Lib(object):
             with open(str(c42Lib.getFilePath(cp_credentialFile))) as f:
                 c42Lib.cp_username = base64.b64decode(f.readline().strip())
                 cp_username        = c42Lib.cp_username
-
                 c42Lib.cp_password = base64.b64decode(f.readline().strip())
 
 
@@ -4668,6 +4667,26 @@ class c42Lib(object):
         
         return newValueList
 
+    # Read a CSV file into a dataframe
+    @staticmethod
+    def loadCSVtoDataFrame(fileName):
+        logging.info('[begin] - loadCSVtoDataFrame : ' + str(fileName))
+
+        frameObject = None
+
+        try:
+            frameObject = pd.read_csv(fileName)
+
+        except Exception, e:
+
+            logging.info("loadCSVtoDataFrame - Error. : " + str(fileName) + " | Error : " + str(e))
+            print "Error getting CSV : " + str(fileName)
+            print "Will return 'None'."  #frameObject is set to None
+
+        logging.info('[  end] - loadCSVtoDataFrame')
+
+        return frameObject
+
 
     # CSV Write & Append Method
     # Will apped to a CSV with n number of elements.  Pass in a list and it writes the CSV.
@@ -5576,6 +5595,50 @@ class c42Lib(object):
 
         if shouldIDie.lower() == 'k':
             sys.exit(0)
+
+
+    @staticmethod
+    def checkPyVersion(**kwargs):
+        logging.info('[start] - checkPyVersion')
+        logging.info("          " + str(sys.version_info))
+
+        minPyVersion = 2
+        pyOk = True
+
+        if kwargs:
+            logging.info("          kwargs : " + str(kwargs))
+            if 'minPyVersion' in kwargs:
+                minPyVersion = kwargs['minPyVerssion']
+
+        # Assign version
+        pyVersionMajor = sys.version_info.major
+        pyVersionMinor = sys.version_info.minor
+        pyVersionMicro = sys.version_info.micro
+
+        pyVersionPretty = str(pyVersionMajor)+"."+str(pyVersionMinor)+"."+str(pyVersionMicro)
+
+        if (minPyVersion < pyVersionMajor):
+
+            logging.info("Python version not ok...  Exiting")
+            pyOk = False
+
+        if pyVersionMajor == 2:
+
+            # Check if 2.7.9 or higher.  If not, then notify user and exit.
+            if pyVersionMinor < 7 and pyVersionMicro < 9:
+                pyOk = False
+                logging.info("Python version not ok...  Exiting")
+
+
+        if pyOk:
+            print ('********** Minimum Python Version Required : 2.7. 9')
+            print ('           Running Python Version : ' + pyVersionPretty + ' - Python version OK...')
+        else:
+            print ("********** This script requires Python 2.7.9 or higher.  You are running " + pyVersionPretty)
+            print ("           Exiting.")
+            sys.exit(0)
+        
+        logging.debug('  [end] - checkPyVersion')
 
 
 
