@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 2018-02-23
+# Last Modified: 2018-03-02
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -37,7 +37,7 @@
 
 # Check if the shared library is being run and not imported.  If being run exit.
 
-isBeta = True
+isBeta = False
 import sys
 
 if __name__ == '__main__':
@@ -90,11 +90,11 @@ import collections
 from requests.exceptions import ConnectionError
 import time
 #import ijson.backends.yajl2 as ijson
-import ijson
+#import ijson
 import pandas as pd
 from contextlib import closing
 import codecs
-
+import ssl
 
 class c42Lib(object):
 
@@ -188,6 +188,39 @@ class c42Lib(object):
     cp_elapsedTime = None
 
 
+    # Check if Python is using an up-to-date version of OpenSSL.  Anything over 1.0 is Good.
+    # Using version < 1 will cause SSL errors.  This validator will notify users they need to
+    # fix their SSL issues before continuing.
+
+    @staticmethod
+    def checkSSLVersion():
+        logging.info('[start] - checkSSLVersion')
+
+        sslRaw = ssl.OPENSSL_VERSION
+
+        sslOK = True
+
+        sslVersion = sslRaw[8:13].split(".")
+
+        if sslVersion[0] == "0" or (sslVersion[0] == "1" and sslVersion[2] == "0"):
+            sslOK = False
+
+        if sslOK:
+            logging.info("SSL Version : " + str(sslRaw) + " is good.")
+            print "**********"
+            print "********** OpenSSL OK.  Continuing..."
+            print "**********"
+        else:
+            logging.info("SSL Version : " + str(sslRaw) + " is < 1.0.1.  Exiting...")
+            print "**********"
+            print "********** SSL Version " + str(sslRaw) + " used with Python needs updating.  Exiting."
+            print "**********"
+
+        logging.info('[  end] - checkSSLVersion : ' + str(sslRaw))
+
+        return sslOK 
+
+
     # startupSharedLibraryValidate
     #
     # Common function to validate the correct shared library is being used.
@@ -197,7 +230,7 @@ class c42Lib(object):
 
         logging.debug('[begin] - startupSharedLibraryValidate')
 
-        c42Lib.cls()
+        #c42Lib.cls()
 
         patchStrict = False
         minorStrict = False
@@ -1163,9 +1196,13 @@ class c42Lib(object):
 
             if int(serverVersion[:1]) > 5: # Use the new, unsupported API
                 logging.info("getLicenseInfo - Use new, unsupported license API")
+                print "           Getting Auth Cookie"
                 JWTAuthCookie = c42Lib.getJWTAuth()
 
                 r = c42Lib.executeRequest("get", c42Lib.cp_api_customerLicense,{},{},cookie=JWTAuthCookie)
+
+                if r.status_code == 200:
+                    print "           Auth Cookie Retrieved"
 
             if r is None or int(serverVersion[:1]) < 6:
                 # Use the old masterLicense API
