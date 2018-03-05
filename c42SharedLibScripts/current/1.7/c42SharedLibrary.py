@@ -1014,6 +1014,39 @@ class c42Lib(object):
         binary = json.loads(r.content.decode('UTF-8'))
         return binary['data'] if 'data' in binary else None
 
+    
+    #
+    # Params:
+    #
+    #   
+    #
+    #
+    @staticmethod
+    def pushRestoreJob(webRestoreSessionId,sourceComputerGuid,pathSet,backupServerGuid,acceptingComputerGuid,restorePath, **kwargs):
+        restoreDateEpochMS = int(round(time.time() * 1000))
+        payload = {}
+        payload["webRestoreSessionId"] = webRestoreSessionId
+        payload["sourceGuid"] = sourceComputerGuid
+        payload["targetNodeGuid"] = backupServerGuid
+        payload["acceptingGuid"] = acceptingComputerGuid
+        payload["restorePath"] = restorePath
+        payload["pathSet"] = pathSet
+        payload["numBytes"] = "1"
+        payload["numFiles"] = "1"
+        if kwargs and 'showDeleted' in kwargs:
+            payload["showDeleted"] = kwargs["showDeleted"]
+        else:
+            payload["showDeleted"] = "true"
+        if kwargs and 'restoreFullPath' in kwargs:
+            payload["restoreFullPath"] = kwargs["restoreFullPath"]
+        else:
+            payload["restoreFullPath"] = "true"
+        payload["timestamp"] = restoreDateEpochMS
+
+        post
+        r = c42Lib.executeRequest("post", c42Lib.cp_api_pushRestoreJob, {}, payload)
+        
+        return json.loads(r.content.decode("UTF-8"))['data']
 
     #
     # Params:
