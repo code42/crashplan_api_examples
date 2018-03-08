@@ -202,7 +202,9 @@ class c42Lib(object):
 
         sslVersion = sslRaw[8:13].split(".")
 
-        if sslVersion[0] == "0" or (sslVersion[0] == "1" and sslVersion[2] == "0"):
+        if sslVersion[0] == "0" or \
+          (sslVersion[0] == "1" and \
+           sslVersion[2] == "0"):
             sslOK = False
 
         if sslOK:
@@ -213,7 +215,7 @@ class c42Lib(object):
         else:
             logging.info("SSL Version : " + str(sslRaw) + " is < 1.0.1.  Exiting...")
             print "**********"
-            print "********** SSL Version " + str(sslRaw) + " used with Python needs updating.  Exiting."
+            print "********** SSL Version " + str(sslRaw) + " used with Python needs updating to at least 1.0.1.  Exiting."
             print "**********"
 
         logging.info('[  end] - checkSSLVersion : ' + str(sslRaw))
