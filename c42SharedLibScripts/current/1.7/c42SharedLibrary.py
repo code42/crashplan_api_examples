@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 2018-03-02
+# Last Modified: 2018-03-15
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -98,7 +98,7 @@ import ssl
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.7.7'.split('.')
+    cp_c42Lib_version = '1.7.8'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -1238,13 +1238,13 @@ class c42Lib(object):
 
             if int(serverVersion[:1]) > 5: # Use the new, unsupported API
                 logging.info("getLicenseInfo - Use new, unsupported license API")
-                print "           Getting Auth Cookie"
+                logging.info("           Getting Auth Cookie")
                 JWTAuthCookie = c42Lib.getJWTAuth()
 
                 r = c42Lib.executeRequest("get", c42Lib.cp_api_customerLicense,{},{},cookie=JWTAuthCookie)
 
                 if r.status_code == 200:
-                    print "           Auth Cookie Retrieved"
+                    logging.info("           Auth Cookie Retrieved")
 
             if r is None or int(serverVersion[:1]) < 6:
                 # Use the old masterLicense API
@@ -2667,15 +2667,22 @@ class c42Lib(object):
     def putDeviceDeactivate(computerId):
         logging.info("putDeviceDeactivate-params:computerId[" + str(computerId) + "]")
 
+        deactivateSuccess = False
+
         if (computerId is not None and computerId != ""):
-            r = c42Lib.executeRequest("put", c42Lib.cp_api_deacivateDevice+"/"+str(computerId),"","")
-            logging.debug('Deactivate Device Call Status: '+str(r.status_code))
-            if not (r.status_code == ""):
-                return True
-            else:
-                return False
+            try:
+                r = c42Lib.executeRequest("put", c42Lib.cp_api_deacivateDevice+"/"+str(computerId),"","")
+                logging.debug('Deactivate Device Call Status: '+str(r.status_code))
+                if not (r.status_code == ""):
+                    deactivateSuccess = True
+
+            except Exception, e:
+                logging.info('Could Not Deactivate : ' + str(computerId) + " | Error : " + str(e))
+
         else:
             logging.error("putDeviceDeactivate has no userID to act on")
+
+        return deactivateSuccess
 
 
     #
