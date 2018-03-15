@@ -1045,7 +1045,7 @@ class c42Lib(object):
             payload["restoreFullPath"] = "true"
         payload["timestamp"] = restoreDateEpochMS
 
-        post
+        #post
         try:
             r = c42Lib.executeRequest("post", c42Lib.cp_api_pushRestoreJob, {}, payload)
         
@@ -1589,29 +1589,35 @@ class c42Lib(object):
         logging.info("getUsersPaged-params:pgNum[" + str(pgNum) + "]")
 
         params = {}
+        users = None
 
         if kwargs:
             if 'params' in kwargs:
                 params = kwargs['params'] 
                 if 'pgSize' not in params: params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
-            else:
-                params = {}
-
-        if 'pgNum' not in params:
-            params['pgNum'] = str(pgNum)
+        
+        params['pgNum'] = pgNum
 
         payload = {}
 
         # r = requests.get(url, params=payload, headers=headers)
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
+        try:
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
 
-        logging.debug(r.text)
+            logging.debug(r.text)
 
-        content = r.content.decode('UTF-8')
-        binary = json.loads(content)
-        logging.debug(binary)
+            content = r.content.decode('UTF-8')
+            binary = json.loads(content)
+            logging.debug(binary)
 
-        users = binary['data']['users']
+            users = binary['data']['users']
+        
+        except Exception, e:
+
+            logging.info("Error Getting Users : " + str(e))
+
+            users = False
+        
         return users
 
     @staticmethod
