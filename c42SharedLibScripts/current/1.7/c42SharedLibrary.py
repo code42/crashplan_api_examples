@@ -2954,18 +2954,26 @@ class c42Lib(object):
         try:
             r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHoldMembership, params, payload)
             logging.info("Server Response : " + str(r.status_code))
-            logging.debug(r.text)
-            content = r.content
-            binary = json.loads(content)
-            logging.debug(binary)
 
-            logging.info("Returned membership response : " + str(binary))
+            # Check if legal hold is licensed.  If not return false...
+            if r.status_code == '402':
 
-            if 'data' in binary:
+                logging.info("Not licensed for legal hold... skipping.")
 
-                if 'legalHoldMemberships' in binary['data']:
+            else:
 
-                    legalHoldMembershipInfo = binary['data']['legalHoldMemberships']
+                logging.debug(r.text)
+                content = r.content
+                binary = json.loads(content)
+                logging.debug(binary)
+
+                logging.info("Returned membership response : " + str(binary))
+
+                if 'data' in binary:
+
+                    if 'legalHoldMemberships' in binary['data']:
+
+                        legalHoldMembershipInfo = binary['data']['legalHoldMemberships']
 
 
         except Exception, e:
@@ -3083,22 +3091,26 @@ class c42Lib(object):
         logging.info("getLegalHoldInfo-params:[" + str(kwargs) + "]")
         params = {}
 
+        actionResults = False
 
 
+        try:
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHold, params, payload)
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHold, params, payload)
+            logging.debug(r.status_code)
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
 
-        logging.debug(r.status_code)
-        content = r.content
-        binary = json.loads(content)
-        logging.debug(binary)
+            if binary['data']:
+                actionResults = binary['data']
 
-        if binary['data']:
-            actionResults = binary['data']
+            else:
 
-        else:
+                actionResults = False
 
-            actionResults = False
+        except Exception, e:
+            logging.info("Error getting legal hold info : " + str(e))
 
         return actionResults
 
