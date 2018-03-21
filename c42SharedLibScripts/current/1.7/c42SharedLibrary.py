@@ -124,6 +124,7 @@ class c42Lib(object):
     cp_api_coldStorage = "/api/ColdStorage"
     cp_api_computer = "/api/Computer"
     cp_api_computerBlock = "/api/ComputerBlock"
+    cp_api_computerActivity = "/api/ComputerActivity"
     cp_api_customerLicense = "/c42api/v3/customerLicense"  #Unsupported API - use at your own peril!
     cp_api_dataKeyToken = "/api/DataKeyToken"
     cp_api_deacivateDevice = "/api/ComputerDeactivation"
@@ -1016,7 +1017,24 @@ class c42Lib(object):
         binary = json.loads(r.content.decode('UTF-8'))
         return binary['data'] if 'data' in binary else None
 
-    
+
+    # params (guid)
+    # returns: true / false / none based on computer online status according to master
+    @staticmethod
+    def getComputerOnlineStatus(client_guid):
+        params = {}
+        payload = {}
+        try:
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_computerActivity+"/"+str(client_guid), params, payload)
+            binary = json.loads(r.content.decode('UTF-8'))
+            return binary['data']['clientConnected'] if 'data' in binary else False
+        except Exception, e:
+            logging.info("Error Returning Push Restore Job : " + str(e))
+            print "********** Error With Push Restore Job"
+            print "           " + str(e)
+            return None
+
+
     #
     # Params:
     #
