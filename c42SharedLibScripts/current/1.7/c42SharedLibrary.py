@@ -1046,27 +1046,30 @@ class c42Lib(object):
         restoreDateEpochMS = int(round(time.time() * 1000))
         payload = {}
         payload["webRestoreSessionId"] = webRestoreSessionId
-        payload["sourceGuid"] = sourceComputerGuid
-        payload["targetNodeGuid"] = backupServerGuid
-        payload["acceptingGuid"] = acceptingComputerGuid
+        payload["sourceGuid"] = str(sourceComputerGuid)
+        payload["targetNodeGuid"] = str(backupServerGuid)
+        payload["acceptingGuid"] = str(acceptingComputerGuid)
         payload["restorePath"] = restorePath
         payload["pathSet"] = pathSet
-        payload["numBytes"] = "1"
-        payload["numFiles"] = "1"
+        payload["numBytes"] = 1
+        payload["numFiles"] = 1
         if kwargs and 'showDeleted' in kwargs:
             payload["showDeleted"] = kwargs["showDeleted"]
         else:
-            payload["showDeleted"] = "true"
+            payload["showDeleted"] = True
         if kwargs and 'restoreFullPath' in kwargs:
             payload["restoreFullPath"] = kwargs["restoreFullPath"]
         else:
-            payload["restoreFullPath"] = "true"
+            payload["restoreFullPath"] = True
         payload["timestamp"] = restoreDateEpochMS
+
+        logging.debug(payload)
 
         #post
         try:
             r = c42Lib.executeRequest("post", c42Lib.cp_api_pushRestoreJob, {}, payload)
-        
+            
+            print r
             return json.loads(r.content.decode("UTF-8"))['data']
         except Exception, e:
             logging.info("Error Returning Push Restore Job : " + str(e))
