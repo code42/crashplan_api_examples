@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 2018-03-15
+# Last Modified: 2018-03-21
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -90,7 +90,7 @@ import collections
 from requests.exceptions import ConnectionError
 import time
 #import ijson.backends.yajl2 as ijson
-#import ijson
+import ijson
 import pandas as pd
 from contextlib import closing
 import codecs
@@ -98,7 +98,7 @@ import ssl
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.7.8'.split('.')
+    cp_c42Lib_version = '1.7.9'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -2279,6 +2279,8 @@ class c42Lib(object):
         df           = False
         howManyPages = 99999
         params = {}  
+        fullDeviceList = None
+        fileData       = None
         
         # Use kwargs to override any defaults...
         if kwargs:
@@ -2309,7 +2311,7 @@ class c42Lib(object):
 
         payload = {}
 
-        print ""
+        #print params
 
         while keepLooping:
             logging.debug("getDeviceBackupReport-page:[" + str(currentPage) + "]")
@@ -2351,11 +2353,12 @@ class c42Lib(object):
                 keepLooping = False
                 break
 
-            if len(binary['data']) < params['pgSize']:  # This should keep us from an extra try to get data only to have it return none.
+            if len(binary['data']) < params['pgSize'] and len(binary['data'])==0:  # This should keep us from an extra try to get data only to have it return none.
 
                 keepLooping = False
 
-            if df:
+
+            if df and len(binary['data'])>0:
                 logging.debug("Using DataFrame...")
                 if loopCount == 1:
                     logging.info("First Time Filling the DataFrame Object...")
@@ -2368,10 +2371,13 @@ class c42Lib(object):
                 dataSize = fileData.shape[0] # Get the number of rows...
 
            
-            else:
+            elif len(binary['data']) > 0:
                 logging.debug("Using Dict...")
                 fullDeviceList.extend(binary['data'])
                 dataSize = len(fullDeviceList)
+
+            else:
+                keepLooping = 0
 
             currentPage += 1
             loopCount   += 1
@@ -5084,7 +5090,8 @@ class c42Lib(object):
                     for index, argument in enumerate (sorted(argumentList,key=argumentList.__getitem__)):
 
                         if argumentList[argument] is not None:
-                            arguments[argument] = raw_input(argumentList[argument])
+                            if type(argumentList[argument]) is not bool:
+                                arguments[argument] = raw_input(argumentList[argument])
                         else:
                             arguments[argument] = None
 
