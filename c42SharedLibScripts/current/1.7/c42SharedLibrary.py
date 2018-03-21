@@ -5090,8 +5090,11 @@ class c42Lib(object):
                     for index, argument in enumerate (sorted(argumentList,key=argumentList.__getitem__)):
 
                         if argumentList[argument] is not None:
+
                             if type(argumentList[argument]) is not bool:
                                 arguments[argument] = raw_input(argumentList[argument])
+                            else:
+                                arguments[argument] = argumentList[argument]
                         else:
                             arguments[argument] = None
 
