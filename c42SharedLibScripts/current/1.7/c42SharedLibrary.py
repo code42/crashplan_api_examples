@@ -3783,8 +3783,9 @@ class c42Lib(object):
 
         logging.info("getAllArchivemetadata-Getting Archive Info : " + str(params))
 
+        getMetadata_start_time = datetime.datetime.now().replace(microsecond=0)
         try:
-            getMetadata_start_time = datetime.datetime.now().replace(microsecond=0)
+            
             print "---------- [ " + str(guid) + " ] Archive Size : " + str(c42Lib.prettyNumberFormat(archiveSize))
             print "---------- [ " + str(guid) + " ] Start Time : " + str(getMetadata_start_time)
             r = requests.get(url, headers=headers, verify=False, timeout=timeout)
@@ -3802,14 +3803,25 @@ class c42Lib(object):
             logging.info("getAllArchivemetadata - Timeout Error. GUID : " + str(guid) + " | Waited for : " + str(params['timeout']) + " seconds.")
             print "           Timing out getting archive: " + str(guid) + " | Waited for : " + str(params['timeout']) + " seconds."
             print "           Will return 'None'."
+            getMetadata_end_time   = datetime.datetime.now().replace(microsecond=0)
+            print "---------- [ " + str(guid) + " ]   End Time : " + str(getMetadata_end_time)
+            getMetadata_total_time = getMetadata_end_time - getMetadata_start_time
+            logging.info('Time to get archive metadata : ' + str(getMetadata_total_time))
+            print "           Time to get archive metadata : " + str(getMetadata_total_time)
             return fileData
 
         except Exception, e:
-
+            if e is None or e == '':
+                e = "Unknown"
             logging.info("getAllArchivemetadata - Error. GUID : " + str(guid) + " | Error : " + str(e))
             print "********* Error getting archive: " + str(guid)
             print "          " + str(e)
             print "          Will return 'None'."
+            getMetadata_end_time   = datetime.datetime.now().replace(microsecond=0)
+            print "---------- [ " + str(guid) + " ]   End Time : " + str(getMetadata_end_time)
+            getMetadata_total_time = getMetadata_end_time - getMetadata_start_time
+            logging.info('Time to get archive metadata : ' + str(getMetadata_total_time))
+            print "           Time to get archive metadata : " + str(getMetadata_total_time)
             return fileData
 
 
