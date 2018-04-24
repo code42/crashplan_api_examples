@@ -1658,7 +1658,7 @@ class c42Lib(object):
                     pgSize = params['pgSize']
 
         while keepLooping:
-            pagedList = c42Lib.getUsersPaged(currentPage,params)
+            pagedList = c42Lib.getUsersPaged(currentPage,params=params)
             if pagedList:
                 fullList.extend(pagedList)
             else:
