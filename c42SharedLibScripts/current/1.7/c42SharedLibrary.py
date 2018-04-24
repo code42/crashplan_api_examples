@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 2018-03-21
+# Last Modified: 2018-04-24
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -1232,6 +1232,7 @@ class c42Lib(object):
         # This is a courtesy to all those running < 6.0
 
         logging.info("Getting server info to obtain Code42 version...")
+
         serverInfo = c42Lib.getServer(0,this=True) # Gets the master server's sever info.
 
         logging.info("Server Info : " + str(serverInfo))
@@ -2147,22 +2148,27 @@ class c42Lib(object):
 
         payload = {}
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_computer + "/" + str(guid), params, payload)
+        try:
 
-        logging.debug(r.text)
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_computer + "/" + str(guid), params, payload)
 
-        if r.text != '[{"name":"SYSTEM","description":"java.lang.NullPointerException"}]' and r.text != '[{"name":"SYSTEM","description":"ComputerId not found"}]':
+            logging.debug(r.text)
+            logging.info("Returned Status Code : {}".format(r.status_code))
 
-            content = r.content
+            if r.status_code == 200:
 
-            binary = json.loads(content)
+                content = r.content
+                binary = json.loads(content)
+                logging.debug(binary)
+                device = binary['data']
 
-            logging.debug(binary)
+            else:
 
-            device = binary['data']
+                logging.info("Returned Status Code [ {} ] when getting device GUID {}...".format(r.status_code,guid))
+                device = None
 
-        else:
-
+        except Exception as e:
+            logging.info("Error [ {} ] getting device GUID {}...".format(e,guid))
             device = None
 
         return device
