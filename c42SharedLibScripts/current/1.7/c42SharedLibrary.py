@@ -4186,6 +4186,7 @@ class c42Lib(object):
 
             # logging.info("====server response : " + r.text + "====")
 
+            logging.info("Returned Response Code : {}".format(r.status_code))
             if r.status_code == 200:
 
                 content = r.content
@@ -4193,11 +4194,13 @@ class c42Lib(object):
                 logging.debug(binary)
 
                 if binary['data']:
+                    logging.info("Server Info Size : {}".format(len(binary['data'])))
                     server = binary['data']
                 else:
                     server = None
 
-            if r.status_code == 500:
+            else:
+                logging.info("Reponse code [ {} ] returned.  Cannot provide server info.".format(r.status_code))
                 return None
 
         except Exception, e:
@@ -4205,6 +4208,7 @@ class c42Lib(object):
             logging.info("Error getting servers : " + str(e))
             print "********** Error Getting Servers : " + str(e)
 
+        logging.info("end - getServer-params:serverId["+str(serverId)+"]")
         return server
 
     #
