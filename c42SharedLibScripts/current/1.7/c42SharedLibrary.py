@@ -2494,7 +2494,9 @@ class c42Lib(object):
         if 'pgNum' in kwargs:
             pgNum = kwargs['pgNum']
         if 'params' in kwargs:
-            params = kwargs['params'] 
+            params = kwargs['params']
+        else:
+            params = None 
 
         # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
         # url = cp_host + ":" + cp_port + cp_api_user
