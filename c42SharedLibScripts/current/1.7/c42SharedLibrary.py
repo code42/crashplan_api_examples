@@ -1,4 +1,4 @@
-# Copyright (c) 2016, 2017 Code42, Inc.
+# Copyright (c) 2016, 2017, 2018 Code42, Inc.
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy 
 # of this software and associated documentation files (the "Software"), to deal 
@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 02-14-2018
+# Last Modified: 2018-04-24
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -32,9 +32,48 @@
 # sudo pip install requests
 # sudo pip install python-dateutil [-update]
 
+# *****************************************************************************
+
+
+# Check if the shared library is being run and not imported.  If being run exit.
+
+isBeta = False
+import sys
+
+if __name__ == '__main__':
+    print ""
+    print "********** " + str(__file__) + " is a shared library and not meant to be run independently."
+    print "           Exiting."
+    print ""
+    sys.exit(0)
+
+if isBeta:
+    print ("\n\n")
+    print ("*****************************************************************************")
+    print ("*****************************************************************************")
+    print ("**********                                                         **********")
+    print ("**********                                                         **********")
+    print ("**********                                                         **********")
+    print ("**********   THIS IS A DEVELOPMENT BRANCH OF THE SHARED LIBRARY.   **********")
+    print ("**********                                                         **********")
+    print ("**********               DO NOT USE FOR PRODUCTION!!!              **********")
+    print ("**********                                                         **********")
+    print ("**********                                                         **********")
+    print ("*****************************************************************************")
+    print ("*****************************************************************************")
+    print ("\n\n")
+    '''
+    okToBeta = False
+    okToBeta = raw_input("Yes, I know it's beta.  Use it anyway (y/n)? ")
+
+
+    if okToBeta.lower() != 'y' and \
+       okToBeta.lower() != 'yes' and \
+       okToBeta.lower() != "ok":
+       sys.exit(0)
+    '''
 
 import math
-import sys
 import json
 import csv
 import base64
@@ -53,10 +92,13 @@ import time
 #import ijson.backends.yajl2 as ijson
 import ijson
 import pandas as pd
+from contextlib import closing
+import codecs
+import ssl
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.6.3'.split('.')
+    cp_c42Lib_version = '1.7.9'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -82,6 +124,7 @@ class c42Lib(object):
     cp_api_coldStorage = "/api/ColdStorage"
     cp_api_computer = "/api/Computer"
     cp_api_computerBlock = "/api/ComputerBlock"
+    cp_api_computerActivity = "/api/ComputerActivity"
     cp_api_customerLicense = "/c42api/v3/customerLicense"  #Unsupported API - use at your own peril!
     cp_api_dataKeyToken = "/api/DataKeyToken"
     cp_api_deacivateDevice = "/api/ComputerDeactivation"
@@ -93,11 +136,12 @@ class c42Lib(object):
     cp_api_ekr = "/api/EKR"
     cp_api_fileContent = "/api/FileContent"
     cp_api_fileMetadata = "/api/FileMetadata"
+    cp_api_jwtAuthToken = '/c42api/v3/auth/jwt'
     cp_api_legaHold = "/api/LegalHold"
     cp_api_legalHoldMembership = "/api/LegalHoldMembership"
     cp_api_legalHoldMembershipDeactivation = "/api/LegalHoldMembershipDeactivation"
     cp_api_loginToken = "/api/v1/LoginToken"
-    cp_api_masterLicense = "/api/v1/masterLicense"
+    cp_api_masterLicense = "/api/MasterLicense"
     cp_api_networkTest = "/api/NetworkTest"
     cp_api_org = "/api/Org"
     cp_api_orgDeactivation = "/api/OrgDeactivation"
@@ -125,7 +169,6 @@ class c42Lib(object):
     cp_api_legalHoldMembershipSummary = "/api/LegalHoldMembershipSummary"
     cp_api_legalHoldMembership = "/api/LegalHoldMembership"
     cp_api_legalHoldMembershipDeactivation = "/api/LegalHoldMembershipDeactivation"
-    cp_api_plan = "/api/Plan"
 
 
     # Overwrite `cp_authorization` to use something other than HTTP-Basic auth.
@@ -134,6 +177,180 @@ class c42Lib(object):
     cp_logFileName = "c42SharedLibrary.log"
     MAX_PAGE_NUM = 250
     cp_verify_ssl = False
+
+    # set dates
+
+    cp_todayHMS  = time.strftime("%Y-%m-%d-%H-%M_%S")
+    cp_todayHM   = time.strftime("%Y%m%d-%H-%M")
+    cp_todayDate = time.strftime("%Y%m%d")
+
+    cp_startTime   = None
+    cp_endTime     = None
+    cp_elapsedTime = None
+
+
+    # Check if Python is using an up-to-date version of OpenSSL.  Anything over 1.0 is Good.
+    # Using version < 1 will cause SSL errors.  This validator will notify users they need to
+    # fix their SSL issues before continuing.
+
+    @staticmethod
+    def checkSSLVersion():
+        logging.info('[start] - checkSSLVersion')
+
+        sslRaw = ssl.OPENSSL_VERSION
+
+        sslOK = True
+
+        sslVersion = sslRaw[8:13].split(".")
+
+        if sslVersion[0] == "0" or \
+          (sslVersion[0] == "1" and \
+           sslVersion[2] == "0"):
+            sslOK = False
+
+        if sslOK:
+            logging.info("SSL Version : " + str(sslRaw) + " is good.")
+            print "**********"
+            print "********** OpenSSL OK.  Continuing..."
+            print "**********"
+        else:
+            logging.info("SSL Version : " + str(sslRaw) + " is < 1.0.1.  Exiting...")
+            print "**********"
+            print "********** SSL Version " + str(sslRaw) + " used with Python needs updating to at least 1.0.1.  Exiting."
+            print "**********"
+
+        logging.info('[  end] - checkSSLVersion : ' + str(sslRaw))
+
+        return sslOK 
+
+
+    # startupSharedLibraryValidate
+    #
+    # Common function to validate the correct shared library is being used.
+
+    @staticmethod
+    def startupSharedLibraryValidate(scriptName,scriptVersion,requiredC42Lib,**kwargs):
+
+        logging.debug('[begin] - startupSharedLibraryValidate')
+
+        #c42Lib.cls()
+
+        patchStrict = False
+        minorStrict = False
+        majorStrict = False
+
+        if kwargs:
+            if 'majorStrict' in kwargs:
+                majorStrict = kwargs['majorStrict']
+            if 'minorStrict' in kwargs:
+                minorStrict = kwargs['minorStrict']
+            if 'patchStrict' in kwargs:
+                patchStrict = kwargs['patchStrict']
+
+        print ""
+        print "**********"
+        print "********** Starting " + scriptName + " v" + scriptVersion
+        print "**********"
+        print "********** Using: c42SharedLibrary v" + str(c42Lib.cp_c42Lib_version[0])+"."+str(c42Lib.cp_c42Lib_version[1])+"."+str(c42Lib.cp_c42Lib_version[2])
+        print "**********"
+        if not c42Lib.validateVersion(version=requiredC42Lib,patchStrict=patchStrict,minorStrict=minorStrict,majorStrict=majorStrict):
+            print "This script requires v" + str(requiredC42Lib) + " of the C42SharedLibary.py to run.\nPlease make sure you have the correct version of the shared library."
+            print ""
+            print "Exiting..."
+            print ""
+            sys.exit()
+        print "********** Shared Library OK.  Continuing..."
+        print "**********"
+        print ""
+
+        logging.info('  [end] - startupSharedLibraryValidate')
+
+    
+    # startupDisclaimer
+    #
+    # Presents disclaimer language at the top of a script when running it.
+
+    @staticmethod
+    def startupDisclaimer(**kwargs):
+
+        logging.debug('[begin] - startupDisclaimer')
+
+        disclaimerFilePath = None
+
+        if kwargs:
+            if 'filePath' in kwargs:
+                disclaimerFilePath = kwargs['filePath']
+
+        print "" 
+        disclaimerFilePath = "../../../Disclaimers/StandardC42Disclaimer2017.txt"
+        if not os.path.exists(disclaimerFilePath):
+            print 'Copyright 2015,2016,2017,2018 Code42'
+            print ''
+            print 'THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.'
+        else:
+            c42Lib.printFileToScreen('../../../Disclaimers/StandardC42Disclaimer2017.txt')
+        print ""
+        print ""
+
+        logging.info('  [end] - startupDisclaimer')
+
+
+    # Common function at the beginning of scripts to validate username & server info.
+    #
+    # Returns true if everything OK, but has built-in exit paths if something doesn't jive.
+
+    @staticmethod
+    def startupValidate(arguments,cp_userName,cp_credentialFile,cp_serverHostURL,cp_serverHostPort,cp_serverInfoFileName):
+
+        logging.info('[begin] - startupValidate')
+
+        print "========== User Inputs =========="
+        print ""
+        print arguments
+        print ""
+        print "================================="
+
+        if cp_userName:
+            userAuth = c42Lib.authenticateUser(cp_userName=cp_userName)  # Sets the variables to authenticate the user.
+        elif cp_credentialFile:
+            userAuth = c42Lib.authenticateUser(cp_credentialFile=cp_credentialFile)
+        else:
+            userAuth = c42Lib.authenticateUser() 
+        print ""
+        print "User Authentication Type: " + str(userAuth)
+        print ""
+        print "================================="
+        print ""
+        print "Validating Server Connection"
+        print ""
+        print "================================="
+
+        if cp_serverHostURL:
+            c42Lib.cpServerInfo(cp_serverHostURL=cp_serverHostURL,cp_serverHostPort=cp_serverHostPort)
+        elif cp_serverInfoFileName:
+            c42Lib.cpServerInfo(cp_serverInfoFileName=cp_serverInfoFileName)
+        else:
+            c42Lib.cpServerInfo()
+
+
+        if not c42Lib.validateUserCredentials():
+            print ""
+            print "=============== Invalid Credentials ================="
+            print ""
+            print "Please check the credentials and try again."
+            print ""
+            sys.exit(0)
+        else:
+            print ""
+            print "[ " + str(c42Lib.cp_username) + " ]'s Credentials Appear to Be Valid"
+            print ""
+            print "====================================================="
+
+            return True
+
+        logging.info('  [end] - startupValidate')
+
+        return False
 
 
     #
@@ -231,13 +448,19 @@ class c42Lib(object):
         if cp_api == c42Lib.cp_api_fileContent:
             assert 'restoreRecordKey' in params and params['restoreRecordKey'] is cp_magic_restoreRecordKey
 
+        cookies = None
+        timeout = None
+
+        if kwargs:
+            if 'cookie' in kwargs:
+                cookies = kwargs['cookie']
+            if 'timeout' in kwargs:
+                timeout = kwargs['timeout']
+
         try:
             if type == "get":
                 logging.debug("Payload : " + str(payload))
-                if 'timeout' in kwargs:
-                    r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl,timeout=kwargs['timeout'])
-                else:
-                    r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
+                r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl,cookies=cookies,timeout=timeout)
                 logging.debug(r.text)
                 return r
             elif type == "delete":
@@ -410,7 +633,6 @@ class c42Lib(object):
             with open(str(c42Lib.getFilePath(cp_credentialFile))) as f:
                 c42Lib.cp_username = base64.b64decode(f.readline().strip())
                 cp_username        = c42Lib.cp_username
-
                 c42Lib.cp_password = base64.b64decode(f.readline().strip())
 
 
@@ -584,25 +806,18 @@ class c42Lib(object):
         connectionGood = False
 
         # strip off http or https if testing connectivity to URL that's more than a ping.
-        #if private_address[:5] == "https":
-        #    private_address = private_address[8:]
-        #if private_address[:4] == "http":
-        #    private_address = private_address[7:]
-
-        #print private_address
+        if private_address[:5] == "https":
+            private_address = private_address[8:]
+        if private_address[:4] == "http":
+            private_address = private_address[7:]
 
         payload = {
-            "testType":"httpUrlReachable",
-            "url":private_address,
+            "testType":"reachable",
+            "address":private_address,
+            "privateAddress":True
         }
 
-        try:
-            r = c42Lib.executeRequest("post", c42Lib.cp_api_networkTest, {}, payload, **kwargs)
-
-        except Exception, e:
-
-            print "Error : " + str(e)
-
+        r = c42Lib.executeRequest("post", c42Lib.cp_api_networkTest, {}, payload, **kwargs)
 
         try:
             contents = r.content.decode("UTF-8")
@@ -615,9 +830,8 @@ class c42Lib(object):
 
             return binary
 
-        except Exception, e:
+        except AttributeError:
 
-            print "Error : " + str(e)
             print ""
             print "Connection to " + str(private_address) + " does not appear to be valid."
             print ""
@@ -629,24 +843,39 @@ class c42Lib(object):
     # 
     @staticmethod
     def requestLoginToken(**kwargs):
-        logging.info("requestLoginToken: " + str(kwargs))
+        logging.info("[begin] requestLoginToken: " + str(kwargs))
         payload = {}
+
+        loginToken = None
+
         if kwargs and ('userId' in kwargs) and ('sourceGuid' in kwargs) and ('destinationGuid' in kwargs):
             payload['userId'] = str(kwargs['userId'])
             payload['sourceGuid'] = str(kwargs['sourceGuid'])
             payload['destinationGuid'] = str(kwargs['destinationGuid'])
         else:
+            logging.info("Insufficient Parameters Passed in : " + str(kwargs))
             return None
         
         try:
+
             r = c42Lib.executeRequest("post", c42Lib.cp_api_loginToken, {}, payload, **kwargs)
+
+            logging.info("Status Code : " + str(r.status_code))
             contents = r.content.decode("UTF-8")
             binary = json.loads(contents)
             logging.info("requestLoginToken Response: " + str(contents))
-            return binary['data'] if 'data' in binary else None
-        except KeyError:
-            return None
 
+            if 'data' in binary:
+                loginToken = binary['data']
+
+        except Exception, e:
+
+            logging.info("Error Login Token : " + str(e))
+            logging.info("      Status Code : " + str(r.status_code))
+
+        logging.info("[  end] requestLoginToken: " + str(loginToken))
+
+        return loginToken
 
     #
     # Params:
@@ -699,14 +928,16 @@ class c42Lib(object):
 
         try:
             r = c42Lib.executeRequest("post", c42Lib.cp_api_dataKeyToken, params, payload, **kwargs)
+            logging.info("Data Key Token Response : " + str(r.status_code))
+            logging.info("Data Key Token          : " + str(r.content))
 
         except Exception, e:
 
-            logging.debug("Error Getting DataKeyToken : " + str(e))
+            logging.info("Error Getting DataKeyToken : " + str(e))
             return False
 
         if r.status_code != 200:
-            logging.debug("Returned Bad Status Code : " + str(r.status_code))
+            logging.info("Returned Bad Status Code : " + str(r.status_code))
             return False
         else: 
             binary = json.loads(r.content.decode('UTF-8'))
@@ -786,6 +1017,66 @@ class c42Lib(object):
         binary = json.loads(r.content.decode('UTF-8'))
         return binary['data'] if 'data' in binary else None
 
+
+    # params (guid)
+    # returns: true / false / none based on computer online status according to master
+    @staticmethod
+    def getComputerOnlineStatus(client_guid):
+        params = {}
+        payload = {}
+        try:
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_computerActivity+"/"+str(client_guid), params, payload)
+            binary = json.loads(r.content.decode('UTF-8'))
+            return binary['data']['clientConnected'] if 'data' in binary else False
+        except Exception, e:
+            logging.info("Error Returning Push Restore Job : " + str(e))
+            print "********** Error With Push Restore Job"
+            print "           " + str(e)
+            return None
+
+
+    #
+    # Params:
+    #
+    #   
+    #
+    #
+    @staticmethod
+    def pushRestoreJob(webRestoreSessionId,sourceComputerGuid,pathSet,backupServerGuid,acceptingComputerGuid,restorePath, **kwargs):
+        restoreDateEpochMS = int(round(time.time() * 1000))
+        payload = {}
+        payload["webRestoreSessionId"] = webRestoreSessionId
+        payload["sourceGuid"] = str(sourceComputerGuid)
+        payload["targetNodeGuid"] = str(backupServerGuid)
+        payload["acceptingGuid"] = str(acceptingComputerGuid)
+        payload["restorePath"] = restorePath
+        payload["pathSet"] = pathSet
+        payload["numBytes"] = 1
+        payload["numFiles"] = 1
+        if kwargs and 'showDeleted' in kwargs:
+            payload["showDeleted"] = kwargs["showDeleted"]
+        else:
+            payload["showDeleted"] = True
+        if kwargs and 'restoreFullPath' in kwargs:
+            payload["restoreFullPath"] = kwargs["restoreFullPath"]
+        else:
+            payload["restoreFullPath"] = True
+        payload["timestamp"] = restoreDateEpochMS
+
+        logging.debug(payload)
+
+        #post
+        try:
+            r = c42Lib.executeRequest("post", c42Lib.cp_api_pushRestoreJob, {}, payload)
+            
+            print r
+            return json.loads(r.content.decode("UTF-8"))['data']
+        except Exception, e:
+            logging.info("Error Returning Push Restore Job : " + str(e))
+            print "********** Error With Push Restore Job"
+            print "           " + str(e)
+
+            return None
 
     #
     # Params:
@@ -941,6 +1232,7 @@ class c42Lib(object):
         # This is a courtesy to all those running < 6.0
 
         logging.info("Getting server info to obtain Code42 version...")
+
         serverInfo = c42Lib.getServer(0,this=True) # Gets the master server's sever info.
 
         logging.info("Server Info : " + str(serverInfo))
@@ -948,24 +1240,42 @@ class c42Lib(object):
         licenseInfo = None
         newAPI      = True
 
+        params = {}
+        payload = {}
+
+        r = None
+
         if serverInfo:
             serverVersion = serverInfo['version']
+            print "           Server Version : " + str(serverVersion)
 
         else:
             logging.info("getLicenseInfo - no server version info returned.")
             return licenseInfo
 
+
         try:
 
+            #print "Figuring out which method..."
+
             if int(serverVersion[:1]) > 5: # Use the new, unsupported API
-                logging.info("getLicenseInfo - Use new, unsupported license API")           
-                r = c42Lib.executeRequest("get", c42Lib.cp_api_customerLicense,{},{})
-            else: # Use the old masterLicense API
+                logging.info("getLicenseInfo - Use new, unsupported license API")
+                logging.info("           Getting Auth Cookie")
+                JWTAuthCookie = c42Lib.getJWTAuth()
+
+                r = c42Lib.executeRequest("get", c42Lib.cp_api_customerLicense,{},{},cookie=JWTAuthCookie)
+
+                if r.status_code == 200:
+                    logging.info("           Auth Cookie Retrieved")
+
+            if r is None or int(serverVersion[:1]) < 6:
+                # Use the old masterLicense API
                 logging.info("getLicenseInfo - Using masterLicense API")           
-                r = c42Lib.executeRequest("get", c42Lib.cp_api_masterLicense,{},{})
+                r = c42Lib.executeRequest("get", c42Lib.cp_api_masterLicense,params,payload)
+
                 newAPI = False
-            
-            content = r.content()
+  
+            content = r.content
 
             content = r.content.decode("UTF-8")
             binary = json.loads(content)
@@ -973,6 +1283,8 @@ class c42Lib(object):
             licenseInfo = binary['data']
 
         except Exception, e:
+
+            print "********** Error Will Robinson!  Error : " + str(e)
 
             logging.info("getLicenseInfo - Error : " + str(e))
             #print "Will return 'None'."
@@ -1079,6 +1391,8 @@ class c42Lib(object):
     def getUser(params):
         logging.info("getUser-params:params[" + str(params) + "]")
 
+        user = None
+
         if params:
             payload = {}
 
@@ -1091,14 +1405,22 @@ class c42Lib(object):
 
                 if keepTryingCount < 4:
 
-                    r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
+                    
+                    try:
+                        r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
 
-                    logging.debug(r.text)
-                    content = r.content
-                    r.content
-                    binary = json.loads(content)
+                        logging.debug(r.text)
+                        content = r.content
+                        r.content
+                        binary = json.loads(content)
 
-                    logging.debug(binary)
+                        logging.debug(binary)
+
+                    except Exception, e:
+
+                        logging.info("Error getting user : " + str(e))
+                        print "********** " + str(keepTryingCount) + " | Error getting user : " + str(e)
+                        break
 
                     if r.status_code == 200:
 
@@ -1112,6 +1434,12 @@ class c42Lib(object):
                             
                             logging.info("getUser-failed : " + r.status_code)
                             sys.exit()
+
+                        except Exception, e:
+                            print str(keepTryingCount) + " | Error : " + str(e)
+                            
+                            logging.info("getUser-failed : " + e)
+                            return None
                     
                     else:
                     
@@ -1194,7 +1522,18 @@ class c42Lib(object):
         params['incAll'] = 'true'
         payload = {}
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
+        user = None
+
+        try:
+
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
+
+        except Exception, e:
+
+            logging.info("getUserByUserName - Error. " + str(username) + " | Error : " + str(e))
+            print "Error getting archive: " + str(username)
+            print "Error : " + str(e)
+            print "Will return 'None'."
 
         logging.debug(r.text)
 
@@ -1268,31 +1607,40 @@ class c42Lib(object):
     # pgNum - page request for user list (starting with 1)
     #
     @staticmethod
-    def getUsersPaged(pgNum,params):
+    def getUsersPaged(pgNum,**kwargs):
         logging.info("getUsersPaged-params:pgNum[" + str(pgNum) + "]")
 
-        try:
-            if not params['pgSize']:
-                params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
-        except:
-            params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
+        params = {}
+        users = None
 
-        params['pgNum'] = str(pgNum)
+        if kwargs:
+            if 'params' in kwargs:
+                params = kwargs['params'] 
+                if 'pgSize' not in params: params['pgSize'] = str(c42Lib.MAX_PAGE_NUM)
+        
+        params['pgNum'] = pgNum
 
         payload = {}
 
         # r = requests.get(url, params=payload, headers=headers)
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
+        try:
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
 
-        logging.debug(r.text)
+            logging.debug(r.text)
 
-        content = r.content.decode('UTF-8')
-        binary = json.loads(content)
-        logging.debug(binary)
+            content = r.content.decode('UTF-8')
+            binary = json.loads(content)
+            logging.debug(binary)
 
-        users = binary['data']['users']
+            users = binary['data']['users']
+        
+        except Exception, e:
+
+            logging.info("Error Getting Users : " + str(e))
+
+            users = False
+        
         return users
-
 
     @staticmethod
     def getAllUsers(**kwargs):
@@ -1306,15 +1654,27 @@ class c42Lib(object):
         if kwargs:
             if 'params' in kwargs:
                 params = kwargs['params']
+                if 'pgSize' in params:
+                    pgSize = params['pgSize']
 
         while keepLooping:
-            pagedList = c42Lib.getUsersPaged(currentPage,params)
+            pagedList = c42Lib.getUsersPaged(currentPage,params=params)
             if pagedList:
                 fullList.extend(pagedList)
             else:
                 keepLooping = False
+
             currentPage += 1
         return fullList
+
+
+# getUsersReturnList
+# this is an "all-purpose" method to get users.
+# Pass in a file name with usernames and it will read the file and get the usersnames
+# Get users by Org - pass in an org Uid or Id and it'll get the users in that org
+# Or, just get all the users.
+
+
 
 # getAllUsersActiveBackup():
 # returns AllUser info + backup usage for active users
@@ -1788,22 +2148,27 @@ class c42Lib(object):
 
         payload = {}
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_computer + "/" + str(guid), params, payload)
+        try:
 
-        logging.debug(r.text)
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_computer + "/" + str(guid), params, payload)
 
-        if r.text != '[{"name":"SYSTEM","description":"java.lang.NullPointerException"}]' and r.text != '[{"name":"SYSTEM","description":"ComputerId not found"}]':
+            logging.debug(r.text)
+            logging.info("Returned Status Code : {}".format(r.status_code))
 
-            content = r.content
+            if r.status_code == 200:
 
-            binary = json.loads(content)
+                content = r.content
+                binary = json.loads(content)
+                logging.debug(binary)
+                device = binary['data']
 
-            logging.debug(binary)
+            else:
 
-            device = binary['data']
+                logging.info("Returned Status Code [ {} ] when getting device GUID {}...".format(r.status_code,guid))
+                device = None
 
-        else:
-
+        except Exception as e:
+            logging.info("Error [ {} ] getting device GUID {}...".format(e,guid))
             device = None
 
         return device
@@ -1922,39 +2287,146 @@ class c42Lib(object):
         return device
 
     #
-    # getDeviceBackupReport(params):
+    # getDeviceBackupReport(**kwargs):
     # returns the DeviceBackupReport
     # params:
     # params - These can be passed in to maximize the utility of the function.
     #          Report will page automatically.
     #
+    # kwargs:
+    # kwargs - params in kwargs take precedence
+
 
     @staticmethod
-    def getDeviceBackupReport(params):
-        logging.info("getDeviceBackupReport-params:[" + str(params) + "]")
+    def getDeviceBackupReport(**kwargs):
+        logging.info("[begin] getDeviceBackupReport")
+        if kwargs:
+            logging.info("getDeviceBackupReport-kwargs:[" + str(kwargs) + "]")
 
-        # set default params for paging and sorting if none passed in
+        df           = False
+        howManyPages = 99999
+        params = {}  
+        fullDeviceList = None
+        fileData       = None
+        
+        # Use kwargs to override any defaults...
+        if kwargs:
+            if 'df' in kwargs:
+                df = True
+            if 'howManyPages' in kwargs:
+                howManyPages = kwargs['howManyPages']
+            if 'params' in kwargs:
+                params = kwargs['params']
 
-        if not params['pgNum']:
-            params['pgNum'] = 1              # Begin w/ Page 1
-            params['pgSize'] = MAX_PAGE_NUM  # Limit page size to 250 per page
 
-        if not params['srtKey']:
-            params['srtKey'] = 'archiveBytes' # Sort on archiveBytes
+        if 'pgNum' not in params:
+            # Set some required defaults
+            params['pgNum'] = 1                     # Begin w/ Page 1
+            params['pgSize'] = c42Lib.MAX_PAGE_NUM  # Limit page size to 250 per page
+            #params['srtKey'] = 'archiveBytes' # Sort on archiveBytes
+            #params['srtDir'] = 'desc'
+
+        if 'active' not in params:
+            params['active'] = True
+
 
         currentPage = params['pgNum']
         keepLooping = True
         fullList = []
+        loopCount = 1
+        dataSize = 0
+
+        payload = {}
+
+        #print params
+
         while keepLooping:
             logging.debug("getDeviceBackupReport-page:[" + str(currentPage) + "]")
-            deviceList = c42Lib.getDeviceBackupReport(params)
-            if deviceList:
-                fullDeviceList.extend(deviceList)
-            else:
-                keepLooping = False
-            currentPage += 1
 
-        return fullDeviceList
+            print "---------- Getting Device Backup Report Data : " + str(currentPage).zfill(3)
+
+            try:
+                r = c42Lib.executeRequest("get", c42Lib.cp_api_deviceBackupReport, params, payload)
+
+                logging.info("Returned Status Code : " + str(r.status_code))
+                logging.debug("       Returned Text : " + str(r.text))
+
+            except requests.exceptions, e:
+                logging.info('Error Reading DeviceBackupReport : ' + str(e))
+
+                print "**********"
+                print "********** Error Reading DeviceBackupReport : " + str(url) + " | " + e
+                print "**********"
+
+                keepLooping = False
+                fileList    = None
+                break
+
+            if r.status_code != 200:
+
+                logging.info("Returned Status Code " + str(r.status_code) + "... bailing.")
+
+                fullDeviceList = None
+                keepLooping    = False
+                break                  #If it returns anything but a 200, bail
+
+            content = r.content.decode('UTF-8')
+            binary  = json.loads(content)
+            logging.debug(content)
+
+            if 'data' not in binary:
+                logging.info("No data returned...")
+                # Empty value returned, skip it.
+                keepLooping = False
+                break
+
+            if len(binary['data']) < params['pgSize'] and len(binary['data'])==0:  # This should keep us from an extra try to get data only to have it return none.
+
+                keepLooping = False
+
+
+            if df and len(binary['data'])>0:
+                logging.debug("Using DataFrame...")
+                if loopCount == 1:
+                    logging.info("First Time Filling the DataFrame Object...")
+                    fileData = pd.DataFrame(binary['data'])
+                else:
+                    logging.info("Appending to DataFrame Object...")
+                    tempFileData = pd.DataFrame(binary['data'])
+                    fileData = pd.concat([fileData,tempFileData])
+
+                dataSize = fileData.shape[0] # Get the number of rows...
+
+           
+            elif len(binary['data']) > 0:
+                logging.debug("Using Dict...")
+                fullDeviceList.extend(binary['data'])
+                dataSize = len(fullDeviceList)
+
+            else:
+                keepLooping = 0
+
+            currentPage += 1
+            loopCount   += 1
+
+            params['pgNum'] = currentPage
+
+            if loopCount > howManyPages:
+                keepLooping = False
+
+            logging.info("Total Rows Collected : " + str(dataSize))
+            print "----------   Total Backup Device Report Rows : " + str(dataSize) + "\n"
+
+
+        logging.info("[ end] getDeviceBackupReport - Size : " + str(dataSize))    
+
+        if df:
+                             # Return a dataframe object
+            tempFileData = None      
+            return fileData
+        else:                      # Return a JSON object
+            return fullDeviceList
+    
 
 
     #
@@ -2008,30 +2480,92 @@ class c42Lib(object):
     #
 
     @staticmethod
-    def getDevicesCustomParams(pgNum, params):
-        logging.debug("getDevicesCustomParams-params:pgNum[" + str(pgNum) + "]:params[" + str(params) + "]")
+    def getDevicesCustomParams(**kwargs):
+        logging.debug("getDevicesCustomParams")
+
+        getFile = False
+
+        if not kwargs:
+            return False
+        else:
+            logging.debug("Kwargs : " + str(kwargs))
+        if 'df' in kwargs:
+            getFile = True
+        if 'pgNum' in kwargs:
+            pgNum = kwargs['pgNum']
+        if 'params' in kwargs:
+            params = kwargs['params']
+        else:
+            params = None 
 
         # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
         # url = cp_host + ":" + cp_port + cp_api_user
         if not params and not isinstance(params, dict):
             params = {}
 
-        params['pgNum'] = str(pgNum)
         payload = {}
 
-        # r = requests.get(url, params=payload, headers=headers)
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, params, payload)
+        if getFile:
 
-        logging.debug(r.text)
+            tempFileName = "TEMP-ComputerDownload.csv"
 
-        content = r.content
-        binary = json.loads(content)
-        logging.debug(binary)
+            parameters = "?export=1"
 
-        try:
-            devices = binary['data']['computers']
-        except TypeError:
-            devices = False
+            if 'active' in params:
+                parameters = parameters + "&active="+str(params['active'])
+            
+
+            url    = c42Lib.getRequestUrl(c42Lib.cp_api_computer) + parameters
+            header = c42Lib.getRequestHeaders()
+
+
+            try:
+                r = requests.get(url,headers=header,allow_redirects=True,verify=c42Lib.cp_verify_ssl).content
+               
+                with open(tempFileName,"wb") as f:
+                    f.write(r)
+            except Exception, e:
+                print "********** Error Getting CSV"
+                print "           " + str(e)
+                devices = None
+                frameObject = None
+
+            try:
+                frameObject = pd.read_csv(tempFileName,index_col='guid')
+
+            except Exception, e:
+
+                logging.info("Error. : " + str(tempFileName) + " | Error : " + str(e))
+                print "Error getting CSV : " + str(tempFileName)
+                print "Will return 'None'."  #frameObject is set to None
+
+
+            try:
+                os.remove(tempFileName)
+                print "---------- Removed existing TEMP CSV file..."
+            except OSError:
+                print "           Failed to remove TEMP file : [ "+str(tempFileName)+" ]" 
+
+
+            devices     = frameObject
+            frameObject = None
+
+
+        else:
+
+            # r = requests.get(url, params=payload, headers=headers)
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, params, payload)
+
+            logging.debug(r.text)
+
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
+
+            try:
+                devices = binary['data']['computers']
+            except TypeError:
+                devices = False
 
         return devices
     #
@@ -2097,7 +2631,7 @@ class c42Lib(object):
         keepLooping = True
         fullList = []
         while keepLooping:
-            pagedList = c42Lib.getDevicesCustomParams(currentPage, params)
+            pagedList = c42Lib.getDevicesCustomParams(pgNum=currentPage, params=params)
             if pagedList:
                 fullList.extend(pagedList)
             else:
@@ -2168,15 +2702,22 @@ class c42Lib(object):
     def putDeviceDeactivate(computerId):
         logging.info("putDeviceDeactivate-params:computerId[" + str(computerId) + "]")
 
+        deactivateSuccess = False
+
         if (computerId is not None and computerId != ""):
-            r = c42Lib.executeRequest("put", c42Lib.cp_api_deacivateDevice+"/"+str(computerId),"","")
-            logging.debug('Deactivate Device Call Status: '+str(r.status_code))
-            if not (r.status_code == ""):
-                return True
-            else:
-                return False
+            try:
+                r = c42Lib.executeRequest("put", c42Lib.cp_api_deacivateDevice+"/"+str(computerId),"","")
+                logging.debug('Deactivate Device Call Status: '+str(r.status_code))
+                if not (r.status_code == ""):
+                    deactivateSuccess = True
+
+            except Exception, e:
+                logging.info('Could Not Deactivate : ' + str(computerId) + " | Error : " + str(e))
+
         else:
             logging.error("putDeviceDeactivate has no userID to act on")
+
+        return deactivateSuccess
 
 
     #
@@ -2409,7 +2950,16 @@ class c42Lib(object):
             binary = json.loads(content)
             logging.debug(binary)
 
-            plan = binary['data']
+            if len(binary['data']) > 0:
+
+                plan = binary['data']
+
+            else:
+
+                plan = None
+
+        else:
+            return None
 
         return plan
 
@@ -2439,18 +2989,26 @@ class c42Lib(object):
         try:
             r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHoldMembership, params, payload)
             logging.info("Server Response : " + str(r.status_code))
-            logging.debug(r.text)
-            content = r.content
-            binary = json.loads(content)
-            logging.debug(binary)
 
-            logging.info("Returned membership response : " + str(binary))
+            # Check if legal hold is licensed.  If not return false...
+            if r.status_code == '402':
 
-            if 'data' in binary:
+                logging.info("Not licensed for legal hold... skipping.")
 
-                if 'legalHoldMemberships' in binary['data']:
+            else:
 
-                    legalHoldMembershipInfo = binary['data']['legalHoldMemberships']
+                logging.debug(r.text)
+                content = r.content
+                binary = json.loads(content)
+                logging.debug(binary)
+
+                logging.info("Returned membership response : " + str(binary))
+
+                if 'data' in binary:
+
+                    if 'legalHoldMemberships' in binary['data']:
+
+                        legalHoldMembershipInfo = binary['data']['legalHoldMemberships']
 
 
         except Exception, e:
@@ -2535,17 +3093,27 @@ class c42Lib(object):
         if kwargs['user']:
             params['userId'] = str(Uid)
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_storedBytesHistory, params, payload)
-        content = r.content
-        binary = json.loads(content)
-        logging.debug(binary)
+        try:
 
-        if binary['data']:
-            actionResults = binary['data']
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_storedBytesHistory, params, payload)
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
 
-        else:
+            if binary['data']:
+                actionResults = binary['data']
+
+            else:
+
+                actionResults = None
+
+        except Exception,e:
+
+            logging.info("Failed to get stored bytes for userUid : " + str(Uid))
+            logging.info("Error : " + str(e))
 
             actionResults = False
+
 
         return actionResults
 
@@ -2558,22 +3126,26 @@ class c42Lib(object):
         logging.info("getLegalHoldInfo-params:[" + str(kwargs) + "]")
         params = {}
 
+        actionResults = False
 
 
+        try:
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHold, params, payload)
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_legalHold, params, payload)
+            logging.debug(r.status_code)
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
 
-        logging.debug(r.status_code)
-        content = r.content
-        binary = json.loads(content)
-        logging.debug(binary)
+            if binary['data']:
+                actionResults = binary['data']
 
-        if binary['data']:
-            actionResults = binary['data']
+            else:
 
-        else:
+                actionResults = False
 
-            actionResults = False
+        except Exception, e:
+            logging.info("Error getting legal hold info : " + str(e))
 
         return actionResults
 
@@ -2796,12 +3368,17 @@ class c42Lib(object):
 
 
     @staticmethod
-    def getArchiveByStorePointId(storePointId,params):
+    def getArchiveByStorePointId(storePointId,**kwargs):
         logging.info("getArchiveByStorePointId-params:storePointId[" + str(storePointId) + "]")
         currentPage = 1
         keepLooping = True
         fullList = []
-        # params = {}
+        params = {}
+
+        if kwargs:
+
+            if 'params' in kwargs:
+                params = kwargs['params']
 
         params['storePointId'] =  str(storePointId)
         while keepLooping:
@@ -2875,7 +3452,7 @@ class c42Lib(object):
 
 
     @staticmethod
-    def getArchivesByUserId_old(userId):
+    def getArchivesByUserId(userId):
         logging.info("getArchivesByUserId-params:userId[" + str(userId) + "]")
 
 
@@ -2945,10 +3522,7 @@ class c42Lib(object):
         binary = json.loads(content)
         logging.debug(binary)
 
-        try:
-            archives = binary['data']['restoreRecords']
-        except:
-            archives = None
+        archives = binary['data']['restoreRecords']
 
         return archives
 
@@ -3087,32 +3661,51 @@ class c42Lib(object):
         return archives
 
 
+    # this method gets the archive's metadata
+
     @staticmethod
-    def archiveFileData(archiveData):
+    def archiveFileData(archiveData, **kwargs):
 
-        logging.info("[start] archiveFileData - process archiveMetadata")
+        logging.info("[start] archiveFileData - process archiveMetadata (clean it up)")
 
-        dropColumns = [
-            "planUid",
-            "pathLength",
-            "timestamp",
-            "versionTimestamp",
-            "sourceLastModified",
-            "sourceLastModifiedTime",
-            "fhPosition",
-            "fhLen",
-            "creatorGuid",
-            "userUid",
-            "fileId",
-            "parentFileId",
-            "sourceChecksum",
-            "fileType"
-            ]
+        dropColumns    = None
+        includeDeleted = False
+        isMetaData     = True
+
+        if kwargs:
+            if 'dropColumns' in kwargs:
+                dropColumns = kwargs['dropColumns']
+
+            if 'incDeleted' in kwargs:
+                includeDeleted = True
+
+            if 'isMetadata' in kwargs:
+                isMetadata = True
+
+
+        if dropColumns is None:
+
+            dropColumns = [
+                "planUid",
+                "pathLength",
+                "timestamp",
+                "versionTimestamp",
+                "sourceLastModified",
+                "sourceLastModifiedTime",
+                "fhPosition",
+                "fhLen",
+                "creatorGuid",
+                "userUid",
+                "fileId",
+                "parentFileId",
+                #"sourceChecksum",
+                "fileType"
+                ]
 
         fullFileData = []
         fileData     = []
 
-        print "========= Reading Archive Metadata from Memory..."
+        print "========== Reading Archive Metadata from Memory..."
 
         print "========== Archive Metadata Objects : " + str(len(archiveData['data']))
         # print archiveData['data']
@@ -3128,17 +3721,19 @@ class c42Lib(object):
         logging.info("  Pre-Clean Up Total Rows : " + str(fileData.shape[0]))
 
         # Remove Deleted, Empty files
-        logging.info("Removing Deleted Files...")
-        fileData = fileData.drop(fileData[(fileData.sourceChecksum == 'ffffffffffffffffffffffffffffffff') & (fileData.fileType == 0)].index)
-        logging.info("Post-Remove Deleted Files : " + str(fileData.shape[0]))
-        logging.info("Removing Directories...")
-        fileData = fileData.drop(fileData[(fileData.fileType == 1)].index)  # Delete paths only
-        logging.info("  Post-Remove Directories : " + str(fileData.shape[0]))
-        logging.info("Removing Zero Byte Files...")
-        fileData = fileData.drop(fileData[(fileData.sourceLength < 100)].index)
-        logging.info(" Post-Remove 0 Byte Files : " + str(fileData.shape[0]))
+        if includeDeleted is False:
+            logging.info("Removing Deleted Files...")
+            fileData = fileData.drop(fileData[(fileData.sourceChecksum == 'ffffffffffffffffffffffffffffffff') & (fileData.fileType == 0)].index)
+            logging.info("Post-Remove Deleted Files : " + str(fileData.shape[0]))
+        if not isMetadata:
+            logging.info("Removing Directories...")
+            fileData = fileData.drop(fileData[(fileData.fileType == 1)].index)  # Delete paths only
+            logging.info("  Post-Remove Directories : " + str(fileData.shape[0]))
+            logging.info("Removing Zero Byte Files...")
+            fileData = fileData.drop(fileData[(fileData.sourceLength < 100)].index)
+            logging.info(" Post-Remove 0 Byte Files : " + str(fileData.shape[0]))
         logging.info("Removing the first row because it's useless...")
-        fileData = fileData.drop(fileData.index[0])
+        #fileData = fileData.drop(fileData.index[0])
         
         logging.info(" Post-Clean Up Total Rows : " + str(fileData.shape[0]))
 
@@ -3150,11 +3745,159 @@ class c42Lib(object):
         fileDataMemorySize = fileData.memory_usage(index=True).sum()
         logging.info(" Archive Data Memory Size : \n" + str(fileDataMemorySize))
 
-        print "========= Done with basic processing of archive metadata..."
+        print "========== Done with basic processing of archive metadata..."
 
         logging.info("[end] archiveFileData - process archiveMetadata")
 
         return fileData
+
+
+    #Get all archive metadata using the storage auth token
+    @staticmethod
+    def getAllArchiveMetadata(storageURL,storageAuthToken,dataKeyToken,guid,**kwargs):
+        logging.info("getAllArchiveMetadata - params:")
+        logging.info("                        Storage Server URL : " + str(storageURL))
+        logging.info("                                 AuthToken : " + str(storageAuthToken))
+        logging.info("                             DataKey Token : " + str(dataKeyToken))
+        logging.info("                               Device GUID : " + str(guid))
+        
+        archiveSize = 0
+        memoryLimit = 1073741826
+        incDeleted  = False
+
+        if kwargs:
+            logging.info("                           Other Arguments : " + str(kwargs))
+
+            if 'archiveSize' in kwargs:
+                archiveSize = kwargs['archiveSize']
+
+            if 'dropColumns' in kwargs:
+                dropColumns = kwargs['dropColumns']
+            else:
+                dropColumns = [
+                    "planUid",
+                    "timestamp",
+                    "sourceLastModified",
+                    "sourceLastModifiedTime",
+                    "userUid",
+                    "fhPosition",
+                    "fhLen",
+                    "creatorGuid"
+                    ]
+
+            if 'memoryLimit' in kwargs:
+                memoryLimit = kwargs['memoryLimit']
+
+            if 'incDeleted' in kwargs:
+                incDeleted = kwargs['incDeleted']
+
+
+        params={}
+
+        url = "{0}/api/ArchiveMetadata/{1}?decryptPaths=true&dataKeyToken={2}&incDeleted={3}"
+        url = url.format(storageURL,guid,dataKeyToken,incDeleted)
+        headers = {'Authorization': 'token ' + storageAuthToken[0] + '-' + storageAuthToken[1]}
+
+        timeout = 7200
+
+
+        fileData = None
+        r        = None
+
+        getMetadata_start_time = 0
+        getMetadata_end_time   = 0
+        getMetadata_total_time = 0
+
+        params = {}
+
+        logging.info("getAllArchivemetadata-Getting Archive Info : " + str(params))
+
+        getMetadata_start_time = datetime.datetime.now().replace(microsecond=0)
+        try:
+            
+            print "---------- [ " + str(guid) + " ] Archive Size : " + str(c42Lib.prettyNumberFormat(archiveSize))
+            print "---------- [ " + str(guid) + " ] Start Time : " + str(getMetadata_start_time)
+            r = requests.get(url, headers=headers, verify=False, timeout=timeout)
+            getMetadata_end_time   = datetime.datetime.now().replace(microsecond=0)
+            print "---------- [ " + str(guid) + " ]   End Time : " + str(getMetadata_end_time)
+            getMetadata_total_time = getMetadata_end_time - getMetadata_start_time
+            logging.info('Time to get archive metadata : ' + str(getMetadata_total_time))
+            print "           Time to get archive metadata : " + str(getMetadata_total_time)
+            print "           Metadata [ " + str(guid) + " ] Retrieved.  Begin processing..."
+
+            #print r.content
+
+        except requests.exceptions.Timeout:
+
+            logging.info("getAllArchivemetadata - Timeout Error. GUID : " + str(guid) + " | Waited for : " + str(params['timeout']) + " seconds.")
+            print "           Timing out getting archive: " + str(guid) + " | Waited for : " + str(params['timeout']) + " seconds."
+            print "           Will return 'None'."
+            getMetadata_end_time   = datetime.datetime.now().replace(microsecond=0)
+            print "---------- [ " + str(guid) + " ]   End Time : " + str(getMetadata_end_time)
+            getMetadata_total_time = getMetadata_end_time - getMetadata_start_time
+            logging.info('Time to get archive metadata : ' + str(getMetadata_total_time))
+            print "           Time to get archive metadata : " + str(getMetadata_total_time)
+            return fileData
+
+        except Exception, e:
+            if e is None or e == '':
+                e = "Unknown"
+            logging.info("getAllArchivemetadata - Error. GUID : " + str(guid) + " | Error : " + str(e))
+            print "********* Error getting archive: " + str(guid)
+            print "          " + str(e)
+            print "          Will return 'None'."
+            getMetadata_end_time   = datetime.datetime.now().replace(microsecond=0)
+            print "---------- [ " + str(guid) + " ]   End Time : " + str(getMetadata_end_time)
+            getMetadata_total_time = getMetadata_end_time - getMetadata_start_time
+            logging.info('Time to get archive metadata : ' + str(getMetadata_total_time))
+            print "           Time to get archive metadata : " + str(getMetadata_total_time)
+            return fileData
+
+
+            # If the metadata is too big it we may have memory issues.
+            # Check if metadata is less than 2 GB and then load into Pandas DataFrame from memory
+            # otherwise, write to disk to read from disk into DataFrame
+
+        if r:
+
+            if len(r.content) < memoryLimit:
+
+                print "========== Loading Data into JSON format..."
+
+                try:
+                    logging.info("Loading returned results into JSON")
+                    content  = json.loads(r.content)
+
+                except Exception, e:
+                    
+                    logging.info("getAllArchivemetadata - Error Parsing JSON : " + str(e))
+                    print "********** Error Parsing JSON : " + str(guid)
+                    print "           Will return 'None'."
+
+                    return fileData
+
+                try:
+
+                    logging.info("Processing returned results into dataframe object")
+                    fileData = c42Lib.archiveFileData(content,dropColumns=dropColumns,isMetadata=True)
+
+                except Exception, e:
+
+                    logging.info("Error processing data into dataframe object")
+                    logging.info("Error : " + str(e))
+
+                    return None
+
+            else:
+
+                logging.info("getAllArchivemetadata - Metadata file too big for memory : " + str(len(r.content)))
+                print "Too Big..." + str(len(r.content)) + " bytes"
+                print "Will return 'None'."
+
+                return fileData
+
+        return fileData            
+
 
 
     # Get 
@@ -3171,12 +3914,6 @@ class c42Lib(object):
 
         memoryLimit = 1073741826
 
-        if kwargs:
-            if 'memoryLimit' in kwargs:
-
-                memoryLimit = kwargs['memoryLimit']
-
-
         params = {}
         if (decrypt):
             params['decryptPaths'] = "true"
@@ -3184,6 +3921,28 @@ class c42Lib(object):
         params['stream'] = "True"
         params['dataKeyToken'] = dataKeyToken
         params['timeout'] = 1800 # 30 minutes should Do It
+
+        if kwargs:
+            if 'memoryLimit' in kwargs:
+
+                memoryLimit = kwargs['memoryLimit']
+
+            if 'planUid' in kwargs:
+                params['idType'] = 'planUid'
+
+                # the following flags only apply if planUid is used
+
+                if 'incDeleted' in kwargs:
+                    params['excludeDeleted'] = kwargs['incDeleted']
+
+                if 'startTime' in kwargs:
+                    params['startTime'] = kwargs['startTime']
+
+                if 'endTime' in kwargs:
+                    params['endTime'] = kwargs['endTime']
+
+ 
+
         payload = {}
 
         logging.info("getArchiveMetadata3-Getting Archive Info : " + str(params))
@@ -3380,15 +4139,24 @@ class c42Lib(object):
         params = {}
         payload = {}
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_server, params, payload)
+        return None
 
-        logging.debug(r.text)
+        try:
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_server, params, payload)
 
-        content = r.content.decode("UTF-8")
-        binary = json.loads(content)
-        logging.debug(binary)
+            logging.debug(r.text)
 
-        servers = binary['data']['servers']
+            content = r.content.decode("UTF-8")
+            binary = json.loads(content)
+            logging.debug(binary)
+
+            servers = binary['data']['servers']
+
+        except Exception, e:
+
+            logging.info("Error getting servers : " + str(e))
+            print "********** Error Getting Servers : " + str(e)
+
         return servers
 
 
@@ -3409,22 +4177,40 @@ class c42Lib(object):
                 logging.info("Getting THIS server's info...")
                 serverId = "this"
 
+        server = None
+
         params = {}
         payload = {}
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_server + "/" + str(serverId), params, payload)
+        try:
 
-        # logging.info("====server response : " + r.text + "====")
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_server + "/" + str(serverId), params, payload)
 
-        content = r.content
-        binary = json.loads(content)
-        logging.debug(binary)
+            # logging.info("====server response : " + r.text + "====")
 
-        if binary['data']:
-            server = binary['data']
-        else:
-            server = None
+            logging.info("Returned Response Code : {}".format(r.status_code))
+            if r.status_code == 200:
 
+                content = r.content
+                binary = json.loads(content)
+                logging.debug(binary)
+
+                if binary['data']:
+                    logging.info("Server Info Size : {}".format(len(binary['data'])))
+                    server = binary['data']
+                else:
+                    server = None
+
+            else:
+                logging.info("Reponse code [ {} ] returned.  Cannot provide server info.".format(r.status_code))
+                return None
+
+        except Exception, e:
+
+            logging.info("Error getting servers : " + str(e))
+            print "********** Error Getting Servers : " + str(e)
+
+        logging.info("end - getServer-params:serverId["+str(serverId)+"]")
         return server
 
     #
@@ -3748,14 +4534,47 @@ class c42Lib(object):
 
         return "Basic %s" % token
 
+
+    #
+    # Gets the V3 JWT Auth Token for such things as the new, undocumented customerLicense API
+    #
+    @staticmethod
+    def getJWTAuth(**kwargs):
+        params  = {}
+        payload = {}
+
+        JWTCookies = None
+
+        try:
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_jwtAuthToken, params, payload)
+
+            logging.debug(r.status_code)
+            logging.debug(r.cookies)
+            content = r.cookies
+           
+            for cookie in content:
+
+                logging.debug("Cookie : " + str(cookie))
+
+                JWTCookie = {}
+                JWTCookie[cookie.name]  = cookie.value
+
+
+        except Exception, e:
+
+            logging.info("Error getting JWT Cooke : " + str(e))
+
+        return JWTCookie
+
+
+
+
     #
     # Sets logger to file and console
     #
     @staticmethod
     def setLoggingLevel(**kwargs):
         # set up logging to file
-
-        #print kwargs
 
         c42Lib.cp_logFileName = c42Lib.getFilePath(c42Lib.cp_logFileName)
         showInConsole = True
@@ -3769,8 +4588,7 @@ class c42Lib(object):
                                     level = logging.info,
                                     format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
-                                    # filename='EditUserRoles.log',
-                                    filename = str(c42Lib.cp_logFileName),
+                                    #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
 
             else:
@@ -3779,8 +4597,7 @@ class c42Lib(object):
                                     level = logging.debug,
                                     format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
-                                    # filename='EditUserRoles.log',
-                                    filename = str(c42Lib.cp_logFileName),
+                                    #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
 
             # define a Handler which writes INFO messages or higher to the sys.stderr
@@ -3811,7 +4628,7 @@ class c42Lib(object):
                                     level=logging.info,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
-                                    filename = str(c42Lib.cp_logFileName),
+                                    #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
 
             if c42Lib.cp_logLevel == 'WARNING':
@@ -3822,7 +4639,7 @@ class c42Lib(object):
                                     level=logging.warning,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
-                                    filename = str(c42Lib.cp_logFileName),
+                                    #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
 
             if c42Lib.cp_logLevel == 'DEBUG':
@@ -3833,7 +4650,7 @@ class c42Lib(object):
                                     level=logging.debug,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
-                                    filename = str(c42Lib.cp_logFileName),
+                                    #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
 
             if c42Lib.cp_logLevel == 'ERROR':
@@ -3844,7 +4661,7 @@ class c42Lib(object):
                                     level=logging.error,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
-                                    filename = str(c42Lib.cp_logFileName),
+                                    #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
 
             if c42Lib.cp_logLevel == 'CRITICAL':
@@ -3855,20 +4672,20 @@ class c42Lib(object):
                                     level=logging.critical,
                                     format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
                                     datefmt='%m-%d %H:%M',
-                                    filename = str(c42Lib.cp_logFileName),
+                                    #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
 
             # Set log file format
             loggingFormatter = logging.Formatter('%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s')
-            logfile = logging.FileHandler(str(c42Lib.cp_logFileName))
-            logfile.setFormatter(loggingFormatter)
+            #logfile = logging.FileHandler(str(c42Lib.cp_logFileName))
+            #logfile.setFormatter(loggingFormatter)
 
             # set a format which is simpler for console use
             console = logging.StreamHandler()
             console.setFormatter(loggingFormatter)
 
             # add the handler to the root logger
-            logging.getLogger('').addHandler(logfile)
+            #logging.getLogger('').addHandler(logfile)
             
         if not showInConsole: 
 
@@ -3878,6 +4695,7 @@ class c42Lib(object):
             print "Suppress Logging Output to Console"
             logging.getLogger('').removeHandler(console)
 
+        '''
         if os.path.exists(c42Lib.getFilePath('deleteme.log')):
 
             logging.debug('setLoggingLevel: delete temporary log file : ' + str(c42Lib.getFilePath('deleteme.log')))
@@ -3889,6 +4707,7 @@ class c42Lib(object):
                 print ""
                 print "Could not delete : " + str(c42Lib.getFilePath('deleteme.log'))
                 print ""
+        '''
 
         logging.debug('end: setLoggingLevel ' + str(c42Lib.cp_logLevel))
 
@@ -4003,6 +4822,25 @@ class c42Lib(object):
         
         return newValueList
 
+    # Read a CSV file into a dataframe
+    @staticmethod
+    def loadCSVtoDataFrame(fileName):
+        logging.info('[begin] - loadCSVtoDataFrame : ' + str(fileName))
+
+        frameObject = None
+
+        try:
+            frameObject = pd.read_csv(fileName)
+
+        except Exception, e:
+
+            logging.info("loadCSVtoDataFrame - Error. : " + str(fileName) + " | Error : " + str(e))
+            print "Error getting CSV : " + str(fileName)
+            print "Will return 'None'."  #frameObject is set to None
+
+        logging.info('[  end] - loadCSVtoDataFrame')
+
+        return frameObject
 
 
     # CSV Write & Append Method
@@ -4068,6 +4906,117 @@ class c42Lib(object):
     
         return
 
+    #Write out dataframes to CSV or Excel files
+    @staticmethod
+    def writeDataframeFiles(processedData,fileName,**kwargs):
+        logging.info('[begin] - writeDataframeFiles')
+        logging.info('                      Params:')
+        logging.info("                  File Name : " + str(fileName))
+        
+        cp_createXLSX = False
+        sheetName     = "Sheet"
+        writeIndex    = True
+
+        if kwargs:
+            logging.info("                     Kwargs : " + str(kwargs))
+
+            if 'sheetName' in kwargs:
+                sheetName = kwargs['sheetName']
+
+            if 'createXLSX' in kwargs:
+                cp_createXLSX = kwargs['createXLSX']
+
+            if 'index' in kwargs:
+                writeIndex=kwargs['index']
+
+
+        csvSuccess  = False
+        xlsxSuccess = False
+
+        fileName = fileName+str(c42Lib.cp_todayDate)
+
+        csvFileName = fileName + '.csv'
+
+        logging.info('If existing CSV file exists, delete it...')
+
+        try:
+            os.remove(csvFileName)
+            print "---------- Removed existing CSV file..."
+        except OSError:
+            print "           OK to create new " + str(csvFileName) + " file."
+
+
+        if cp_createXLSX:
+
+            xlsFileName = fileName + '.xlsx'
+
+            logging.info('If existing XLSX file exists, delete it...')
+
+            try:
+                os.remove(xlsFileName)
+                print "---------- Removed existing XLSX file..."
+            except OSError:
+                print "           OK to create new " + str(xlsFileName) + " file."
+
+        try:
+            fileDataMemorySize = processedData.memory_usage(index=True).sum()
+            logging.info(" Device Report Data Memory Size : " + str(fileDataMemorySize))
+            logging.info("                     Total Rows : " + str(processedData.shape[0]))
+        except Exception, e:
+            logging.info("Cannot report on memory size: " + str(e))
+
+        logging.info("[Begin] Writing processed device backup report [ " + str( fileName ) + " ] as files...")
+
+        
+        if cp_createXLSX:
+
+            print "---------- [ " + str(time.strftime('%H:%M:%S', time.gmtime(time.time()))) + " ] Writing out as XLSX..."
+
+            try:
+                xlsOutput = pd.ExcelWriter(xlsFileName, engine='xlsxwriter')
+                processedData.to_excel(xlsOutput,sheet_name=sheetName)
+                xlsOutput.save()
+
+                logging.info("[  End] Done writing processed device backup report [ " + str( xlsFileName ) + " ] as XLSX...")
+                print "---------- [ " + str(time.strftime('%H:%M:%S', time.gmtime(time.time()))) + " ] Done writing [ " + str( xlsFileName ) + " ] as XLSX..."
+
+                xlsxSuccess = True
+
+            except Exception, e:
+
+                logging.info("writeXLSFile - Error writing : " + str(xlsFileName) + " | Error : " + str(e))
+                print "********* Error writing out XLSX file : " + str(xlsFileName)
+                print "          " + str(e)
+                print "          Will return 'False'."
+
+        print "---------- [ " + str(time.strftime('%H:%M:%S', time.gmtime(time.time()))) + " ] Writing out as CSV..."
+
+        try:
+            processedData.to_csv(csvFileName,index=writeIndex)
+
+            logging.info("[  End] Done writing processed device backup report [ " + str( csvFileName ) + " ] as CSV...")
+            print "---------- [ " + str(time.strftime('%H:%M:%S', time.gmtime(time.time()))) + " ] Done writing [ " + str( csvFileName ) + " ] as CSV..."
+
+            csvSuccess = True
+
+        except Exception, e:
+
+            logging.info("writeCSVFile - Error writing : " + str(csvFileName) + " | Error : " + str(e))
+            print "********** Error writing out CSV file : " + str(csvFileName)
+            print "           Will return 'False'."
+            
+        if cp_createXLSX and xlsxSuccess and csvSuccess:
+            return True
+        elif not cp_createXLSX and csvSuccess:
+            return True
+        else:
+            return False
+
+        logging.info('[  end] - writeDataframeFiles - Success : ' + str(success))
+
+
+
+
     # CSV Creates files.  Single funciton that's used a lot to create output files in scripts.
     # params:   csvFileName - the base file name
     #           fileList - an array with a file name extension and the headers for the files to create
@@ -4076,7 +5025,7 @@ class c42Lib(object):
     #           testMode - if anything except "execute" is passed to it the file
 
     @staticmethod
-    def setupCSVFiles (csvFileName,fileList,fileDate,testMode,writeMode):
+    def setupCSVFiles (csvFileName,fileList,fileDate,testMode,writeMode,**kwargs):
         logging.info("setupCSVFiles:base file name - [" + csvFileName + "]")
 
         # Add 'Test' to file name if a test
@@ -4086,6 +5035,10 @@ class c42Lib(object):
 
         counter = 0
         fileNames = []
+
+        if kwargs:
+            if 'counter' in kwargs:
+                counter = kwargs['counter']
 
         for index, fileHeader in enumerate(fileList):
 
@@ -4182,7 +5135,11 @@ class c42Lib(object):
                     for index, argument in enumerate (sorted(argumentList,key=argumentList.__getitem__)):
 
                         if argumentList[argument] is not None:
-                            arguments[argument] = raw_input(argumentList[argument])
+
+                            if type(argumentList[argument]) is not bool:
+                                arguments[argument] = raw_input(argumentList[argument])
+                            else:
+                                arguments[argument] = argumentList[argument]
                         else:
                             arguments[argument] = None
 
@@ -4403,6 +5360,8 @@ class c42Lib(object):
 
         return os.path.join(base_path,relativePath)    
 
+
+    # Try to make a directory
     @staticmethod
     def checkPathMakePath(filePath):
 
@@ -4507,17 +5466,21 @@ class c42Lib(object):
 
     @staticmethod
     def convertToBool(isItTrue):
+        logging.debug('[start] - convertToBool : ' + str(isItTrue))
         if isItTrue:
             isItTrue = str(isItTrue).lower()
             if isItTrue in ('y','t','yes','true'):
                 isItTrue = True
             else:
                 isItTrue = False
+
+        logging.debug('[  End] - convertToBool : ' + str(isItTrue))
         return isItTrue 
 
 
     @staticmethod
     def validateFileInput(userPrompt,fileToCheck):
+        logging.info('[start] - validateFileInput : params - ' + str(userPrompt) + " , " + str(fileToCheck))
 
         fileName = None
 
@@ -4529,26 +5492,314 @@ class c42Lib(object):
                 print ""
                 print "********** Too many bad attempts.  Quitting."
                 sys.exit()
-            if os.path.exists(fileToCheck):
-                fileName = fileToCheck
-                userInputOK = True
-            else:
-                print ""
-                print "********** " + str(fileToCheck) + " Cannot be found.  Please try again."
-                print ""
-                fileToCheck = raw_input(userPrompt)
+            try:
+                if os.path.exists(fileToCheck):
+                    fileName = fileToCheck
+                    userInputOK = True
+                else:
+                    logging.info('Failed to Find : ' + str(fileToCheck))
+                    print ""
+                    print "********** " + str(fileToCheck) + " Cannot be found.  Please try again."
+                    print ""
+                    fileToCheck = raw_input(userPrompt)
+            except:
+                logging.debug('********** Error trying to find file : ' + str(fileToCheck))
+                print "********** ERROR ATTEMPTING TO FIND : " + str(fileToCheck)
 
+        
+        logging.info('[start] - validateFileInput : ' + str(fileName))
         return fileName         
 
 
     #Converts numbers to "pretty" format
     @staticmethod
     def prettyNumberFormat(num, suffix='B'):
+        logging.debug('[start] - prettyNumberFormat : ' + str(num))
         for unit in ['',' K',' M',' G',' T',' P',' E',' Z']:
             if abs(num) < 1000.0:
                 return "%3.2f%s%s" % (num, unit, suffix)
             num /= 1000.0
-        return "%.1f%s%s" % (num, 'Yi ', suffix)   
+        logging.debug('[  end] - prettyNumberFormat : ' + "%.1f%s%s" % (num, 'Yi ', suffix))
+        return "%.1f%s%s" % (num, 'Yi ', suffix)
+
+    @staticmethod
+    def yesNoMaybe(question,answer):
+        logging.debug('[start] - yesNoMaybe : ' + str(question) + " | " + str(answer))
+        
+        whatDoYouSay = False
+        inputCount = 0
+
+        while inputCount < 4:  # User gets 4 chances to get it right.
+
+            try:
+                answer = answer.lower()  # Force it all lowercase
+                if answer == 'y' or \
+                   answer == 'yes' or \
+                   answer == '1' or \
+                   answer == 'true':
+                    whatDoYouSay = True
+                
+                break
+
+            except:
+
+                print "********** Only Y or N, please...\n"
+                inputCount += 1
+
+                answer = raw_input(question)
+
+        if inputCount > 3:
+
+            print "********** Too many invalid inputs.  Quitting.  Please restart and retry."
+            sys.exit(0)
+
+        return whatDoYouSay
+
+    # Generic Validate User Input method
+    # Validates user input against a list of valid answers and allows a user to retry
+    # answerType is "string", "number" or "bool" 
+
+    @staticmethod
+    def validateUserInput(userQuestion,validAnswers,answerType,**kwargs):
+
+        logging.info("[begin] - validateUserInput")
+        logging.info("          Question : " + str(userQuestion))
+        logging.info("           Answers : " + str(validAnswers))
+        logging.info("       Answer Type : " + str(answerType))
+        logging.info("            Others : " + str(kwargs))
+
+        tryCount = 0
+        maxTries = 4
+        userResponse  = None
+        validResponse = False
+        userValue     = None
+
+        if kwargs:
+            if 'maxTries'  in kwargs: tryCount  = kwargs['maxTries']
+            if 'userValue' in kwargs: userValue = kwargs['userValue']
+
+        if (answerType != 'integer' and answerType != 'float') or userValue == 'ALL':  # covert answers to lowercase for comparisons
+
+            for index, answer in enumerate(validAnswers):
+                validAnswers[index] = answer.lower()
+
+        # Check if a user input has been passed in... if not, ask the question.
+        if userValue is None:
+            userResponse = raw_input(userQuestion).lower()
+        else:
+            userResponse = userValue.lower() # Make lower case!
+
+        if userResponse == 'all' and answerType == 'integer':  # This lets a user input "ALL"
+            answerType = ''
+
+        while (tryCount < maxTries) and not validResponse:
+
+            tryCount += 1
+
+            if answerType == 'float':
+                if userResponse.find('.'):  # Checks to see if the number is a float...      
+                    userResponse = c42Lib.isFloat(userResponse)
+                    if userResponse is None:
+                        print "********** Not a valid decimal number.  Please try again."
+
+                    else:
+                        validResponse = True
+                        break
+            elif answerType == 'integer': # Number not a float, checks to see if it's an intenger...
+                userResponse = c42Lib.isInteger(userResponse)
+                if userResponse is None:
+                    print "********** Not a valid integer.  Please try again."
+                else:
+                    validResponse = True
+                    break
+
+            elif answerType == 'bool':
+
+                if userResponse == 'y' or \
+                   userResponse == 'yes' or \
+                   userResponse == '1' or \
+                   userResponse == 'true':
+                    userResponse = True
+
+            else:
+                # print "Check List..."
+                for index, answer in enumerate(validAnswers):
+
+                    if userResponse == answer:
+                        validResponse = True
+
+                        if answer == 'all':
+                            userResponse = -1
+                        break
+
+                    else:
+                        print "********** Not a valid response.  Please try again ( " + str(tryCount) + " of " + str(maxTries) + " tries remaining)."
+                        print "           Valid answers include : " + str(validAnswers)
+
+            if validResponse:
+                #print "I got here..."
+                break
+
+            # If it gets here, it means that a valid response hasn't been provided
+            # Re-ask the question...
+            userResponse = raw_input(userQuestion).lower()
+
+        #print "Try Count : " + str(tryCount)
+        #print "Max Tries : " + str(maxTries)
+        #print "    Valid : " + str(validResponse)
+
+        if tryCount >= maxTries and not validResponse:
+            print ""
+            print "********** Too many bad input responses :\n"
+            print "           " + str(userQuestion) + "\n"
+            #print "           Quitting."
+            #sys.exit()
+
+        else:
+
+            return userResponse 
+
+    #Quick function to check if a string is an integer
+    @staticmethod
+    def isInteger(string):
+        try: 
+            int(string)
+            return int(string)
+        except ValueError:
+            return None
+
+    #Quick function to check if a string is a float
+    @staticmethod
+    def isFloat(string):
+        try: 
+            float(string)
+            return float(string)
+        except ValueError:
+            return None
+
+    # Some time functions for doing things like setting start, end, etc.
+    @staticmethod
+    def timeInfo(**kwargs):
+        logging.debug ("[begin] timeInfo")
+
+        timeThing = None
+
+        if kwargs:
+            logging.debug("        timeInfo - kwargs : " + str(kwargs))
+
+            if 'now' in kwargs:
+                timeThing = time.time()
+
+            if 'start' in kwargs:
+                c42Lib.cp_startTime = time.time()
+            if 'end'   in kwargs:
+                c42Lib.cp_endTime   = time.time()
+            if 'elapsed' in kwargs and cpLib.cp_startTime:
+                cpLib.cp_elapsedTime = time.time() - c42Lib.cp_startTime
+
+            # Average time per event
+            if 'count' in kwargs and c42Lib.cp_elapsedTime is not None:
+                timeThing = cp_elapsedTime / kwargs['count']
+
+            #Time remaning based on average time per event
+            if 'numRemaining' in kwargs and 'aveTime' in kwargs:
+                timeThing = aveTime * kwargs['numRemaining']
+                
+            # return a human readable format
+            if 'fmt' in kwargs and timeThing is not None:
+                timeThing = str(time.strftime('%H:%M:%S', time.gmtime(timeThing)))
+            
+        return timeThing
+
+        logging.debug ("[end] timeInfo")
+
+    @staticmethod
+    def returnShortVersion(version):
+        logging.debug('[begin] - returnShortVersion : ' + str(version))
+
+        version = version[-3:]
+        version = list(version)
+        version = version[0]+"."+version[1]+"."+version[2]
+
+        logging.debug('[  end] - returnShortVersion : ' + str(version))
+        return version
+
+    @staticmethod
+    def dateCleanUp(rawDate):
+
+        justTheDate = None
+
+        if rawDate:
+
+            justTheDate = rawDate[0:10] #Trim out date
+
+
+        else:
+
+            justTheDate = ""
+        
+        #sinceToday = int((datetime.today() - datetime.strptime(justTheDate , '%Y-%m-%d')).days)
+
+        return justTheDate
+
+    @staticmethod
+    def killItPrompt(**kwargs):
+
+        prompt = "K to end it now... "
+
+        if kwargs and 'prompt' in kwargs:
+            prompt = kwargs['prompt']
+
+        shouldIDie = raw_input(prompt)
+
+        if shouldIDie.lower() == 'k':
+            sys.exit(0)
+
+
+    @staticmethod
+    def checkPyVersion(**kwargs):
+        logging.info('[start] - checkPyVersion')
+        logging.info("          " + str(sys.version_info))
+
+        minPyVersion = 2
+        pyOk = True
+
+        if kwargs:
+            logging.info("          kwargs : " + str(kwargs))
+            if 'minPyVersion' in kwargs:
+                minPyVersion = kwargs['minPyVerssion']
+
+        # Assign version
+        pyVersionMajor = sys.version_info.major
+        pyVersionMinor = sys.version_info.minor
+        pyVersionMicro = sys.version_info.micro
+
+        pyVersionPretty = str(pyVersionMajor)+"."+str(pyVersionMinor)+"."+str(pyVersionMicro)
+
+        if (minPyVersion < pyVersionMajor):
+
+            logging.info("Python version not ok...  Exiting")
+            pyOk = False
+
+        if pyVersionMajor == 2:
+
+            # Check if 2.7.9 or higher.  If not, then notify user and exit.
+            if pyVersionMinor < 7 and pyVersionMicro < 9:
+                pyOk = False
+                logging.info("Python version not ok...  Exiting")
+
+
+        if pyOk:
+            print ('********** Minimum Python Version Required : 2.7. 9')
+            print ('           Running Python Version : ' + pyVersionPretty + ' - Python version OK...')
+        else:
+            print ("********** This script requires Python 2.7.9 or higher.  You are running " + pyVersionPretty)
+            print ("           Exiting.")
+            sys.exit(0)
+        
+        logging.debug('  [end] - checkPyVersion')
+
+
 
 # class UserClass(object)
 

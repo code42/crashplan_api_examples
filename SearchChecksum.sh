@@ -90,7 +90,6 @@ case $LEVEL in
 		#Gather ORG Registration to determine Organization ID
 		echo "Enter Organization Registration Key XXXX-XXXX-XXXX-XXXX" 
 		read ORGREG
-		ORGREG=949J-2MP4-7HJM-SKR7
 		ORGID=$(curl -sku $C42UID:$C42PASS "$PROTOCOL://$MASTER:$PORT/api/Org?q=$ORGREG" | python -mjson.tool | grep orgId | tr -cd '[:digit:]')
 
 		#Use Organization ID to get a list of all guids of service type CrashPlan in the given Org.

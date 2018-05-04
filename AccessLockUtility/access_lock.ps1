@@ -15,7 +15,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-# Code42 Access Lock Utility
+# Code42 Access Lock Utility - v1.2
 #
 # Description: This script will remotely lock or unlock access on devices through 
 # the Access Lock feature of Code42. Clients are required to be on Windows using 
@@ -42,7 +42,7 @@ Param(
 	[string]$action
 )
 
-$scriptVersion = "1.1"
+$scriptVersion = "1.2"
 ########################################################
 # Functions
 ########################################################
@@ -333,7 +333,6 @@ function lockOutput {
 # Variables (Customize)
 ###################################
 [string]$WebProtocol = "https"
-[string]$CPPort = "4285"
 [string]$global:ContentType = "application/json"
 
 ##############################################################
@@ -374,7 +373,7 @@ Write-Host "####################################################################
 # Inputs 
 ###################################
 # Your master server address (e.g. code42.company.com, 177.14.34.193, etc)
-$CPServer = Read-Host -Prompt 'Input your server address (no colon or port needed)'
+$CPServer = Read-Host -Prompt 'Input your server address and web port(no http/s needed. e.g. company.c.code42.com:4285)'
 # Username and Password prompt
 $CPUserName = Read-Host -Prompt 'Input username'
 $CPSecureUserPassword = Read-Host 'Input password' -AsSecureString
@@ -387,9 +386,12 @@ $headers = @{"Authorization" = "Basic $($EncodedPassword)"}
 ###################################
 # Verify user has proper permissions
 ###################################
-$FullCPServerAddress = $WebProtocol + "://" + $CPServer + ":" + $CPPort
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$FullCPServerAddress = $WebProtocol + "://" + $CPServer
 $resourceurl = '/api/User?incAll=true&active=true&q=' + $CPUserName
 $uri = $FullCPServerAddress + $resourceurl
+
+Write-Host "Trying " $uri 
 try {
 	
 	$adminUser = invoke-RestMethod -Uri $uri -Method GET -Headers $headers 
@@ -398,8 +400,7 @@ try {
 	# If using a self-signed cert, Powershell will not allow a connection. Use HTTP instead.
 	if($catcherror.IndexOf("SSL/TLS") -ge 0) {
 		$WebProtocol = "http"
-		$CPPort = "4280"
-		$FullCPServerAddress = $WebProtocol + "://" + $CPServer + ":" + $CPPort
+		$FullCPServerAddress = $WebProtocol + "://" + $CPServer
 		$uri = $FullCPServerAddress + $resourceurl
 		try {
 			$adminUser = invoke-RestMethod -Uri $uri -Method GET -Headers $headers 
