@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 2018-04-24
+# Last Modified: 2018-06-08
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -2136,7 +2136,7 @@ class c42Lib(object):
 
     @staticmethod
     def getDeviceByGuid(guid, **kwargs):
-        logging.debug("getDeviceByGuid-params:guid[" + str(guid) + "]")
+        logging.info("[start] getDeviceByGuid-params:guid[" + str(guid) + "]")
 
         if kwargs and 'params' in kwargs:
             params = kwargs['params']
@@ -2171,6 +2171,7 @@ class c42Lib(object):
             logging.info("Error [ {} ] getting device GUID {}...".format(e,guid))
             device = None
 
+        logging.info("[  end] getDeviceByGuid-params:guid[" + str(guid) + "]")
         return device
 
 
@@ -3507,23 +3508,33 @@ class c42Lib(object):
 
     @staticmethod
     def getRestoreRecordPaged(params, pgNum):
-        logging.info("getRestoreRecordPaged-params:params[" + str(params) + "]:pgNum[" + str(pgNum) + "]")
+        logging.info("[start] getRestoreRecordPaged-params:params[" + str(params) + "]:pgNum[" + str(pgNum) + "]")
 
         params['pgSize'] = c42Lib.MAX_PAGE_NUM
         params['pgNum'] = pgNum
 
+        archives = None
         payload = {}
 
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_restoreRecord, params, payload)
+        try:
 
-        logging.debug(r.text)
+            r = c42Lib.executeRequest("get", c42Lib.cp_api_restoreRecord, params, payload)
 
-        content = r.content
-        binary = json.loads(content)
-        logging.debug(binary)
+            logging.debug(r.text)
 
-        archives = binary['data']['restoreRecords']
+            content = r.content
+            binary = json.loads(content)
+            logging.debug(binary)
 
+        except Exception, e:
+            logging.error("Error [ {} ] getting restore records".format(e))
+
+        data = binary['data'] if 'data' in binary else None
+
+        if data:
+            archives = data['restoreRecords'] if 'restoreRecords' in data else None
+
+        logging.info("[ end] getRestoreRecordPaged")
         return archives
 
 
@@ -4586,7 +4597,7 @@ class c42Lib(object):
 
                 logging.basicConfig(
                                     level = logging.info,
-                                    format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] %(message)s',
+                                    format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] [%(funcName)20s():%(lineno)5s] %(message)s',
                                     datefmt='%m-%d %H:%M',
                                     #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
@@ -4595,7 +4606,7 @@ class c42Lib(object):
 
                 logging.basicConfig(
                                     level = logging.debug,
-                                    format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] %(message)s',
+                                    format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] [%(funcName)20s():%(lineno)5s] %(message)s',
                                     datefmt='%m-%d %H:%M',
                                     #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
@@ -4604,7 +4615,7 @@ class c42Lib(object):
             console = logging.StreamHandler()
 
            # set a format which is simpler for console use
-            formatter = logging.Formatter('%(asctime)s [%(name)-8s] [ %(levelname)-6s ] %(message)s')
+            formatter = logging.Formatter('%(asctime)s [%(name)-8s] [ %(levelname)-6s ] [%(funcName)20s():%(lineno)5s] %(message)s')
             # tell the handler to use this format
             console.setFormatter(formatter)
             # add the handler to the root logger
@@ -4626,7 +4637,7 @@ class c42Lib(object):
 
                 logging.basicConfig(
                                     level=logging.info,
-                                    format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
+                                    format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] [%(funcName)20s():%(lineno)5s] %(message)s',
                                     datefmt='%m-%d %H:%M',
                                     #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
@@ -4637,7 +4648,7 @@ class c42Lib(object):
 
                 logging.basicConfig(
                                     level=logging.warning,
-                                    format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
+                                    format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] [%(funcName)20s():%(lineno)5s] %(message)s',
                                     datefmt='%m-%d %H:%M',
                                     #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
@@ -4648,7 +4659,7 @@ class c42Lib(object):
 
                 logging.basicConfig(
                                     level=logging.debug,
-                                    format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
+                                    format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] [%(funcName)20s():%(lineno)5s] %(message)s',
                                     datefmt='%m-%d %H:%M',
                                     #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
@@ -4659,7 +4670,7 @@ class c42Lib(object):
 
                 logging.basicConfig(
                                     level=logging.error,
-                                    format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
+                                    format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] [%(funcName)20s():%(lineno)5s] %(message)s',
                                     datefmt='%m-%d %H:%M',
                                     #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
@@ -4670,13 +4681,13 @@ class c42Lib(object):
 
                 logging.basicConfig(
                                     level=logging.critical,
-                                    format='%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s',
+                                    format='%(asctime)s [%(name)-8s] [ %(levelname)-6s ] [%(funcName)20s():%(lineno)5s] %(message)s',
                                     datefmt='%m-%d %H:%M',
                                     #filename = str(c42Lib.cp_logFileName),
                                     filemode='w')
 
             # Set log file format
-            loggingFormatter = logging.Formatter('%(asctime)s [%(name)-12s] [ %(levelname)-6s ] %(message)s')
+            loggingFormatter = logging.Formatter('%(asctime)s [%(name)-8s] [ %(levelname)-6s ] [%(funcName)20s():%(lineno)5s] %(message)s')
             #logfile = logging.FileHandler(str(c42Lib.cp_logFileName))
             #logfile.setFormatter(loggingFormatter)
 
