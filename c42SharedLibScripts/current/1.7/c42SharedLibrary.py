@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 2018-06-08
+# Last Modified: 2018-09-24
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -2449,7 +2449,7 @@ class c42Lib(object):
     #
 
     @staticmethod
-    def getDevices(pgNum):
+    def getDevices(pgNum,**kwargs):
         logging.info("getDevices-params:pgNum[" + str(pgNum) + "]")
 
         # headers = {"Authorization":getAuthHeader(cp_username,cp_password)}
@@ -2490,8 +2490,11 @@ class c42Lib(object):
             return False
         else:
             logging.debug("Kwargs : " + str(kwargs))
-        if 'df' in kwargs:
-            getFile = True
+        
+        df      = kwargs['df']      if 'df'      in kwargs else False
+        getFile = kwargs['getFile'] if 'getFile' in kwargs else False
+        getAll  = kwargs['getAll']  if 'getAll'  in kwargs else False
+
         if 'pgNum' in kwargs:
             pgNum = kwargs['pgNum']
         if 'params' in kwargs:
@@ -2551,6 +2554,53 @@ class c42Lib(object):
             devices     = frameObject
             frameObject = None
 
+        elif getAll:
+            logging.info("Get All Devices...")
+
+            keepLooping = True
+            deviceCount = 0
+
+            pgNum = 1
+            pgSize = c42Lib.MAX_PAGE_NUM
+            params['pgNum']  = pgNum
+            params['pgSize'] = pgSize
+
+            devices = pd.DataFrame()
+
+            while keepLooping:
+                logging.info("Page : {}".format(pgNum))
+
+                r = None
+
+                try:
+                    r = c42Lib.executeRequest("get", c42Lib.cp_api_computer, params, payload)
+                    if r.status_code == 201:
+                        binary = json.loads(content)
+                    else:
+                        binary = None
+
+                except Exception as e:
+                    logging.info("Error [ {} ] getting computers...")
+
+                if binary:
+                    data = binary['data']
+                    data = data['computers']
+                else:
+                    data = None
+
+                if data:
+                    if len(data) < pgSize:
+                        keepLooping = False
+
+                    if devices.empty:
+                        devices = pd.DataFrame(data)
+                    else:
+                        devices = pd.concat([devices,data])
+
+                else:
+                    keepLooping = False
+
+                logging.info("Loaded : {} computers...".format(devices.shape[0]))
 
         else:
 
@@ -5003,6 +5053,7 @@ class c42Lib(object):
         print "---------- [ " + str(time.strftime('%H:%M:%S', time.gmtime(time.time()))) + " ] Writing out as CSV..."
 
         try:
+            logging.info("Include Index : {}".format(writeIndex))
             processedData.to_csv(csvFileName,index=writeIndex)
 
             logging.info("[  End] Done writing processed device backup report [ " + str( csvFileName ) + " ] as CSV...")
