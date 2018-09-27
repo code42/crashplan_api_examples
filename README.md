@@ -12,6 +12,9 @@ If you're planning on migrating your Code42 authority to the cloud, these script
 1. `roleChanger.py` - batch add or remove roles for users in your environment
 2. `usernameToEmails.py` - change usernames to e-mail addresses using a few different methods
 
+## CompiledScripts
+This folder contains compiled versions of scripts that appear elsewhere in this repository.  No dependencies needed, just download and run the binary.
+
 ### FFS
 This Windows utility (.exe and powershell script provided) uses the Code42 API in order to return Forensic File Search events matching one or more search terms.
 

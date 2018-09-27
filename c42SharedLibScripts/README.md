@@ -1,9 +1,6 @@
 # Code42 Shared Python Library
 This library is written in Python 2.7 in order to make common operations easier, such as getting authentication tokens, retrieving all users in the system, or getting all devices.
 
-## bin
-This folder contains compiled versions of scripts that have been written using the shared library.  No dependencies needed, just download and run the binary.
-
 ## v1.7
 This is the most current version of the shared library.
 
