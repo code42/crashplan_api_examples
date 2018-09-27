@@ -16,7 +16,7 @@ If you're planning on migrating your Code42 authority to the cloud, these script
 This Windows utility (.exe and powershell script provided) uses the Code42 API in order to return Forensic File Search events matching one or more search terms.
 
 ### c42SharedLibScripts
-This folder contains a number of all-purpose scripts built off of Code42's shared python library.  See README in this folder for more information.
+This folder contains a number of all-purpose scripts built off of Code42's shared python library.  See `README.md` in this folder for more information.
 
 ---
 ## Standalone Scripts
@@ -42,13 +42,14 @@ STEPS:
 3. Execute the script and check the addLDAPUsers.log file for your results.
 
 #### deactivateDevices.py
-Deactivates users devices based on the number of months since they have last connected to a master server
+Deactivates users devices based on the number of months since they have last connected to the authority server
+
 Params:
-* 1 arg - number of months (i.e 3)
-* 2 arg - type of logging
-*     - values: `verbose`, `nonverbose`
-* 3 arg - set to deactivate devices or only print the devices that will be deactivated, but not deactivate them.
-*     - values: `deactivate`, `print`
+* 1st arg - number of months (i.e 3)
+* 2nd arg - type of logging
+  * values: `verbose`, `nonverbose`
+* 3rd arg - set to deactivate devices or only print the devices that will be deactivated, but not deactivate them.
+ * values: `deactivate`, `print`
 
 Example usages:
 * `python deactivateDevices.py 3 verbose print`
