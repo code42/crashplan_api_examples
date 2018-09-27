@@ -12,7 +12,7 @@ If you're planning on migrating your Code42 authority to the cloud, these script
 1. `roleChanger.py` - batch add or remove roles for users in your environment
 2. `usernameToEmails.py` - change usernames to e-mail addresses using a few different methods
 
-## CompiledScripts
+### CompiledScripts
 This folder contains compiled versions of scripts that appear elsewhere in this repository.  No dependencies needed, just download and run the binary.
 
 ### FFS
@@ -52,7 +52,7 @@ Params:
 * 2nd arg - type of logging
   * values: `verbose`, `nonverbose`
 * 3rd arg - set to deactivate devices or only print the devices that will be deactivated, but not deactivate them.
- * values: `deactivate`, `print`
+  * values: `deactivate`, `print`
 
 Example usages:
 * `python deactivateDevices.py 3 verbose print`
