@@ -15,7 +15,7 @@
 #
 # File: usernameToEmails.py
 # Author: A Orrison, Code42 Software
-# Last Modified: 2018-07-18
+# Last Modified: 2018-10-29
 # Built for python 3
 
 import requests
@@ -29,7 +29,7 @@ import sys
 
 parser = argparse.ArgumentParser(description='Input for this script')
 
-parser.add_argument('-s',dest='serverUrl',nargs= 2,help='Server and port for the server ex: "https://server.url.code42.com 4285" ',required=True)
+parser.add_argument('-s',dest='serverUrl',help='Server and port for the server ex: "https://server.url.code42.com:4285"',required=True)
 parser.add_argument('-u',dest='username',required=True,help='Username for a SYSADMIN user using local authentication')
 parser.add_argument('--method',dest='method',required=True,type=int,choices=[1,2,3,4],help="Select which method you want to use for changing usernames to email addresses. 1=Make user's email their username.2=username@domain.com 3=first.last@domain.com")
 parser.add_argument('-e',action='store_true',help='Add this flag to run it for real. Leave out for a dry run')
@@ -38,7 +38,7 @@ parser.add_argument('-f',dest='inputFile',type=argparse.FileType('r'),help='File
 args = parser.parse_args()
 method = args.method
 username = args.username
-serverAddress = args.serverUrl[0]+":"+args.serverUrl[1]
+serverAddress = args.serverUrl
 #print (args.inputFile )
 filename = args.inputFile
 execute = args.e
@@ -57,10 +57,10 @@ class Logger(object):
         pass
 sys.stdout = Logger()
 
-print ("Arguments: ", args)
-
 if not execute:
     print ("This is a dry run. Add the -e flag to run for real." )
+else:
+    print ("BE AWARE, THIS WILL CHANGE ALL USERNAMES ON YOUR SYSTEM TO EMAIL ADDRESSES\nIf you have second thoughts, or are not ready please quit now. (ctrl+c)")
 
 if method >1:
     while True:
@@ -70,11 +70,10 @@ if method >1:
             break
         else:
             print ("Double check the domain for an @ symbol and try again. You entered:",domain )
-
-print ("Username:\t",username, "\nServer Address:", serverAddress )
+    print ("Domain:\t\t",domain)
+print ("Username:\t",username, "\nServer Address:\t", serverAddress,"\nMethod:\t\t",method)
 userPassword = getpass.getpass(prompt='Please enter your password:')
 
-print (serverAddress)
 
 def genericRequest(requestType,call, params={}, payload={}):
     address= serverAddress+call
@@ -113,7 +112,7 @@ def testCredentials():
     data = json.loads(content)
     if response.status_code == 200:
         print ("Credentials are good." )
-        print ("\tthis user has the follwing roles:", data['data']['roles'] )
+        print ("\tthis user has the following roles:", data['data']['roles'] )
     else:
         print (data )
         print ("Exiting, please try your credentials again." )
@@ -124,7 +123,7 @@ def getAllUsers():
     params = {}
     params['pgSize']=250
     params['pgNum']=1
-    params['active']=True
+    #params['active']=False
     allUsers = []
     response = genericRequest('get','/api/user', params=params,payload={})
     firstContent = response.text
@@ -184,7 +183,22 @@ for index, row in dfAllUsersToProcess.iterrows():
     toSend['email'] = newUsername
     toSend['username'] = newUsername
     payload = json.dumps(toSend)
-    response = genericRequest('put', call, params={}, payload=payload)
+    attemptStatus=""
+    singleQuote='\''
+    if not newUsername==None:
+        if newUsername == oldUsername:
+            print ("Did not change", oldUsername + " to ", newUsername, "it is already the same.")
+            attemptStatus = " Already Set to Username"
+        elif singleQuote in newUsername :
+            print ("Did not change",oldUsername+" to ",newUsername,"it has a single quote in it. Please manually change username to an email address.")
+            attemptStatus=" ' in email address."
+        elif not username==oldUsername:
+            response = genericRequest('put', call, params={}, payload=payload)
+        else:
+            print ("Did not change",oldUsername+" to ",newUsername,"This is the user running this script.")
+            attemptStatus= " Username used for script"
+    else:
+        attemptStatus = " Email Blank"
     try:
         if response.status_code != 200:
             print (response.text )
@@ -194,7 +208,7 @@ for index, row in dfAllUsersToProcess.iterrows():
             print ("Changed",oldUsername+" to ",newUsername )
             result['Status'] = 'Success'
     except :
-        result['Status'] = 'Failure'
+        result['Status'] = 'Failure'+attemptStatus
         try:
             print (response.text )
         except:
@@ -203,10 +217,11 @@ for index, row in dfAllUsersToProcess.iterrows():
 
     allResults.append(result)
 dfAllResults = pd.DataFrame(allResults,columns=['User Id','New Username','Old Username','Status'])
-
+failures = dfAllResults.shape[0]-dfAllResults[dfAllResults.Status == 'Success'].shape[0]
 if execute:
-    print ("Completed. \nUsers changed:",len(dfAllResults[allResults.Status == 'Success']),"Users with an error:",len(dfAllResults[allResults.Status == 'Failure']) )
+    print ("Completed. \nUsers changed:",dfAllResults[dfAllResults.Status == 'Success'].shape[0],"Users with an error:",failures )
 else:
-    print ("This was a dry run. Use the -e flag to run for real. All lines in the resulting UsernamesChangedResults.csv will be marked 'Failure' " )
+    print ("This was a dry run. Use the -e flag to run for real. All lines in the resulting UsernamesChangedResults.csv will be marked 'Failure'." )
+
 dfAllResults.to_string()
 dfAllResults.to_csv('UsernamesChangedResults-'+startTime+'.csv', encoding='utf-8', index=False)

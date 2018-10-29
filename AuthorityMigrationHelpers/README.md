@@ -1,5 +1,11 @@
 # Authority Migration Helpers
 These scripts are designed for customers that will be migrating their on-prem Code42 authority into the Code42 multi-tenant cloud.  Two of the most common tasks that admins need to do are to remove any custom roles, and to make sure all of their usernames are in an e-mail format.
+For both scripts run with -h to get help on the syntax needed for running the scripts.
+
+Required non default libraries:
+requests
+pandas
+
 
 ### roleChanger.py
 This is a standalone Python script which will walk the admin through mass role changes in their environment to get rid of custom roles, and to add roles that can be translated into the cloud easier than going one-by-one in the web interface.

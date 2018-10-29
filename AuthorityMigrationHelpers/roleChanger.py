@@ -15,7 +15,7 @@
 #
 # File: roleChanger.py
 # Author: A Orrison, Code42 Software
-# Last Modified: 2018-08-03
+# Last Modified: 2018-10-29
 # Built for Python 3
 
 import requests
@@ -30,19 +30,18 @@ import os
 
 parser = argparse.ArgumentParser(description='Input for this script')
 
-parser.add_argument('-s',dest='serverUrl',nargs= 2,help='Server and port for the server ex: "https://server.url.code42.com 4285" ',required=True)
+parser.add_argument('-s',dest='serverUrl',help='Server and port for the server ex: "https://server.url.code42.com:4285"',required=True)
 parser.add_argument('-u',dest='username',required=True,help='Username for a SYSADMIN user using local authentication')
 parser.add_argument('-e',action='store_true',help='Add this flag to run it for real. Leave out for a dry run')
 
 args = parser.parse_args()
 username = args.username
-serverAddress = args.serverUrl[0]+":"+args.serverUrl[1]
+serverAddress = args.serverUrl
 #print ( args.inputFile )
 execute = args.e
 startTime = time.strftime("%y%m%d%I%M%S",time.localtime(time.time()))
 cwd = os.getcwd()
 
-print (cwd)
 
 class Logger(object):
     def __init__(self):
@@ -50,23 +49,20 @@ class Logger(object):
 
     def write(self, message):
         self.terminal.write(message)
-        with open(cwd+"/"+"roleChanger.py-"+startTime+".log", "a") as f:
+        with open("usernameToEmailChange-"+startTime+".log", "a") as f:
              f.write(message)
-        f.close()
 
     def flush(self):
         pass
 sys.stdout = Logger()
 
-print ( "Arguments: "+str(args))
-
 if not execute:
     print ( "This is a dry run. Add the -e flag to run for real.")
+else:
+    print ("This wil change roles on your system if you continue\nIf you have second thoughts, or are not ready please quit now. (ctrl+c)")
 
-print ( "Username:\t",username, "\nServer Address:", serverAddress )
+print ( "Username:\t",username, "\nServer Address:\t", serverAddress )
 userPassword = getpass.getpass(prompt='Please enter your password:')
-
-print ( serverAddress )
 
 def genericRequest(requestType,call, params={}, payload={}):
     address= serverAddress+call
@@ -106,7 +102,7 @@ def testCredentials():
     data = json.loads(content)
     if response.status_code == 200:
         print ( "Credentials are good." )
-        print ( "\tthis user has the follwing roles:", data['data']['roles'] )
+        print ( "\tthis user has the following roles:", data['data']['roles'] )
     else:
         print ( data )
         print ( "Exiting, please try your credentials again." )
@@ -183,8 +179,9 @@ def changeRole(oldRoleName,newRoleName,userId):
 
     #remove the old role from the user"
     oldRequest = genericRequest('delete',call,params=oldparams,payload=oldPayload)
-    #add the new role to the user
-    newRequest = genericRequest('post',call,params=newparams,payload=newPayload)
+    if newRoleName != 'None':
+        #add the new role to the user
+        newRequest = genericRequest('post',call,params=newparams,payload=newPayload)
 
 testServerConnectivity()
 testCredentials()
@@ -198,9 +195,9 @@ for eachRole in allRoles:
         oldRoleId = allRoles[eachRole]['roleId']
         numUsers = allRoles[eachRole]['Number of users']
         while True:
-            print ( "Please enter the new role name for users who currently have", oldRoleName,". Type \"skip\" to skip this role and move onto the next",oldRoleName )
+            print ( "Please enter the new role name for users who currently have", oldRoleName,". Type \"skip\" to skip this role and move onto the next, type \"None\" to remove this role from the users" )
             newRoleName = input("")
-            if newRoleName != 'skip':
+            if newRoleName != 'skip' or newRoleName !='None':
                 try:
                     newRoleType = allRoles[newRoleName]['Type']
                     newRoleId = allRoles[newRoleName]['roleId']
