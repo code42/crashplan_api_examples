@@ -15,7 +15,7 @@
 #
 # File: usernameToEmails.py
 # Author: A Orrison, Code42 Software
-# Last Modified: 2018-10-29
+# Last Modified: 2018-11-29
 # Built for python 3
 #################### TO do: 1. Get rid of insecure warning when running, add option to only do one org, users with blank email address not incremented for failure.
 
@@ -27,6 +27,7 @@ import pandas as pd
 import time
 import logging
 import sys
+import os
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -65,7 +66,7 @@ if not execute:
 else:
     print ("BE AWARE, THIS WILL CHANGE ALL USERNAMES ON YOUR SYSTEM TO EMAIL ADDRESSES\nIf you have second thoughts, or are not ready please quit now. (ctrl+c)")
 
-if method >1<4:
+if method >1 and method < 4:
     while True:
         print ("Please enter the domain for your users ex: @example.com")
         domain = input()
@@ -154,14 +155,16 @@ def usernameIsEmail(username):
         return False
 
 def checkIfUsernamesAreEmailAddresses(allUsers):
-    notCorrectUsers = {}
+    if os.path.exists("usernamesNotemailAddresses.csv"):
+        os.remove("usernamesNotemailAddresses.csv")
+    notCorrectUsers = []
     for eachUser in allUsers:
         if not usernameIsEmail(eachUser['username']):
             notCorrectUsers.append(eachUser)
-            content = eachUser['userId']
-            with open("devices.csv", "w") as text_file:
+            content = str(eachUser['userId'])+","+ eachUser['username']+"\n"
+            with open("usernamesNotemailAddresses.csv", "a") as text_file:
                 text_file.write(content)
-                f.close()
+                text_file.close()
 
 testServerConnectivity()
 testCredentials()
@@ -171,9 +174,6 @@ allUsers = getAllUsers()
 dfAllUsersToProcess =  pd.DataFrame(allUsers,columns=['userId','userUid','active','username','email','firstName','lastName'])
 dfAllUsersToProcess['Old Username'] = dfAllUsersToProcess['username']
 
-
-
-
 if method == 1:
     dfAllUsersToProcess['username'] = dfAllUsersToProcess['email']
 elif method ==2:
@@ -182,6 +182,9 @@ elif method == 3:
     dfAllUsersToProcess['username'] = dfAllUsersToProcess['firstName'] + '.' + dfAllUsersToProcess['lastName'] + domain
 elif method == 4:
     checkIfUsernamesAreEmailAddresses(allUsers)
+    print ("Users without email addresses have been printed to usernamesNotemailAddresses.csv")
+    exit()
+
 
 #dfAllUsersToProcess = dfAllUsersToProcess.fillna('empty')
 
