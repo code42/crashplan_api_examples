@@ -17,6 +17,7 @@
 # Author: A Orrison, Code42 Software
 # Last Modified: 2018-10-29
 # Built for python 3
+#################### TO do: 1. Get rid of insecure warning when running, add option to only do one org, users with blank email address not incremented for failure.
 
 import requests
 import argparse
@@ -26,12 +27,14 @@ import pandas as pd
 import time
 import logging
 import sys
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 parser = argparse.ArgumentParser(description='Input for this script')
 
 parser.add_argument('-s',dest='serverUrl',help='Server and port for the server ex: "https://server.url.code42.com:4285"',required=True)
 parser.add_argument('-u',dest='username',required=True,help='Username for a SYSADMIN user using local authentication')
-parser.add_argument('--method',dest='method',required=True,type=int,choices=[1,2,3,4],help="Select which method you want to use for changing usernames to email addresses. 1=Make user's email their username.2=username@domain.com 3=first.last@domain.com")
+parser.add_argument('--method',dest='method',required=True,type=int,choices=[1,2,3,4],help="Select which method you want to use for changing usernames to email addresses. 1=Make user's email their username.2=username@domain.com 3=first.last@domain.com. 4=Check to see if all usernames are emails")
 parser.add_argument('-e',action='store_true',help='Add this flag to run it for real. Leave out for a dry run')
 parser.add_argument('-f',dest='inputFile',type=argparse.FileType('r'),help='File that contains just the userIds you want to alter')
 
@@ -62,7 +65,7 @@ if not execute:
 else:
     print ("BE AWARE, THIS WILL CHANGE ALL USERNAMES ON YOUR SYSTEM TO EMAIL ADDRESSES\nIf you have second thoughts, or are not ready please quit now. (ctrl+c)")
 
-if method >1:
+if method >1<4:
     while True:
         print ("Please enter the domain for your users ex: @example.com")
         domain = input()
@@ -138,14 +141,38 @@ def getAllUsers():
         allUsers.extend(data['users'])
         params['pgNum'] += 1
 
-    dfAllUsers =  pd.DataFrame(allUsers,columns=['userId','userUid','active','username','email','firstName','lastName'])
-    dfAllUsers['Old Username'] = dfAllUsers['username']
-    return dfAllUsers
+    return allUsers
+
+def usernameIsEmail(username):
+    try:
+        usernameTest = username.split("@")
+        if len(usernameTest) == 2:
+            return True
+        else:
+            return False
+    except:
+        return False
+
+def checkIfUsernamesAreEmailAddresses(allUsers):
+    notCorrectUsers = {}
+    for eachUser in allUsers:
+        if not usernameIsEmail(eachUser['username']):
+            notCorrectUsers.append(eachUser)
+            content = eachUser['userId']
+            with open("devices.csv", "w") as text_file:
+                text_file.write(content)
+                f.close()
 
 testServerConnectivity()
 testCredentials()
 
-dfAllUsersToProcess = getAllUsers()
+allUsers = getAllUsers()
+
+dfAllUsersToProcess =  pd.DataFrame(allUsers,columns=['userId','userUid','active','username','email','firstName','lastName'])
+dfAllUsersToProcess['Old Username'] = dfAllUsersToProcess['username']
+
+
+
 
 if method == 1:
     dfAllUsersToProcess['username'] = dfAllUsersToProcess['email']
@@ -154,7 +181,7 @@ elif method ==2:
 elif method == 3:
     dfAllUsersToProcess['username'] = dfAllUsersToProcess['firstName'] + '.' + dfAllUsersToProcess['lastName'] + domain
 elif method == 4:
-    print ("Currently no method four" )
+    checkIfUsernamesAreEmailAddresses(allUsers)
 
 #dfAllUsersToProcess = dfAllUsersToProcess.fillna('empty')
 
@@ -185,35 +212,39 @@ for index, row in dfAllUsersToProcess.iterrows():
     payload = json.dumps(toSend)
     attemptStatus=""
     singleQuote='\''
-    if not newUsername==None:
-        if newUsername == oldUsername:
+    if usernameIsEmail(newUsername):
+        if usernameIsEmail(oldUsername):
+            print("Did not change", oldUsername + " to ", newUsername, "it is already an email address.")
+            attemptStatus = ", username is already an email address"
+        elif newUsername == oldUsername:
             print ("Did not change", oldUsername + " to ", newUsername, "it is already the same.")
-            attemptStatus = " Already Set to Username"
+            attemptStatus = ", already Set to Username"
         elif singleQuote in newUsername :
             print ("Did not change",oldUsername+" to ",newUsername,"it has a single quote in it. Please manually change username to an email address.")
-            attemptStatus=" ' in email address."
+            attemptStatus=", ' in email address."
         elif not username==oldUsername:
             response = genericRequest('put', call, params={}, payload=payload)
         else:
             print ("Did not change",oldUsername+" to ",newUsername,"This is the user running this script.")
-            attemptStatus= " Username used for script"
+            attemptStatus= ", username used for script"
     else:
-        attemptStatus = " Email Blank"
+        print("Did not change", oldUsername + " to ", newUsername, "It is not a valid email address.")
+        attemptStatus = ", new username not a valid email address"
     try:
-        if response.status_code != 200:
+        if (response.status_code != 200):
             print (response.text )
             result['Status'] = 'Failure'
             print (payload )
         else:
-            print ("Changed",oldUsername+" to ",newUsername )
+            print ("Changed",oldUsername+" to",newUsername )
             result['Status'] = 'Success'
     except :
         result['Status'] = 'Failure'+attemptStatus
+
         try:
             print (response.text )
         except:
             None
-
 
     allResults.append(result)
 dfAllResults = pd.DataFrame(allResults,columns=['User Id','New Username','Old Username','Status'])
@@ -223,5 +254,5 @@ if execute:
 else:
     print ("This was a dry run. Use the -e flag to run for real. All lines in the resulting UsernamesChangedResults.csv will be marked 'Failure'." )
 
-dfAllResults.to_string()
+print (dfAllResults.to_string())
 dfAllResults.to_csv('UsernamesChangedResults-'+startTime+'.csv', encoding='utf-8', index=False)
