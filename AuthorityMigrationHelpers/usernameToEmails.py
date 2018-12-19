@@ -15,7 +15,7 @@
 #
 # File: usernameToEmails.py
 # Author: A Orrison, Code42 Software
-# Last Modified: 2018-11-29
+# Last Modified: 2018-12-17
 # Built for python 3
 #################### TO do: 1. Get rid of insecure warning when running, add option to only do one org, users with blank email address not incremented for failure.
 
@@ -196,6 +196,7 @@ else:
 print (dfAllUsersToProcess.to_string() )
 #Check to see if there are any users that don't have an @ symbol in their username.
 #If this is the case something is not right, and needs to be fixed.
+#If this is the case something is not right, and needs to be fixed.
 
 allResults = []
 for index, row in dfAllUsersToProcess.iterrows():
@@ -240,9 +241,13 @@ for index, row in dfAllUsersToProcess.iterrows():
             print (payload )
         else:
             print ("Changed",oldUsername+" to",newUsername )
-            result['Status'] = 'Success'
+            result['Status'] = 'success'
     except :
-        result['Status'] = 'Failure'+attemptStatus
+
+        if not execute and attemptStatus == "":
+            result['Status'] = 'Dry run Success'
+        else:
+            result['Status'] = 'Failure'+attemptStatus
 
         try:
             print (response.text )
@@ -255,7 +260,7 @@ failures = dfAllResults.shape[0]-dfAllResults[dfAllResults.Status == 'Success'].
 if execute:
     print ("Completed. \nUsers changed:",dfAllResults[dfAllResults.Status == 'Success'].shape[0],"Users with an error:",failures )
 else:
-    print ("This was a dry run. Use the -e flag to run for real. All lines in the resulting UsernamesChangedResults.csv will be marked 'Failure'." )
+    print ("This was a dry run. Use the -e flag to run for real.")
 
 print (dfAllResults.to_string())
 dfAllResults.to_csv('UsernamesChangedResults-'+startTime+'.csv', encoding='utf-8', index=False)
