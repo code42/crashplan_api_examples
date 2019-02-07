@@ -1,4 +1,4 @@
-# Copyright (c) 2016, 2017, 2018 Code42, Inc.
+# Copyright (c) 2016, 2017, 2018, 2019 Code42, Inc.
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy 
 # of this software and associated documentation files (the "Software"), to deal 
@@ -18,7 +18,7 @@
 # SOFTWARE.
 
 # File: c42SharedLibrary.py
-# Last Modified: 2018-09-24
+# Last Modified: 2019-02-07
 #   Modified By: Paul H.
 
 # Author: AJ LaVenture
@@ -155,6 +155,7 @@ class c42Lib(object):
     cp_api_storage = "/api/Storage"
     cp_api_storageAuthToken = "/api/StorageAuthToken"
     cp_api_storedBytesHistory = "/api/StoredBytesHistory"
+    cp_api_securityToolsProfile = "/c42api/v3/SecurityToolsProfile"
     cp_api_storePoint = "/api/StorePoint"
     cp_api_user = "/api/User"
     cp_api_userMoveProcess = "/api/UserMoveProcess"
@@ -366,25 +367,36 @@ class c42Lib(object):
     #
     @staticmethod
     def getRequestHeaders(**kwargs):
-        header = {}
+        header = None
 
-        if not c42Lib.cp_authorization:
+        logging.info("[start] getRequestHeaders")
+        if kwargs:
+            logging.debug("Kwargs : {}".format(kwargs))
+
+        logging.info("Currently Set Auth : {}".format(c42Lib.cp_authorization))
+        header = kwargs['headers'] if 'headers' in kwargs else header
+
+        if not c42Lib.cp_authorization and header is None:
+            header = {}
             if kwargs and 'login_token' in kwargs:
                 logging.info("---- headers eval = login_token ----")
                 header["Authorization"] = "login_token {0}".format(kwargs['login_token'])
             elif kwargs and 'auth_token' in kwargs:
                 logging.info("---- headers eval = auth_token ----")
                 header["Authorization"] = "token {0}".format(kwargs['auth_token'])
+            elif kwargs and 'v3_user_token' in kwargs:
+                logging.info("---- headers eval = v3_user_token ----")
+                header["Authorization"] = "v3_user_token {0}".format(kwargs['v3_user_token'])
             else:
                 logging.info("---- headers eval = create basic_auth ----")
                 header["Authorization"] = c42Lib.getAuthHeader(c42Lib.cp_username,c42Lib.cp_password)
-        else:
+        elif header is None:
             logging.info("---- headers eval = use current basic auth ----")
             header['Authorization'] = c42Lib.cp_authorization
 
         header["Content-Type"] = "application/json"
 
-        # logging.info("-getRequestHeaders: " + str(header))
+        logging.info("-getRequestHeaders: " + str(header))
         return header
 
     #
@@ -397,8 +409,10 @@ class c42Lib(object):
     #
     @staticmethod
     def getRequestUrl(cp_api, **kwargs):
+        logging.info("[start] getRequestUrl : {0}".format(cp_api))
         host = ''
         port = ''
+        logging.info("Kwargs : {0}".format(kwargs))
 
         if kwargs and 'host' in kwargs:
             host = kwargs['host']
@@ -410,12 +424,27 @@ class c42Lib(object):
         else:
             port = c42Lib.cp_port
 
+        if port.lower() == 'false':
+            port = ''
+            c42Lib.cp_port = ''
+
+        # Check to see if using a Code42 Cloud Authority
+        host = host[:-1] if host[-1:] == '/' else host
+                
+        if 'v3' in host or 'v4' in host:
+            host = host.replace("/console","")
+        c42Lib.cp_host = host
+
+        logging.info("Host : {0}".format(host))
+        logging.info("Port : {0}".format(port))
+
 
         if port == '':           # Some customers have port forwarding and adding a port breaks the API calls
             url = host+ cp_api
         else:
             url = host + ":" + str(port) + cp_api
 
+        logging.info("[  end] getRequestUrl : {0}".format(url))
         return url
 
     #
@@ -456,6 +485,10 @@ class c42Lib(object):
                 cookies = kwargs['cookie']
             if 'timeout' in kwargs:
                 timeout = kwargs['timeout']
+
+        logging.debug("    URL : {0}".format(url))
+        logging.debug(" Params : {0}".format(params))
+        logging.debug("Payload : {0}".format(payload))
 
         try:
             if type == "get":
@@ -741,6 +774,8 @@ class c42Lib(object):
 
             serverInfoType = 'Manually Entered'
 
+        logging.info("Server : {0} : {1}".format(c42Lib.cp_host,c42Lib.cp_port))
+
         canConnect = False
         canConnect = c42Lib.reachableNetworkTest(c42Lib.cp_host)
 
@@ -817,16 +852,26 @@ class c42Lib(object):
             "privateAddress":True
         }
 
+        logging.info("Address : {0}".format(private_address))
+        logging.info("Payload : {0}".format(payload))
+
         r = c42Lib.executeRequest("post", c42Lib.cp_api_networkTest, {}, payload, **kwargs)
 
         try:
             contents = r.content.decode("UTF-8")
-            binary = json.loads(contents)
-            binary['data'] if 'data' in binary else None
+            validStatus = [200,201,202,203,204,205,206,207,208,400,401,403,404,405,408]
+            if r.status_code in validStatus:
 
-            print ""
-            print "Connection to " + str(private_address) + " appears to be valid."
-            print ""
+                print ""
+                print "Connection to " + str(private_address) + " appears to be valid (Status Code : {}).".format(r.status_code)
+                print ""
+
+                return True
+            else:
+                print ""
+                print "Connection to " + str(private_address) + " appears to be invalid."
+                print ""
+                return False
 
             return binary
 
@@ -1408,23 +1453,23 @@ class c42Lib(object):
                     
                     try:
                         r = c42Lib.executeRequest("get", c42Lib.cp_api_user, params, payload)
-
+                        logging.info("Status Code : {}".format(r.status_code))
                         logging.debug(r.text)
                         content = r.content
-                        r.content
-                        binary = json.loads(content)
-
-                        logging.debug(binary)
 
                     except Exception, e:
 
+                        logging.info("Status Code : {}".format(r.status_code))
                         logging.info("Error getting user : " + str(e))
                         print "********** " + str(keepTryingCount) + " | Error getting user : " + str(e)
                         break
 
                     if r.status_code == 200:
-
                         try:
+
+                            binary = json.loads(content)
+
+                            logging.debug(binary)
                             return binary['data']['users']
                             keepTrying = False
 
