@@ -234,7 +234,7 @@ for eachRole in allRoles:
                         result['Status'] = 'Failure'
                     allResults.append(result)
             else:
-                print ( "skipping this role" )
+              print ( "skipping this role" )
 dfAllResults = pd.DataFrame(allResults,columns=['User Id','Username','New Role','Old Role','Status'])
 
 if execute:
