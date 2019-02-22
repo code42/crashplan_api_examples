@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 Code42
+# Copyright (c) 2019 Code42
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
 # files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,7 @@
 #
 # File: roleChanger.py
 # Author: A Orrison, Code42 Software
-# Last Modified: 2018-10-29
+# Last Modified: 2019-02-21
 # Built for Python 3
 
 import requests
@@ -187,53 +187,54 @@ testServerConnectivity()
 testCredentials()
 allRoles = getRoles()
 print ( "Please refer to AllRoles.csv (exported by this script), or the roles page in console to determine what default roles you want to map your custom roles to.\nYou will be using the role name" )
-allResults = {}
+allResults = []
 
 for eachRole in allRoles:
     if allRoles[eachRole]['Type'] == 'Custom':
         oldRoleName = eachRole
         oldRoleId = allRoles[eachRole]['roleId']
         numUsers = allRoles[eachRole]['Number of users']
-        while True:
-            print ( "Please enter the new role name for users who currently have", oldRoleName,". Type \"skip\" to skip this role and move onto the next, type \"None\" to remove this role from the users" )
-            newRoleName = input("")
-            if newRoleName != 'skip' or newRoleName !='None':
-                try:
-                    newRoleType = allRoles[newRoleName]['Type']
-                    newRoleId = allRoles[newRoleName]['roleId']
-                    print ( "You have chosen\n\tRole name:", newRoleName )
-                    if newRoleType == 'Default':
-                        break
-                    else:
-                        print ( "please choose a default role." )
-                except:
-                    print ( "Please choose a valid role name" )
-            else:
-                break
-        if newRoleName != 'skip':
-            print ( "Removing the role", oldRoleName,"for", numUsers, "Replacing with", newRoleName )
+        if numUsers > 0:
+            while True:
+                print ( "Please enter the new role name for users who currently have", oldRoleName,". Type \"skip\" to skip this role and move onto the next")
+                newRoleName = input("")
+                if newRoleName != 'skip':
+                    try:
+                        newRoleType = allRoles[newRoleName]['Type']
+                        newRoleId = allRoles[newRoleName]['roleId']
+                        print ( "You have chosen\n\tRole name:", newRoleName )
+                        if newRoleType == 'Default':
+                            break
+                        else:
+                            print ( "please choose a default role." )
+                    except:
+                        print ( "Please choose a valid role name" )
+                else:
+                    break
+            if newRoleName != 'skip':
+                print ( "Removing the role", oldRoleName,"for", numUsers, "Replacing with", newRoleName )
 
-            thisRoleUsers  = getAllUsersByRole(oldRoleId)
-            for user in thisRoleUsers:
-                result = {}
-                userId = user['userId']
-                username = user['username']
-                result['User Id'] = userId
-                result['Username'] = username
-                try:
-                    changeRole(oldRoleName,newRoleName,userId)
-                    print ( "changed roles from ",oldRoleName, "to", newRoleName,"successfully for:",username )
-                    result['Old Role'] = oldRoleName
-                    result['New Role'] = newRoleName
-                    result['Status'] = 'Success'
-                except:
-                    print ( "ERROR failed to change roles from ",oldRoleName, "to", newRoleName, "for:", username )
-                    result['Old Role'] = oldRoleName
-                    result['New Role'] = newRoleName
-                    result['Status'] = 'Failure'
-                allResults.append(result)
-        else:
-            print ( "skipping this role" )
+                thisRoleUsers  = getAllUsersByRole(oldRoleId)
+                for user in thisRoleUsers:
+                    result = {}
+                    userId = user['userId']
+                    username = user['username']
+                    result['User Id'] = userId
+                    result['Username'] = username
+                    try:
+                        changeRole(oldRoleName,newRoleName,userId)
+                        print ( "changed roles from ",oldRoleName, "to", newRoleName,"successfully for:",username )
+                        result['Old Role'] = oldRoleName
+                        result['New Role'] = newRoleName
+                        result['Status'] = 'Success'
+                    except:
+                        print ( "ERROR failed to change roles from ",oldRoleName, "to", newRoleName, "for:", username )
+                        result['Old Role'] = oldRoleName
+                        result['New Role'] = newRoleName
+                        result['Status'] = 'Failure'
+                    allResults.append(result)
+            else:
+              print ( "skipping this role" )
 dfAllResults = pd.DataFrame(allResults,columns=['User Id','Username','New Role','Old Role','Status'])
 
 if execute:

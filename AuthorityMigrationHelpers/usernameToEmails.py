@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 Code42
+# Copyright (c) 2019 Code42
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
 # files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,7 @@
 #
 # File: usernameToEmails.py
 # Author: A Orrison, Code42 Software
-# Last Modified: 2018-12-17
+# Last Modified: 2019-2-19
 # Built for python 3
 #################### TO do: 1. Get rid of insecure warning when running, add option to only do one org, users with blank email address not incremented for failure.
 
@@ -30,6 +30,9 @@ import sys
 import os
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+# Force UTF-8, only on Macs
+#reload(sys)
+#sys.setdefaultencoding('utf-8')
 
 parser = argparse.ArgumentParser(description='Input for this script')
 
@@ -107,7 +110,7 @@ def testServerConnectivity():
             print ("Server is accessible." )
     except:
         print (serverAddress, "is not available. Please check the server address and try again" )
-        exit()
+        sys.exit()
 
 def testCredentials():
     response = genericRequest('get', '/api/user/my?incRoles=True',params={}, payload={})
@@ -120,7 +123,7 @@ def testCredentials():
     else:
         print (data )
         print ("Exiting, please try your credentials again." )
-        exit()
+        sys.exit()
 
 def getAllUsers():
     payload = {}
@@ -182,8 +185,8 @@ elif method == 3:
     dfAllUsersToProcess['username'] = dfAllUsersToProcess['firstName'] + '.' + dfAllUsersToProcess['lastName'] + domain
 elif method == 4:
     checkIfUsernamesAreEmailAddresses(allUsers)
-    print ("Users without email addresses have been printed to usernamesNotemailAddresses.csv")
-    exit()
+    print ("Users without email addresses have been printed to usernamesNotEmailAddresses.csv")
+    sys.exit()
 
 
 #dfAllUsersToProcess = dfAllUsersToProcess.fillna('empty')
@@ -193,7 +196,7 @@ if args.inputFile:
     dfAllUsersToProcess = dfAllUsersToProcess[dfAllUsersToProcess['userId'].isin(lines)]
 else:
     print ("Processing all users." )
-print (dfAllUsersToProcess.to_string() )
+#print (dfAllUsersToProcess.to_string() )
 #Check to see if there are any users that don't have an @ symbol in their username.
 #If this is the case something is not right, and needs to be fixed.
 #If this is the case something is not right, and needs to be fixed.
@@ -262,5 +265,5 @@ if execute:
 else:
     print ("This was a dry run. Use the -e flag to run for real.")
 
-print (dfAllResults.to_string())
+#print (dfAllResults.to_string())
 dfAllResults.to_csv('UsernamesChangedResults-'+startTime+'.csv', encoding='utf-8', index=False)
