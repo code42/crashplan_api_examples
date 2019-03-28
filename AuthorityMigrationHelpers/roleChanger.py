@@ -1,3 +1,8 @@
+# By downloading and executing this software, you acknowledge and agree that Code42 is providing you this software at no cost separately from Code42's commercial offerings.
+# This software is not provided under Code42's master services agreement.
+# It is provided AS-IS, without support, and subject to the license below.
+# Any support and documentation for this software are available at the Code42 community site.
+
 # The MIT License (MIT)
 # Copyright (c) 2019 Code42
 
