@@ -22,7 +22,7 @@
 # Author: A Orrison, Code42 Software
 # Last Modified: 2019-2-19
 # Built for python 3
-#################### TO do: 1. Get rid of insecure warning when running, add option to only do one org, users with blank email address not incremented for failure.
+####################
 
 import requests
 import argparse
