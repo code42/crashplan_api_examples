@@ -1,26 +1,25 @@
-# By downloading and executing this software, you acknowledge and agree that Code42 is providing you this software at no cost separately from Code42's commercial offerings.
-# This software is not provided under Code42's master services agreement.
-# It is provided AS-IS, without support, and subject to the license below.
-# Any support and documentation for this software are available at the Code42 community site.
-
-# The MIT License (MIT)
-# Copyright (c) 2019 Code42
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
-# files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
-# modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software
-# is furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
+# By downloading and executing this software, you acknowledge and agree that Code42 is providing you this software at no
+# cost separately from Code42's commercial offerings.  This software is not provided under Code42's master services
+# agreement.  It is provided AS-IS, without support, and subject to the license below.  Any support and documentation
+# for this software are available at the Code42 community site.
+#
+# MIT LICENSE
+# Copyright (c) 2019 Code42 Software, Inc.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
 # WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+# OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 # File: usernameToEmails.py
 # Author: A Orrison, Code42 Software
-# Last Modified: 2019-2-19
+# Last Modified: 2019-3-28
 # Built for python 3
 ####################
 
@@ -35,9 +34,7 @@ import sys
 import os
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-# Force UTF-8, only on Macs
-#reload(sys)
-#sys.setdefaultencoding('utf-8')
+# Force UTF-8, only on Windows
 
 parser = argparse.ArgumentParser(description='Input for this script')
 
@@ -74,7 +71,7 @@ if not execute:
 else:
     print ("BE AWARE, THIS WILL CHANGE ALL USERNAMES ON YOUR SYSTEM TO EMAIL ADDRESSES\nIf you have second thoughts, or are not ready please quit now. (ctrl+c)")
 
-if method >1 and method < 4:
+if method in {2,3}:
     while True:
         print ("Please enter the domain for your users ex: @example.com")
         domain = input()
@@ -199,7 +196,6 @@ elif method == 4:
     print ("Users without email addresses have been printed to usernamesNotEmailAddresses.csv")
     sys.exit()
 
-
 #dfAllUsersToProcess = dfAllUsersToProcess.fillna('empty')
 
 if args.inputFile:
@@ -218,7 +214,6 @@ for index, row in dfAllUsersToProcess.iterrows():
     newUsername = row['username']
     oldUsername  = row['Old Username']
     userId = row['userId']
-
     result['User Id'] = userId
     result['New Username'] = newUsername
     result['Old Username'] = oldUsername
@@ -255,9 +250,8 @@ for index, row in dfAllUsersToProcess.iterrows():
             print (payload )
         else:
             print ("Changed",oldUsername+" to",newUsername )
-            result['Status'] = 'success'
+            result['Status'] = 'Success'
     except :
-
         if not execute and attemptStatus == "":
             result['Status'] = 'Dry run Success'
         else:
