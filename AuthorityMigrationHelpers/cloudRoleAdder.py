@@ -202,7 +202,7 @@ def addRole(oldRoleName,newRoleName,userId):
 testServerConnectivity()
 testCredentials()
 allRoles = getRoles()
-print ( "Please refer to https://support.code42.com/Administrator/Cloud/Monitoring_and_managing/Manage_user_roles to determine what cloud roles you want to map your on premis roles to.\nYou will be using the role name" )
+print ( "Please refer to https://support.code42.com/Administrator/Cloud/Monitoring_and_managing/Manage_user_roles to determine what cloud roles you want to map your on premises roles to.\nYou will be using the role name" )
 allResults = []
 
 for eachRole in allRoles:
