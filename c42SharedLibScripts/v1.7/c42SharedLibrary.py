@@ -1,21 +1,23 @@
-# Copyright (c) 2016, 2017, 2018, 2019 Code42, Inc.
+# By downloading and executing this software, you acknowledge and agree that Code42 is providing you this software at no cost separately from Code42's commercial offerings.
+# This software is not provided under Code42's master services agreement.
+# It is provided AS-IS, without support, and subject to the license below.
+# Any support and documentation for this software are available at the Code42 community site.
 
-# Permission is hereby granted, free of charge, to any person obtaining a copy 
-# of this software and associated documentation files (the "Software"), to deal 
-# in the Software without restriction, including without limitation the rights 
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
-# copies of the Software, and to permit persons to whom the Software is 
-# furnished to do so, subject to the following conditions:
-# The above copyright notice and this permission notice shall be included in all 
-# copies or substantial portions of the Software.
+# The MIT License (MIT)
+# Copyright (c) 2019 Code42
 
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
-# SOFTWARE.
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
+# modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software
+# is furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
 
 # File: c42SharedLibrary.py
 # Last Modified: 2019-02-07
@@ -95,10 +97,11 @@ import pandas as pd
 from contextlib import closing
 import codecs
 import ssl
+import textwrap
 
 class c42Lib(object):
 
-    cp_c42Lib_version = '1.7.9'.split('.')
+    cp_c42Lib_version = '1.7.10'.split('.')
 
     # Set to your environments values
     #cp_host = "<HOST OR IP ADDRESS>" ex: http://localhost or https://localhost
@@ -276,22 +279,15 @@ class c42Lib(object):
 
         logging.debug('[begin] - startupDisclaimer')
 
-        disclaimerFilePath = None
-
-        if kwargs:
-            if 'filePath' in kwargs:
-                disclaimerFilePath = kwargs['filePath']
-
-        print "" 
-        disclaimerFilePath = "../../../Disclaimers/StandardC42Disclaimer2017.txt"
-        if not os.path.exists(disclaimerFilePath):
-            print 'Copyright 2015,2016,2017,2018 Code42'
-            print ''
-            print 'THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.'
-        else:
-            c42Lib.printFileToScreen('../../../Disclaimers/StandardC42Disclaimer2017.txt')
-        print ""
-        print ""
+        print ('\n')
+        print ("By downloading and executing this software, you acknowledge and agree that Code42 is providing you this software free of charge separately from Code42's commercial offerings. This software is not provided under Code42's master services agreement. It is provided AS-IS, without support, and subject to the license below. Any support and documentation for this software are available at the Code42 community site.")
+        print ('\n')
+        print ('Copyright 2019 Code42')
+        print ('\n')
+        print ("Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.")
+        print ('\n')
+        print ("THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.")
+        print ('\n')
 
         logging.info('  [end] - startupDisclaimer')
 
@@ -410,6 +406,15 @@ class c42Lib(object):
     @staticmethod
     def getRequestUrl(cp_api, **kwargs):
         logging.info("[start] getRequestUrl : {0}".format(cp_api))
+        logging.info("URL : {} | Port : {}".format(c42Lib.cp_host,c42Lib.cp_port))
+        if  c42Lib.cp_host == "https://crashplan.com" or c42Lib.cp_host == "https://console.us.code42.com":
+            logging.info("Connecting to Code42 Cloud... no port needed.")
+            c42Lib.cp_port    = ""
+            cp_serverHostPort = ""
+            c42Lib.isC42Cloud = True
+            kwargs['port'] = ""
+            c42Lib.cp_host = "https://www.crashplan.com" if "crashplan.com" in c42Lib.cp_host else c42Lib.cp_host
+        logging.info("Code42 Cloud : {}".format(c42Lib.isC42Cloud))
         host = ''
         port = ''
         logging.info("Kwargs : {0}".format(kwargs))
@@ -428,7 +433,11 @@ class c42Lib(object):
             port = ''
             c42Lib.cp_port = ''
 
+        if c42Lib.isC42Cloud:
+            c42Lib.cp_port = ''
+
         # Check to see if using a Code42 Cloud Authority
+        
         host = host[:-1] if host[-1:] == '/' else host
                 
         if 'v3' in host or 'v4' in host:
@@ -480,11 +489,9 @@ class c42Lib(object):
         cookies = None
         timeout = None
 
-        if kwargs:
-            if 'cookie' in kwargs:
-                cookies = kwargs['cookie']
-            if 'timeout' in kwargs:
-                timeout = kwargs['timeout']
+        cookies = kwargs['cookie']  if 'cookie'  in kwargs else None
+        timeout = kwargs['timeout'] if 'timeout' in kwargs else None
+                
 
         logging.debug("    URL : {0}".format(url))
         logging.debug(" Params : {0}".format(params))
@@ -492,7 +499,6 @@ class c42Lib(object):
 
         try:
             if type == "get":
-                logging.debug("Payload : " + str(payload))
                 r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl,cookies=cookies,timeout=timeout)
                 logging.debug(r.text)
                 return r
@@ -729,32 +735,39 @@ class c42Lib(object):
         print "========= Checking Connection to Server..."
         print ""
 
+        cp_serverHostURL  = kwargs['cp_serverHostURL']  if 'cp_serverHostURL'  in kwargs else None
+        cp_serverHostPort = kwargs['cp_serverHostPort'] if 'cp_serverHostPort' in kwargs else None
+        c42Lib.isC42Cloud = False
+
         serverInfoType     = 'Hardcoded'
         warningText        = ''
         cp_serverInfoFile  = False
-        cp_serverEntryFlag = False 
+        cp_serverEntryFlag = False
 
-        if kwargs:
-            
-            # If no KWARGS it will use 'admin'/'admin' and proceed.
-            
-            if ('cp_serverHostURL' in kwargs) and ('cp_serverHostPort' in kwargs):
-                cp_serverHostURL  = kwargs['cp_serverHostURL']
-                cp_serverHostPort = kwargs['cp_serverHostPort']
-                cp_serverEntryFlag = True
+        if  cp_serverHostURL == "https://crashplan.com" or cp_serverHostURL == "https://console.us.code42.com":
+            logging.info("Connecting to Code42 Cloud... no port needed.")
+            c42Lib.cp_port    = ""
+            cp_serverHostPort = ""
+            c42Lib.isC42Cloud = True
+
+        if cp_serverHostURL and (cp_serverHostPort or c42Lib.isC42Cloud):
+            cp_serverEntryFlag = True
+        else:
+            cp_serverEntryFlag = False
+            if c42Lib.isC42Cloud:
+                warningText = 'Check Code42 Cloud URL'
             else:
-                cp_serverEntryFlag = False
                 warningText = 'Check Server URL & Port (no colon between URL & port)'
-                cp_serverHostURL  = c42Lib.cp_host
-                cp_serverHostPort = c42Lib.cp_port
+            cp_serverHostURL  = c42Lib.cp_host
+            cp_serverHostPort = c42Lib.cp_port
 
-            if ('cp_serverInfoFileName' in kwargs) and not cp_serverEntryFlag:
-                cp_serverInfoFileName = kwargs['cp_serverInfoFileName']
-                cp_serverInfoFile = True
-            elif not cp_serverEntryFlag:
-                cp_serverInfoFile = False
-                warningText = 'Check Server File Info'
-                cp_serverInfoFileName = ''
+        if ('cp_serverInfoFileName' in kwargs) and not cp_serverEntryFlag:
+            cp_serverInfoFileName = kwargs['cp_serverInfoFileName']
+            cp_serverInfoFile = True
+        elif not cp_serverEntryFlag:
+            cp_serverInfoFile = False
+            warningText = 'Check Server File Info'
+            cp_serverInfoFileName = ''
 
         # end if
 
@@ -762,7 +775,16 @@ class c42Lib(object):
             
             with open(str(c42Lib.getFilePath(cp_serverInfoFileName))) as f:
                 c42Lib.cp_host = f.readline().strip()
-                c42Lib.cp_port = f.readline().strip()
+                try:
+                    c42Lib.cp_port = f.readline().strip()
+                except:
+                    pass
+
+        if  c42Lib.cp_host == "https://crashplan.com" or c42Lib.cp_host == "https://console.us.code42.com":
+            logging.info("Connecting to Code42 Cloud... no port needed.")
+            c42Lib.cp_port    = ""
+            cp_serverHostPort = ""
+            c42Lib.isC42Cloud = True
 
             serverInfoType = 'Server Info File'
 
@@ -777,7 +799,10 @@ class c42Lib(object):
         logging.info("Server : {0} : {1}".format(c42Lib.cp_host,c42Lib.cp_port))
 
         canConnect = False
-        canConnect = c42Lib.reachableNetworkTest(c42Lib.cp_host)
+        if c42Lib.isC42Cloud:
+            canConnect = c42Lib.URLPing(c42Lib.cp_host)
+        else:
+            canConnect = c42Lib.reachableNetworkTest(c42Lib.cp_host)
 
         if not canConnect:
             serverInfoType = False
@@ -819,7 +844,7 @@ class c42Lib(object):
 
         try:
             # print "Trying : " + str(private_address)
-            r = requests.get(private_address, params={}, data={}, headers={}, verify=c42Lib.cp_verify_ssl,timeout=kwargs['timeout'])
+            r = requests.get(private_address, params={}, data={}, headers={}, verify=c42Lib.cp_verify_ssl,timeout=timeout)
             contents = r.content.decode("UTF-8")
             binary = json.loads(contents)
             return True if 'data' in binary else None
@@ -1819,27 +1844,26 @@ class c42Lib(object):
 
     @staticmethod
     def putUserDeactivate(userId, deactivate):
-        logging.info("putUserDeactivate-params:userId[" + str(userId) + "],deactivate[" + str(deactivate) + "]")
+        logging.info("[start] putUserDeactivate - userId : {} | Action : {}".format(userId,deactivate))
+
+        actionSuccess = None
         params = {}
         payload = {}
         if (userId is not None and userId != ""):
             if deactivate:
                 r = c42Lib.executeRequest("put", c42Lib.cp_api_deactivateUser+"/"+str(userId), params, payload)
-                logging.debug('Deactivate Call Status: '+str(r.status_code))
-                if not (r.status_code == ""):
-                    return True
-                else:
-                    return False
+                logging.debug('Deactivate Call Status: '.format(r.status_code))
+                actionSuccess = True if (r.status_code == "") else False
+
             else:
                 r = c42Lib.executeRequest("delete", c42Lib.cp_api_deactivateUser+"/"+str(userId), params, payload)
-                logging.debug('Deactivate Call Status: '+str(r.status_code))
-                if not (r.status_code == ""):
-                    return True
-                else:
-                    return False
+                logging.debug('Deactivate Call Status: '.format(r.status_code))
+                actionSuccess = True if (r.status_code == "") else False
         else:
             logging.error("putUserDeactivate has no userID to act on")
 
+        logging.info("[start] putUserDeactivate - userId : {} | Action : {} | Success : {}".format(userId,deactivate,actionSuccess))
+        return actionSuccess
 
     #
     # postUserMoveProcess(userUid, orgUid):
@@ -2787,33 +2811,39 @@ class c42Lib(object):
             return False
 
     #
-    # putDeviceDeactivate(computerId):
-    # Deactivates a device based in the computerId passed
+    # putDeviceDeactivate(computerIdId, reactive):
+    # Deactivates a device based in the DeviceId passed
     # params:
-    # computerId - id for the user to update
-    # returns: user object after the update
+    # DeviceId - id for the user to update
+    # deactivate - deactivates the device if true, re-activates if false
     #
 
     @staticmethod
-    def putDeviceDeactivate(computerId):
-        logging.info("putDeviceDeactivate-params:computerId[" + str(computerId) + "]")
+    def putDeviceDeactivate(deviceId, deactivate):
+        logging.info("[start] putDeviceDeactivate - deviceId : {} | Action : {}".format(deviceId,deactivate))
 
-        deactivateSuccess = False
+        actionSuccess = None
+        params = {}
+        payload = {}
+        if (deviceId is not None and deviceId != ""):
+            if deactivate:
+                r = c42Lib.executeRequest("put", c42Lib.cp_api_deactivateDevice+"/"+str(deviceId), params, payload)
+                logging.debug('Deactivate Call Status: '.format(r.status_code))
+                actionSuccess = True if (r.status_code == 204) else False
+                if r.status_code != 204:
+                    logging.info("Error deactivating device : {}".format(r.status_code)) # A 400 error indicates the user could be in legal hold.
 
-        if (computerId is not None and computerId != ""):
-            try:
-                r = c42Lib.executeRequest("put", c42Lib.cp_api_deacivateDevice+"/"+str(computerId),"","")
-                logging.debug('Deactivate Device Call Status: '+str(r.status_code))
-                if not (r.status_code == ""):
-                    deactivateSuccess = True
+            else:
+                r = c42Lib.executeRequest("delete", c42Lib.cp_api_deactivateDevice+"/"+str(deviceId), params, payload)
+                logging.debug('Deactivate Call Status: '.format(r.status_code))
+                actionSuccess = True if (r.status_code == 204) else False
+                if r.status_code != 204:
+                    logging.info("Error reactivating device : {}".format(r.status_code))
+                    r.logging.info("")
+            logging.error("putDeviceDeactivate has no deviceID to act on")
 
-            except Exception, e:
-                logging.info('Could Not Deactivate : ' + str(computerId) + " | Error : " + str(e))
-
-        else:
-            logging.error("putDeviceDeactivate has no userID to act on")
-
-        return deactivateSuccess
+        logging.info("[start] putUserDeactivate - userId : {} | Action : {} | Success : {}".format(userId,deactivate,actionSuccess))
+        return actionSuccess
 
 
     #
@@ -4683,7 +4713,7 @@ class c42Lib(object):
         # set up logging to file
 
         c42Lib.cp_logFileName = c42Lib.getFilePath(c42Lib.cp_logFileName)
-        showInConsole = True
+        showInConsole = kwargs['showInConsole'] if 'showInConsole' in kwargs else True
 
         if not kwargs:
 

@@ -19,7 +19,7 @@
 #
 # File: cloudRoleAdder.py
 # Author: A Orrison, Code42 Software
-# Last Modified: 2019-04-17
+# Last Modified: 2019-04-01
 # Built for Python 3
 
 import requests
@@ -41,7 +41,7 @@ parser.add_argument('-u',dest='username',required=True,help='Username for a SYSA
 parser.add_argument('-e',action='store_true',help='Add this flag to run it for real. Leave out for a dry run')
 
 args = parser.parse_args()
-credsUsername = args.username
+username = args.username
 serverAddress = args.serverUrl
 #print ( args.inputFile )
 execute = args.e
@@ -68,20 +68,20 @@ if not execute:
 else:
     print ("This wil add cloud roles to users \nIf you have second thoughts, or are not ready please quit now. (ctrl+c)")
 
-print ( "Username:\t",credsUsername, "\nServer Address:\t", serverAddress )
+print ( "Username:\t",username, "\nServer Address:\t", serverAddress )
 userPassword = getpass.getpass(prompt='Please enter your password:')
 
 def genericRequest(requestType,call, params={}, payload={}):
     address= serverAddress+call
 
     if requestType == 'get':
-        r = requests.get(address,auth =(credsUsername,userPassword),params=params, verify=False)
+        r = requests.get(address,auth =(username,userPassword),params=params, verify=False)
     elif requestType == 'post' and execute:
-        r = requests.post(address,auth =(credsUsername,userPassword),data=payload,params=params, verify=False)
+        r = requests.post(address,auth =(username,userPassword),data=payload,params=params, verify=False)
     elif requestType == 'put' and execute:
-        r = requests.put(address, auth =(credsUsername, userPassword),data=payload, params = params, verify=False)
+        r = requests.put(address, auth =(username, userPassword),data=payload, params = params, verify=False)
     elif requestType == 'delete' and execute:
-        r = requests.delete(address, auth =(credsUsername, userPassword),data=payload, params = params, verify=False)
+        r = requests.delete(address, auth =(username, userPassword),data=payload, params = params, verify=False)
     elif not execute:
         r = False
     else:
@@ -138,16 +138,17 @@ def getAllUsersByRole(roleId):
 
     return allUsers
 
-
-
 def createNonExistingCloudRole(newRoleName):
     params = {}
     toSend = {}
     toSend['roleName'] = newRoleName
     toSend['permissions'] = []
     payload = json.dumps(toSend)
-    createdRole = genericRequest('post', '/api/role', params=params, payload=payload)
-    return createdRole
+    try:
+        genericRequest('post', '/api/role', params=params, payload=payload)
+    except:
+        print ("Did not create role")
+
 def getRoles():
     roles = {}
     params = {}
@@ -176,8 +177,8 @@ def getRoles():
         else:
             thisRole['Type'] = "Custom"
             rolesReady = False
-        if numberOfUsers > 0:
-            roles[roleName] = thisRole
+
+        roles[roleName] = thisRole
     dfRoles = pd.DataFrame(roles, columns=['RoleId', 'Name', 'Number of users', 'Type', 'Permissions'])
     dfRoles.to_csv(cwd+"/"+"AllRoles-"+startTime+".csv",encoding='utf-8',index=False)
     return roles
@@ -186,21 +187,22 @@ def addRole(oldRoleName,newRoleName,userId):
     newparams = {}
     toSend = {}
     oldparams = {}
+    oldPayload = {}
     oldparams['userId'] = userId
     oldparams['roleName']=oldRoleName
     call = '/api/UserRole'
     toSend['userId'] = userId
     toSend['roleName'] = newRoleName
     newPayload = json.dumps(toSend)
-    #add the new role to the user
-    roleAddRequest = genericRequest('post',call,params=newparams,payload=newPayload)
-    return roleAddRequest
 
+    if newRoleName != 'None':
+        #add the new role to the user
+        newRequest = genericRequest('post',call,params=newparams,payload=newPayload)
 
 testServerConnectivity()
 testCredentials()
 allRoles = getRoles()
-print ( "\nPlease refer to https://support.code42.com/Administrator/Cloud/Monitoring_and_managing/Manage_user_roles to determine what cloud roles you want to map your on premis roles to.\nYou will be using the role name\n\n" )
+print ( "Please refer to https://support.code42.com/Administrator/Cloud/Monitoring_and_managing/Manage_user_roles to determine what cloud roles you want to map your on premis roles to.\nYou will be using the role name" )
 allResults = []
 
 for eachRole in allRoles:
@@ -208,54 +210,47 @@ for eachRole in allRoles:
         oldRoleName = eachRole
         oldRoleId = allRoles[eachRole]['roleId']
         numUsers = allRoles[eachRole]['Number of users']
-        waitingForNewRoleName = True
-        while waitingForNewRoleName:
-            print ( "Please enter the new role name for the",numUsers,"user(s) who currently have", oldRoleName,". Type \"skip\" to skip this role and move onto the next")
-            newRoleName = input("")
+        if numUsers > 0:
+            waitingForNewRoleName = True
+            while waitingForNewRoleName:
+                print ( "Please enter the new role name for users who currently have", oldRoleName,". Type \"skip\" to skip this role and move onto the next")
+                newRoleName = input("")
+                if newRoleName != 'skip':
+                        print ( "You have chosen\n\tRole name:", newRoleName )
+                        for eachCloudRole in cloudRoles:
+                            if newRoleName == eachCloudRole:
+                                waitingForNewRoleName= False
+                        else:
+                            print ( "please choose a role present in the cloud." )
+                else:
+                    break
             if newRoleName != 'skip':
-                    print ( "You have chosen\n\tRole name:", newRoleName )
-                    for eachCloudRole in cloudRoles:
-                        if newRoleName == eachCloudRole:
-                            print(newRoleName," is a cloud role")
-                            waitingForNewRoleName= False
-                    if waitingForNewRoleName == True:
-                        print ( "please choose a role present in the cloud." )
-            else:
-                break
-        if newRoleName != 'skip':
-            print ( "Adding the role", newRoleName,"for", numUsers, "users with",oldRoleName)
+                print ( "Adding the role", newRoleName,"for", numUsers, "with",oldRoleName)
 
-            thisRoleUsers  = getAllUsersByRole(oldRoleId)
-            if execute:
-                print("Trying to create", newRoleName, "if it does not exist already.")
-                wasRoleMade = createNonExistingCloudRole(newRoleName)
-                print("Result:",wasRoleMade)
-            for user in thisRoleUsers:
-                result = {}
-                userId = user['userId']
-                username = user['username']
-                result['User Id'] = userId
-                result['Username'] = username
-                try:
-                    if execute:
-                        roleAddRequest = addRole(oldRoleName,newRoleName,userId)
-                    if roleAddRequest.status_code ==200:
+                thisRoleUsers  = getAllUsersByRole(oldRoleId)
+                for user in thisRoleUsers:
+                    result = {}
+                    userId = user['userId']
+                    username = user['username']
+                    result['User Id'] = userId
+                    result['Username'] = username
+                    try:
+                        createNonExistingCloudRole(newRoleName)
+                        if execute:
+                            print("Creating",newRoleName,"if it does not exist already.")
+                        addRole(oldRoleName,newRoleName,userId)
                         print ( "Added", newRoleName,"successfully for:",username )
+                        result['Old Role'] = oldRoleName
+                        result['New Role'] = newRoleName
                         result['Status'] = 'Success'
-                    else:
-                        print ( "Did not add", newRoleName,"to:",username )
+                    except:
+                        print ( "ERROR failed to add the new role",newRoleName,"for:", username )
+                        result['Old Role'] = oldRoleName
+                        result['New Role'] = newRoleName
                         result['Status'] = 'Failure'
-
-                    result['Old Role'] = oldRoleName
-                    result['New Role'] = newRoleName
-
-                except:
-                    print ( "ERROR failed to add the new role",newRoleName,"for:", username )
-                    result['Old Role'] = oldRoleName
-                    result['New Role'] = newRoleName
-                    result['Status'] = 'Failure'
-                allResults.append(result)
-
+                    allResults.append(result)
+            else:
+                print ( "skipping this role" )
 dfAllResults = pd.DataFrame(allResults,columns=['User Id','Username','New Role','Old Role','Status'])
 failures = dfAllResults.shape[0]-dfAllResults[dfAllResults.Status == 'Success'].shape[0]
 if execute:
