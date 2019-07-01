@@ -19,7 +19,7 @@
 #
 # File: usernameToEmails.py
 # Author: A Orrison, Code42 Software
-# Last Modified: 2019-3-28
+# Last Modified: 2019-6-11
 # Built for python 3
 ####################
 
@@ -33,25 +33,16 @@ import logging
 import sys
 import os
 import urllib3
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Force UTF-8, only on Windows
 
-parser = argparse.ArgumentParser(description='Input for this script')
-
-parser.add_argument('-s',dest='serverUrl',help='Server and port for the server ex: "https://server.url.code42.com:4285"',required=True)
-parser.add_argument('-u',dest='username',required=True,help='Username for a SYSADMIN user using local authentication')
-parser.add_argument('--method',dest='method',required=True,type=int,choices=[1,2,3,4],help="Select which method you want to use for changing usernames to email addresses. 1=Make user's email their username.2=username@domain.com 3=first.last@domain.com. 4=Check to see if all usernames are emails")
-parser.add_argument('-e',action='store_true',help='Add this flag to run it for real. Leave out for a dry run')
-parser.add_argument('-f',dest='inputFile',type=argparse.FileType('r'),help='File that contains just the userIds you want to alter')
-
-args = parser.parse_args()
-method = args.method
-username = args.username
-serverAddress = args.serverUrl
-#print (args.inputFile )
-filename = args.inputFile
-execute = args.e
-startTime = time.strftime("%y%m%d%I%M%S",time.localtime(time.time()))
+#Global variables
+startTime = time.strftime("%y%m%d%I%M%S", time.localtime(time.time()))
+serverAddress = ""
+credsUsername = ""
+userPassword = ""
+execute = ""
 
 class Logger(object):
     def __init__(self):
@@ -64,37 +55,22 @@ class Logger(object):
 
     def flush(self):
         pass
-sys.stdout = Logger()
-
-if not execute:
-    print ("This is a dry run. Add the -e flag to run for real." )
-else:
-    print ("BE AWARE, THIS WILL CHANGE ALL USERNAMES ON YOUR SYSTEM TO EMAIL ADDRESSES\nIf you have second thoughts, or are not ready please quit now. (ctrl+c)")
-
-if method in {2,3}:
-    while True:
-        print ("Please enter the domain for your users ex: @example.com")
-        domain = input()
-        if '@' in domain:
-            break
-        else:
-            print ("Double check the domain for an @ symbol and try again. You entered:",domain )
-    print ("Domain:\t\t",domain)
-print ("Username:\t",username, "\nServer Address:\t", serverAddress,"\nMethod:\t\t",method)
-userPassword = getpass.getpass(prompt='Please enter your password:')
-
 
 def genericRequest(requestType,call, params={}, payload={}):
+    global serverAddress
+    global credsUsername
+    global userPassword
+    global execute
     address= serverAddress+call
 
     if requestType == 'get':
-        r = requests.get(address,auth =(username,userPassword),params=params, verify=False)
+        r = requests.get(address,auth =(credsUsername,userPassword),params=params, verify=False)
     elif requestType == 'post' and execute:
-        r = requests.post(address,auth =(username,userPassword),data=payload,params=params, verify=False)
+        r = requests.post(address,auth =(credsUsername,userPassword),data=payload,params=params, verify=False)
     elif requestType == 'put' and execute:
-        r = requests.put(address, auth =(username, userPassword),data=payload, params = params, verify=False)
+        r = requests.put(address, auth =(credsUsername, userPassword),data=payload, params = params, verify=False)
     elif requestType == 'delete' and execute:
-        r = requests.delete(address, auth =(username, userPassword),data=payload, params = params, verify=False)
+        r = requests.delete(address, auth =(credsUsername, userPassword),data=payload, params = params, verify=False)
     elif not execute:
         r = False
     else:
@@ -103,6 +79,7 @@ def genericRequest(requestType,call, params={}, payload={}):
     return r
 
 def testServerConnectivity():
+    global serverAddress
     try:
         response = genericRequest('get','/api/ping',params={}, payload={})
 
@@ -149,9 +126,9 @@ def getAllUsers():
 
     return allUsers
 
-def usernameIsEmail(username):
+def usernameIsEmail(usernameToTest):
     try:
-        usernameTest = username.split("@")
+        usernameTest = usernameToTest.split("@")
         if len(usernameTest) == 2:
             return True
         else:
@@ -177,98 +154,168 @@ def checkIfUsernamesAreEmailAddresses(allUsers):
                 text_file.write(content)
                 text_file.close()
 
-testServerConnectivity()
-testCredentials()
+def main():
+    print("For assistance please check usernameToEmailsReadme.txt\nFor license info about this script read licenses.txt\n\t© 2019 Code42\n")
 
-allUsers = getAllUsers()
+    global serverAddress
+    global credsUsername
+    global userPassword
+    global execute
 
-dfAllUsersToProcess =  pd.DataFrame(allUsers,columns=['userId','userUid','active','username','email','firstName','lastName'])
-dfAllUsersToProcess['Old Username'] = dfAllUsersToProcess['username']
+    parser = argparse.ArgumentParser(description='Input for this script')
 
-if method == 1:
-    dfAllUsersToProcess['username'] = dfAllUsersToProcess['email']
-elif method ==2:
-    dfAllUsersToProcess['username'] = dfAllUsersToProcess['username'] + domain
-elif method == 3:
-    dfAllUsersToProcess['username'] = dfAllUsersToProcess['firstName'] + '.' + dfAllUsersToProcess['lastName'] + domain
-elif method == 4:
-    checkIfUsernamesAreEmailAddresses(allUsers)
-    print ("Users without email addresses have been printed to usernamesNotEmailAddresses.csv")
-    sys.exit()
+    parser.add_argument('-s', dest='serverUrl',
+                        help='Server and port for the server ex: "https://server.url.code42.com:4285"', required=True)
+    parser.add_argument('-u', dest='username', required=True,
+                        help='Username for a SYSADMIN user using local authentication')
+    parser.add_argument('--method', dest='method', required=True, type=int, choices=[1,2,3,4],default=1,
+                        help="Select which method you want to use for changing usernames to email addresses. 1=Make user's email their username.2=username@domain.com 3=first.last@domain.com. 4=Check to see if all usernames are emails")
+    parser.add_argument('-e', action='store_true', help='Add this flag to run it for real. Leave out for a dry run')
+    parser.add_argument('-f', dest='inputFile', type=argparse.FileType('r'),
+                        help='File that contains just the userIds you want to alter')
 
-#dfAllUsersToProcess = dfAllUsersToProcess.fillna('empty')
+    args = parser.parse_args()
+    method = int(args.method)
+    credsUsername = args.username
+    serverAddress = args.serverUrl
+    # print (args.inputFile )
+    filename = args.inputFile
 
-if args.inputFile:
-    lines = filename.read().splitlines()
-    dfAllUsersToProcess = dfAllUsersToProcess[dfAllUsersToProcess['userId'].isin(lines)]
-else:
-    print ("Processing all users." )
-#print (dfAllUsersToProcess.to_string() )
-#Check to see if there are any users that don't have an @ symbol in their username.
-#If this is the case something is not right, and needs to be fixed.
-#If this is the case something is not right, and needs to be fixed.
-
-allResults = []
-for index, row in dfAllUsersToProcess.iterrows():
-    result = {}
-    newUsername = row['username']
-    oldUsername  = row['Old Username']
-    userId = row['userId']
-    result['User Id'] = userId
-    result['New Username'] = newUsername
-    result['Old Username'] = oldUsername
-
-    call = '/api/user/' + str(userId)
-    toSend = {}
-    toSend['email'] = newUsername
-    toSend['username'] = newUsername
-    payload = json.dumps(toSend)
-    attemptStatus=""
-    singleQuote='\''
-    if usernameIsEmail(newUsername):
-        if usernameIsEmail(oldUsername):
-            print("Did not change", oldUsername + " to ", newUsername, "it is already an email address.")
-            attemptStatus = ", username is already an email address"
-        elif newUsername == oldUsername:
-            print ("Did not change", oldUsername + " to ", newUsername, "it is already the same.")
-            attemptStatus = ", already Set to Username"
-        elif singleQuote in newUsername :
-            print ("Did not change",oldUsername+" to ",newUsername,"it has a single quote in it. Please manually change username to an email address.")
-            attemptStatus=", ' in email address."
-        elif not username==oldUsername:
-            response = genericRequest('put', call, params={}, payload=payload)
-        else:
-            print ("Did not change",oldUsername+" to ",newUsername,"This is the user running this script.")
-            attemptStatus= ", username used for script"
-    else:
-        print("Did not change", oldUsername + " to ", newUsername, "It is not a valid email address.")
-        attemptStatus = ", new username not a valid email address"
     try:
-        if (response.status_code != 200):
-            print (response.text )
-            result['Status'] = 'Failure'
-            print (payload )
-        else:
-            print ("Changed",oldUsername+" to",newUsername )
-            result['Status'] = 'Success'
-    except :
-        if not execute and attemptStatus == "":
-            result['Status'] = 'Dry run Success'
-        else:
-            result['Status'] = 'Failure'+attemptStatus
+        execute = args.e
+    except:
+        execute = args.execute
+    sys.stdout = Logger()
+    print ("Username:\t", credsUsername, "\nServer Address:\t", serverAddress, "\nMethod:\t\t", method)
+    userPassword = getpass.getpass(prompt='Please enter your password:')
 
+    testServerConnectivity()
+    testCredentials()
+
+    if method in {2, 3}:
+        while True:
+            print ("Please enter the domain for your users ex: @example.com")
+            domain = input()
+            if '@' in domain:
+                break
+            else:
+                print ("Double check the domain for an @ symbol and try again. You entered:", domain)
+        print ("Domain:\t\t", domain)
+
+    print()
+    allUsers = getAllUsers()
+
+    dfAllUsersToProcess = pd.DataFrame(allUsers, columns=['userId', 'userUid', 'active', 'username', 'email', 'firstName',
+                                                          'lastName'])
+    dfAllUsersToProcess['Old Username'] = dfAllUsersToProcess['username']
+
+    if method == 1:
+        dfAllUsersToProcess['username'] = dfAllUsersToProcess['email']
+    elif method == 2:
+        dfAllUsersToProcess['username'] = dfAllUsersToProcess['username'] + domain
+    elif method == 3:
+        dfAllUsersToProcess['username'] = dfAllUsersToProcess['firstName'] + '.' + dfAllUsersToProcess['lastName'] + domain
+    elif method == 4:
+        checkIfUsernamesAreEmailAddresses(allUsers)
+        print ("Users without email addresses have been printed to usernamesNotEmailAddresses.csv")
+        sys.exit()
+    if not execute:
+        print ("This is a dry run. Add the -e flag to run for real.")
+    else:
+        print (
+            "BE AWARE, THIS WILL CHANGE ALL USERNAMES ON YOUR SYSTEM TO EMAIL ADDRESSES\nIf you have second thoughts, or are not ready please quit now. (ctrl+c)")
+
+
+    if args.inputFile:
+        lines = filename.read().splitlines()
+        dfAllUsersToProcess = dfAllUsersToProcess[dfAllUsersToProcess['userId'].isin(lines)]
+    else:
+        print ("Processing all users.")
+    # print (dfAllUsersToProcess.to_string() )
+    # Check to see if there are any users that don't have an @ symbol in their username.
+    # If this is the case something is not right, and needs to be fixed.
+    # If this is the case something is not right, and needs to be fixed.
+
+    allResults = []
+    for index, row in dfAllUsersToProcess.iterrows():
+        result = {}
+        newUsername = row['username']
+
+        oldUsername = row['Old Username']
+        userId = row['userId']
+        result['User Id'] = userId
+        result['New Username'] = newUsername
+        result['Old Username'] = oldUsername
+
+        call = '/api/user/' + str(userId)
+        toSend = {}
+        toSend['email'] = newUsername
+        toSend['username'] = newUsername
+        payload = json.dumps(toSend)
+        attemptStatus = ""
+        singleQuote = '\''
+        changeUser = True
+
+        if usernameIsEmail(newUsername):
+            if usernameIsEmail(oldUsername):
+                print("Did not change", oldUsername + " to ",newUsername, "it is already an email address.")
+                attemptStatus = ", username is already an email address"
+                changeUser = False
+            elif newUsername == oldUsername:
+                print ("Did not change", oldUsername + " to ",newUsername, "it is already the same.")
+                attemptStatus = ", already Set to Username"
+                changeUser = False
+            elif singleQuote in newUsername:
+                print ("Did not change", oldUsername + " to ",newUsername,
+                       "it has a single quote in it. Please manually change username to an email address.")
+                attemptStatus = ", ' in email address."
+                changeUser = False
+            elif credsUsername == oldUsername:
+                print ("Did not change", oldUsername + " to ",newUsername, "This is the user running this script.")
+                attemptStatus = ", username used for script"
+                changeUser = False
+        else:
+            print("Did not change", oldUsername + " to ",newUsername, "It is not a valid email address.")
+            attemptStatus = ", new username not a valid email address"
+            changeUser = False
+
+        if changeUser:
+            response = genericRequest('put', call, params={}, payload=payload)
         try:
-            print (response.text )
+            if (response.status_code != 200):
+                print (response.text)
+                result['Status'] = 'Failure'
+                print (payload)
+            else:
+                if execute:
+                    print ("Changed", oldUsername + " to", newUsername)
+                else:
+                    print ("Dry run, would", oldUsername + " to", newUsername)
+                result['Status'] = 'Success'
         except:
-            None
+            if not execute and attemptStatus == "":
+                result['Status'] = 'Dry run Success'
+            else:
+                result['Status'] = 'Failure' + attemptStatus
 
-    allResults.append(result)
-dfAllResults = pd.DataFrame(allResults,columns=['User Id','New Username','Old Username','Status'])
-failures = dfAllResults.shape[0]-dfAllResults[dfAllResults.Status == 'Success'].shape[0]
-if execute:
-    print ("Completed. \nUsers changed:",dfAllResults[dfAllResults.Status == 'Success'].shape[0],"Users with an error:",failures )
-else:
-    print ("This was a dry run. Use the -e flag to run for real.")
+            try:
+                print (response.text)
+            except:
+                None
 
-#print (dfAllResults.to_string())
-dfAllResults.to_csv('UsernamesChangedResults-'+startTime+'.csv', encoding='utf-8', index=False)
+        allResults.append(result)
+    dfAllResults = pd.DataFrame(allResults, columns=['User Id', 'New Username', 'Old Username', 'Status'])
+    failures = dfAllResults.shape[0] - dfAllResults[dfAllResults.Status == 'Success'].shape[0]
+    if execute:
+        print (
+        "Completed. \nUsers changed:", dfAllResults[dfAllResults.Status == 'Success'].shape[0], "Users with an error:",
+        failures)
+    else:
+        print ("\nThis was a dry run. Use the -e flag to run for real.")
+    resultsFilename = 'UsernamesChangedResults-' + startTime + '.csv'
+    print("Results were printed to:", resultsFilename)
+    # print (dfAllResults.to_string())
+    dfAllResults.to_csv(resultsFilename, encoding='utf-8', index=False)
+
+if __name__ == '__main__':
+    main()
