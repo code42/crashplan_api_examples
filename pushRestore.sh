@@ -11,7 +11,7 @@
 #  * Using MPC or Cloud storage.
 #  * Recursive restore (includes subdirectories).
 #  * Between computers of different users (if Admin).
-#  * Supports restoring to origional location
+#  * Supports restoring to original location
 #  * ...and more.
 #
 #
