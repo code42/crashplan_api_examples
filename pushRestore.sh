@@ -288,11 +288,11 @@ DATA='{
 	"numFiles":1,
 	"showDeleted":true,
 	"restoreFullPath":true,
-	"timestamp":'${restoreDateEpochMS}',
+	"timestamp":"'${restoreDateEpochMS}'",
 	"pushRestoreStrategy":'${pushRestoreStrategy}',
 	"permitRestoreToDifferentOsVersion":'${permitRestoreToDifferentOsVersion}',
-	"existingFiles":'${existingFiles}',
-	"filePermissions":'${filePermissions}'
+	"existingFiles":"'${existingFiles}'",
+	"filePermissions":"'${filePermissions}'"
 	
 }'
 
