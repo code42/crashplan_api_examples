@@ -3,7 +3,7 @@
 #
 # 	Edit the variables near the top of this script then run it!
 #	This script is fire and forget, progress is not monitored with this script. That must be done via client or server logs.
-#   Usage: ./simplifiedPushRestore.sh
+#   Usage: ./pushRestore.sh
 #
 # This example script performs an automated Push Restore (via REST):
 #  * One or more source files/directories.
