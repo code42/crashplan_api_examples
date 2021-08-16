@@ -3,7 +3,7 @@
 #
 # 	Edit the variables near the top of this script then run it!
 #	This script is fire and forget, progress is not monitored with this script. That must be done via client or server logs.
-#   Usage: ./simplifiedPushRestore.sh
+#   Usage: ./pushRestore.sh
 #
 # This example script performs an automated Push Restore (via REST):
 #  * One or more source files/directories.
@@ -11,7 +11,7 @@
 #  * Using MPC or Cloud storage.
 #  * Recursive restore (includes subdirectories).
 #  * Between computers of different users (if Admin).
-#  * Supports restoring to origional location
+#  * Supports restoring to original location
 #  * ...and more.
 #
 #
@@ -288,11 +288,11 @@ DATA='{
 	"numFiles":1,
 	"showDeleted":true,
 	"restoreFullPath":true,
-	"timestamp":'${restoreDateEpochMS}',
+	"timestamp":"'${restoreDateEpochMS}'",
 	"pushRestoreStrategy":'${pushRestoreStrategy}',
 	"permitRestoreToDifferentOsVersion":'${permitRestoreToDifferentOsVersion}',
-	"existingFiles":'${existingFiles}',
-	"filePermissions":'${filePermissions}'
+	"existingFiles":"'${existingFiles}'",
+	"filePermissions":"'${filePermissions}'"
 	
 }'
 
