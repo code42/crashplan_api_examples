@@ -1,4 +1,10 @@
-# Code42 API Examples
+# Deprecated
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+
+Code42 recommends that customers visit [developer.code42.com](https://developer.code42.com) for current documentation and reference to current supported toolkits.
+
+---
+# CrashPlan API Examples
 
 This project is a showcase area for various scripts that either Code42 or its customers have provided that run against the Code42 REST API and extend the functionality or reporting beyond what is possible in the default console.
 
